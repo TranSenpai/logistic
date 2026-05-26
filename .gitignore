@@ -1,0 +1,28 @@
+# Binary outputs
+/bin/
+main
+app
+
+# Hot Reload (Air)
+/tmp/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.go.work
+
+# Configurations and Secrets
+# Chỉ ignore file chứa secret, giữ lại folder để chứa template
+configs/.env
+configs/*.local.toml
+
+# Dependencies
+vendor/
+
+# Others
+techBook/
