@@ -18,8 +18,8 @@ Thumbs.db
 
 # Configurations and Secrets
 # Chỉ ignore file chứa secret, giữ lại folder để chứa template
-configs/.env
-configs/*.local.toml
+**/.env
+**/*.local.toml
 
 # Dependencies
 vendor/
