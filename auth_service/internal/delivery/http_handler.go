@@ -9,13 +9,13 @@ import (
 )
 
 type HttpHandler struct {
-	authUsecase biz.AuthUsecase
+	authService biz.AuthService
 	authMapper  mapper.AuthMapper
 }
 
-func NewHttpHandler(authUsecase biz.AuthUsecase) *HttpHandler {
+func NewHttpHandler(authService biz.AuthService) *HttpHandler {
 	return &HttpHandler{
-		authUsecase: authUsecase,
+		authService: authService,
 		authMapper:  &generated.AuthMapperImpl{},
 	}
 }

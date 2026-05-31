@@ -8,6 +8,7 @@ import (
 	"matching_service/ent"
 	"matching_service/ent/ask"
 	"matching_service/ent/bid"
+	"matching_service/internal/biz"
 	"matching_service/internal/entity"
 	"matching_service/internal/mapper"
 	"matching_service/internal/mapper/generated"
@@ -15,19 +16,19 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
-type MatchingRepo struct {
+type matchingRepoImpl struct {
 	client *ent.Client
 	mapper mapper.Converter
 }
 
-func NewMatchingRepo(client *ent.Client) *MatchingRepo {
-	return &MatchingRepo{
+func NewMatchingRepo(client *ent.Client) biz.MatchingRepo {
+	return &matchingRepoImpl{
 		client: client,
 		mapper: &generated.ConverterImpl{},
 	}
 }
 
-func (r *MatchingRepo) CreateBid(ctx context.Context, bid *entity.Bid) error {
+func (r *matchingRepoImpl) CreateBid(ctx context.Context, bid *entity.Bid) error {
 	userID, _ := strconv.Atoi(bid.UserID)
 	pickupPoint := fmt.Sprintf("POINT(%f %f)", bid.Origin.Longitude, bid.Origin.Latitude)
 	deliveryPoint := fmt.Sprintf("POINT(%f %f)", bid.Destination.Longitude, bid.Destination.Latitude)
@@ -47,7 +48,7 @@ func (r *MatchingRepo) CreateBid(ctx context.Context, bid *entity.Bid) error {
 	return err
 }
 
-func (r *MatchingRepo) CreateAsk(ctx context.Context, ask *entity.Ask) error {
+func (r *matchingRepoImpl) CreateAsk(ctx context.Context, ask *entity.Ask) error {
 	driverID, _ := strconv.Atoi(ask.DriverID)
 	currentPoint := fmt.Sprintf("POINT(%f %f)", ask.CurrentLocation.Longitude, ask.CurrentLocation.Latitude)
 
@@ -63,7 +64,7 @@ func (r *MatchingRepo) CreateAsk(ctx context.Context, ask *entity.Ask) error {
 	return err
 }
 
-func (r *MatchingRepo) GetPendingBids(ctx context.Context, zone string) ([]entity.Bid, error) {
+func (r *matchingRepoImpl) GetPendingBids(ctx context.Context, zone string) ([]entity.Bid, error) {
 	daoList, err := r.client.Bid.Query().
 		Where(bid.ZoneID(zone)).
 		Where(bid.Status(mapper.BidStatusToInt(entity.BidStatusPending))).
@@ -74,7 +75,7 @@ func (r *MatchingRepo) GetPendingBids(ctx context.Context, zone string) ([]entit
 	return r.mapper.EntBidListToEntityBidList(daoList), nil
 }
 
-func (r *MatchingRepo) GetPendingAsks(ctx context.Context, zone string) ([]entity.Ask, error) {
+func (r *matchingRepoImpl) GetPendingAsks(ctx context.Context, zone string) ([]entity.Ask, error) {
 	daoList, err := r.client.Ask.Query().
 		Where(ask.ZoneID(zone)).
 		Where(ask.Status(mapper.AskStatusToInt(entity.AskStatusPending))).
@@ -85,7 +86,7 @@ func (r *MatchingRepo) GetPendingAsks(ctx context.Context, zone string) ([]entit
 	return r.mapper.EntAskListToEntityAskList(daoList), nil
 }
 
-func (r *MatchingRepo) FindAskForBid(ctx context.Context, bid *entity.Bid) ([]entity.Ask, error) {
+func (r *matchingRepoImpl) FindAskForBid(ctx context.Context, bid *entity.Bid) ([]entity.Ask, error) {
 	query := r.client.Ask.Query()
 
 	daoList, err := query.Where(ask.ZoneID(bid.Origin.ZoneID)).
@@ -111,7 +112,7 @@ func (r *MatchingRepo) FindAskForBid(ctx context.Context, bid *entity.Bid) ([]en
 	return r.mapper.EntAskListToEntityAskList(daoList), nil
 }
 
-func (r *MatchingRepo) FindBidForAsk(ctx context.Context, ask *entity.Ask) ([]entity.Bid, error) {
+func (r *matchingRepoImpl) FindBidForAsk(ctx context.Context, ask *entity.Ask) ([]entity.Bid, error) {
 	query := r.client.Bid.Query()
 
 	daoList, err := query.Where(bid.ZoneID(ask.CurrentLocation.ZoneID)).
@@ -138,7 +139,7 @@ func (r *MatchingRepo) FindBidForAsk(ctx context.Context, ask *entity.Ask) ([]en
 	return r.mapper.EntBidListToEntityBidList(daoList), nil
 }
 
-func (r *MatchingRepo) UpdateAsk(ctx context.Context, ask *entity.Ask) error {
+func (r *matchingRepoImpl) UpdateAsk(ctx context.Context, ask *entity.Ask) error {
 	askID, err := strconv.Atoi(ask.ID)
 	if err != nil {
 		return fmt.Errorf("invalid ask ID: %w", err)
@@ -155,7 +156,7 @@ func (r *MatchingRepo) UpdateAsk(ctx context.Context, ask *entity.Ask) error {
 	return err
 }
 
-func (r *MatchingRepo) UpdateBid(ctx context.Context, bid *entity.Bid) error {
+func (r *matchingRepoImpl) UpdateBid(ctx context.Context, bid *entity.Bid) error {
 	bidID, err := strconv.Atoi(bid.ID)
 	if err != nil {
 		return fmt.Errorf("invalid bid ID: %w", err)
@@ -175,7 +176,7 @@ func (r *MatchingRepo) UpdateBid(ctx context.Context, bid *entity.Bid) error {
 	return err
 }
 
-func (r *MatchingRepo) DeleteBid(ctx context.Context, bidID string) error {
+func (r *matchingRepoImpl) DeleteBid(ctx context.Context, bidID string) error {
 	id, err := strconv.Atoi(bidID)
 	if err != nil {
 		return fmt.Errorf("invalid bid ID: %w", err)
@@ -183,7 +184,7 @@ func (r *MatchingRepo) DeleteBid(ctx context.Context, bidID string) error {
 	return r.client.Bid.DeleteOneID(id).Exec(ctx)
 }
 
-func (r *MatchingRepo) DeleteAsk(ctx context.Context, askID string) error {
+func (r *matchingRepoImpl) DeleteAsk(ctx context.Context, askID string) error {
 	id, err := strconv.Atoi(askID)
 	if err != nil {
 		return fmt.Errorf("invalid ask ID: %w", err)

@@ -5,7 +5,7 @@ import (
 	"matching_service/internal/entity"
 )
 
-type IMatchingRepo interface {
+type MatchingRepo interface {
 	CreateBid(ctx context.Context, bid *entity.Bid) error
 	CreateAsk(ctx context.Context, ask *entity.Ask) error
 	GetPendingBids(ctx context.Context, zone string) ([]entity.Bid, error)

@@ -8,15 +8,15 @@ import (
 	"github.com/mmcloughlin/geohash"
 )
 
-type GeoHashEngine struct {
+type geoHashEngineImpl struct {
 	// TODO: Add redis cache here
 }
 
-func NewGeoHashEngine() *GeoHashEngine {
-	return &GeoHashEngine{}
+func NewGeoHashEngine() SpatialEngine {
+	return &geoHashEngineImpl{}
 }
 
-func (g *GeoHashEngine) GetZoneId(ctx context.Context, lat, lng float64) (string, error) {
+func (g *geoHashEngineImpl) GetZoneId(ctx context.Context, lat, lng float64) (string, error) {
 	if lat == 0 || lng == 0 {
 		return "", fmt.Errorf("%w: Empty lattitude or longtitude", entity.ErrEmptyLocation)
 	}
@@ -29,7 +29,7 @@ func (g *GeoHashEngine) GetZoneId(ctx context.Context, lat, lng float64) (string
 	return result, nil
 }
 
-func (g *GeoHashEngine) GetNeighborZones(ctx context.Context, zoneID string) ([]string, error) {
+func (g *geoHashEngineImpl) GetNeighborZones(ctx context.Context, zoneID string) ([]string, error) {
 	if zoneID == "" {
 		return nil, fmt.Errorf("%w: Empty zone ID", entity.ErrInvalidLocation)
 	}

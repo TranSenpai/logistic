@@ -9,16 +9,22 @@ import (
 
 // MatchingEngine chịu trách nhiệm nhận Bid (Yêu cầu chở hàng) và Ask (Xe rỗng)
 // Sau đó chạy thuật toán ghép nối chúng lại với nhau.
-type MatchingEngine struct {
+type MatchingEngine interface {
+	SubmitBid(ctx context.Context, bid *entity.Bid) error
+	SubmitAsk(ctx context.Context, ask *entity.Ask) error
+	MatchStream() <-chan *entity.MatchResult
+}
+
+type matchingEngineImpl struct {
 	mu      sync.RWMutex
-	repo    IMatchingRepo
+	repo    MatchingRepo
 	spatial SpatialEngine
 	// matchChan dùng để bắn kết quả ra ngoài sau khi ghép thành công
 	matchChan chan *entity.MatchResult
 }
 
-func NewMatchingEngine(repo IMatchingRepo, spatial SpatialEngine) *MatchingEngine {
-	return &MatchingEngine{
+func NewMatchingEngine(repo MatchingRepo, spatial SpatialEngine) MatchingEngine {
+	return &matchingEngineImpl{
 		repo:      repo,
 		spatial:   spatial,
 		matchChan: make(chan *entity.MatchResult, 1000),
@@ -26,7 +32,7 @@ func NewMatchingEngine(repo IMatchingRepo, spatial SpatialEngine) *MatchingEngin
 }
 
 // SubmitBid nhận một yêu cầu chở hàng từ Shipper.
-func (e *MatchingEngine) SubmitBid(ctx context.Context, bid *entity.Bid) error {
+func (e *matchingEngineImpl) SubmitBid(ctx context.Context, bid *entity.Bid) error {
 	if bid == nil {
 		return entity.ErrNilBid
 	}
@@ -49,7 +55,7 @@ func (e *MatchingEngine) SubmitBid(ctx context.Context, bid *entity.Bid) error {
 }
 
 // SubmitAsk nhận thông tin xe rỗng từ Driver.
-func (e *MatchingEngine) SubmitAsk(ctx context.Context, ask *entity.Ask) error {
+func (e *matchingEngineImpl) SubmitAsk(ctx context.Context, ask *entity.Ask) error {
 	if ask == nil {
 		return entity.ErrNilAsk
 	}
@@ -72,7 +78,7 @@ func (e *MatchingEngine) SubmitAsk(ctx context.Context, ask *entity.Ask) error {
 }
 
 // matchForBid tìm kiếm các xe (Ask) phù hợp cho một đơn hàng (Bid) vừa được tạo.
-func (e *MatchingEngine) matchForBid(ctx context.Context, bid *entity.Bid) {
+func (e *matchingEngineImpl) matchForBid(ctx context.Context, bid *entity.Bid) {
 	if bid == nil {
 		log.Printf("Failed to find asks for bid: %v", entity.ErrNilBid)
 		return
@@ -90,7 +96,7 @@ func (e *MatchingEngine) matchForBid(ctx context.Context, bid *entity.Bid) {
 }
 
 // matchForAsk tìm kiếm các đơn hàng (Bid) phù hợp cho một xe (Ask) vừa được tạo.
-func (e *MatchingEngine) matchForAsk(ctx context.Context, ask *entity.Ask) {
+func (e *matchingEngineImpl) matchForAsk(ctx context.Context, ask *entity.Ask) {
 	if ask == nil {
 		log.Printf("Failed to find bids for ask: %v", entity.ErrNilAsk)
 		return
@@ -108,6 +114,6 @@ func (e *MatchingEngine) matchForAsk(ctx context.Context, ask *entity.Ask) {
 }
 
 // MatchStream trả về channel chứa kết quả ghép đơn thành công để Delivery/Worker hứng.
-func (e *MatchingEngine) MatchStream() <-chan *entity.MatchResult {
+func (e *matchingEngineImpl) MatchStream() <-chan *entity.MatchResult {
 	return e.matchChan
 }

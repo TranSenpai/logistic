@@ -18,7 +18,7 @@ import (
 // ========================================================================================
 // KIẾN TRÚC: AuthService — Tầng Business Logic thuần túy
 //
-// Rule tối thượng: BIZ LAYER KHÔNG ĐƯỢC:
+// Rule: BIZ LAYER KHÔNG ĐƯỢC:
 //   ✗ Import bất kỳ thư viện HTTP nào (gin, net/http)
 //   ✗ Import bất kỳ thư viện DB nào (ent, gorm, database/sql)
 //   ✗ Biết về JSON serialization
@@ -31,6 +31,14 @@ import (
 // Đây là "Protected Variation" principle: Business logic được bọc kín,
 // thay đổi ở infra (DB, framework) không ripple vào business rules.
 // ========================================================================================
+
+type AuthService interface {
+	Register(ctx context.Context, req entity.UserRegister) (*entity.UserProfile, error)
+	Login(ctx context.Context, req entity.UserLogin) (*entity.AuthTokenPair, error)
+	GetGoogleLoginURL(state string) string
+	GoogleCallback(ctx context.Context, code string) (*entity.AuthTokenPair, error)
+	VerifyToken(ctx context.Context, tokenString string) (*entity.UserProfile, error)
+}
 
 var (
 	// Domain errors — được định nghĩa ở biz layer, không ở controller/delivery.
@@ -51,7 +59,7 @@ type jwtClaims struct {
 	jwt.RegisteredClaims
 }
 
-type AuthService struct {
+type authServiceImpl struct {
 	authRepo AuthRepo
 
 	// TRADE-OFF: Inject jwtSecret vào struct thay vì hardcode hay đọc từ os.Getenv() mỗi lần gọi.
@@ -61,8 +69,8 @@ type AuthService struct {
 	oauthConfig *oauth2.Config
 }
 
-func NewAuthService(authRepo AuthRepo, jwtSecret string, oauthConfig *oauth2.Config) AuthUsecase {
-	return &AuthService{
+func NewAuthService(authRepo AuthRepo, jwtSecret string, oauthConfig *oauth2.Config) AuthService {
+	return &authServiceImpl{
 		authRepo:    authRepo,
 		jwtSecret:   jwtSecret,
 		oauthConfig: oauthConfig,
@@ -70,7 +78,7 @@ func NewAuthService(authRepo AuthRepo, jwtSecret string, oauthConfig *oauth2.Con
 }
 
 // Register implement business logic đăng ký user.
-func (s *AuthService) Register(ctx context.Context, req entity.UserRegister) (*entity.UserProfile, error) {
+func (s *authServiceImpl) Register(ctx context.Context, req entity.UserRegister) (*entity.UserProfile, error) {
 	// STEP 1 — Guard clause: Kiểm tra email trước khi làm bất cứ điều gì tốn kém (hashing).
 	// Đây là "Fail Fast" principle: phát hiện lỗi sớm nhất có thể, tránh tốn CPU cho bcrypt
 	// (bcrypt cost 12 ≈ 250ms/request) khi email đã tồn tại.
@@ -105,7 +113,7 @@ func (s *AuthService) Register(ctx context.Context, req entity.UserRegister) (*e
 }
 
 // Login implement business logic đăng nhập.
-func (s *AuthService) Login(ctx context.Context, req entity.UserLogin) (*entity.AuthTokenPair, error) {
+func (s *authServiceImpl) Login(ctx context.Context, req entity.UserLogin) (*entity.AuthTokenPair, error) {
 	// STEP 1 — Tìm user. FindByEmail trả về profile + hashed password.
 	// SECURITY NOTE: Không phân biệt "email không tồn tại" vs "password sai" trong response.
 	// Lý do: Tránh User Enumeration Attack — attacker không biết email có tồn tại hay không.
@@ -132,19 +140,19 @@ func (s *AuthService) Login(ctx context.Context, req entity.UserLogin) (*entity.
 }
 
 // getOAuthConfig trả về cấu hình Google OAuth2 đã được inject.
-func (s *AuthService) getOAuthConfig() *oauth2.Config {
+func (s *authServiceImpl) getOAuthConfig() *oauth2.Config {
 	return s.oauthConfig
 }
 
 // GetGoogleLoginURL trả về URL để redirect user sang trang đăng nhập của Google
-func (s *AuthService) GetGoogleLoginURL(state string) string {
+func (s *authServiceImpl) GetGoogleLoginURL(state string) string {
 	// Gọi hàm AuthCodeURL của thư viện để nó gắn state và ClientID vào link Google
 	conf := s.getOAuthConfig()
 	return conf.AuthCodeURL(state) // Trả về link Google chuẩn!
 }
 
 // GoogleCallback xử lý Authorization Code Google trả về
-func (s *AuthService) GoogleCallback(ctx context.Context, code string) (*entity.AuthTokenPair, error) {
+func (s *authServiceImpl) GoogleCallback(ctx context.Context, code string) (*entity.AuthTokenPair, error) {
 	conf := s.getOAuthConfig()
 
 	// 1. Đổi code lấy Access Token của Google
@@ -194,7 +202,7 @@ func (s *AuthService) GoogleCallback(ctx context.Context, code string) (*entity.
 
 // generateTokenPair là private helper — chỉ AuthService dùng.
 // DESIGN: Tách thành method riêng để dễ unit test (có thể test token generation độc lập).
-func (s *AuthService) generateTokenPair(profile *entity.UserProfile) (*entity.AuthTokenPair, error) {
+func (s *authServiceImpl) generateTokenPair(profile *entity.UserProfile) (*entity.AuthTokenPair, error) {
 	now := time.Now()
 	accessExpiresAt := now.Add(15 * time.Minute)
 
@@ -250,7 +258,7 @@ func (s *AuthService) generateTokenPair(profile *entity.UserProfile) (*entity.Au
 }
 
 // VerifyToken xác thực JWT và trả về thông tin User.
-func (s *AuthService) VerifyToken(ctx context.Context, tokenString string) (*entity.UserProfile, error) {
+func (s *authServiceImpl) VerifyToken(ctx context.Context, tokenString string) (*entity.UserProfile, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &jwtClaims{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method")

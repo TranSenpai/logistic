@@ -9,10 +9,10 @@ import (
 // It acts as the boundary layer protecting the Biz logic.
 type LogisticsDelivery struct {
 	logisticsv1.UnimplementedMatchingEngineServiceServer
-	matchingEngine *biz.MatchingEngine
+	matchingEngine biz.MatchingEngine
 }
 
-func NewLogisticsDelivery(engine *biz.MatchingEngine) *LogisticsDelivery {
+func NewLogisticsDelivery(engine biz.MatchingEngine) *LogisticsDelivery {
 	return &LogisticsDelivery{
 		matchingEngine: engine,
 	}

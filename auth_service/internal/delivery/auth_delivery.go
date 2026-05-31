@@ -42,7 +42,7 @@ func (h *HttpHandler) Register(ctx *gin.Context) {
 		Password: req.Password,
 	}
 
-	profile, err := h.authUsecase.Register(ctx.Request.Context(), domainReq)
+	profile, err := h.authService.Register(ctx.Request.Context(), domainReq)
 	if err != nil {
 		switch {
 		case errors.Is(err, biz.ErrEmailAlreadyExists):
@@ -91,7 +91,7 @@ func (h *HttpHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	tokenPair, err := h.authUsecase.Login(ctx.Request.Context(), entity.UserLogin{
+	tokenPair, err := h.authService.Login(ctx.Request.Context(), entity.UserLogin{
 		Email:    req.Email,
 		Password: req.Password,
 	})
@@ -125,7 +125,7 @@ func (h *HttpHandler) GoogleLogin(ctx *gin.Context) {
 	state := base64.URLEncoding.EncodeToString(b)
 
 	// 2. Lấy URL từ service
-	url := h.authUsecase.GetGoogleLoginURL(state)
+	url := h.authService.GetGoogleLoginURL(state)
 
 	// 3. Set cookie và redirect
 	ctx.SetCookie("oauth_state", state, int(time.Minute*5), "/", "", false, true)
@@ -143,7 +143,7 @@ func (h *HttpHandler) GoogleCallback(ctx *gin.Context) {
 		return
 	}
 	code := ctx.Query("code")
-	tokenPair, err := h.authUsecase.GoogleCallback(ctx.Request.Context(), code)
+	tokenPair, err := h.authService.GoogleCallback(ctx.Request.Context(), code)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "internal_server_error",
@@ -193,7 +193,7 @@ func (h *HttpHandler) GetInfo(ctx *gin.Context) {
 	}
 
 	// Validate token và lấy profile
-	profile, err := h.authUsecase.VerifyToken(ctx.Request.Context(), token)
+	profile, err := h.authService.VerifyToken(ctx.Request.Context(), token)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "invalid_token",
