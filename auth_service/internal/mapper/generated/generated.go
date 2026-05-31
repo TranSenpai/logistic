@@ -4,10 +4,10 @@
 package generated
 
 import (
-	ent "goBackend/matching_service/ent"
+	entity "auth_service/internal/entity"
+	mapper "auth_service/internal/mapper"
 	gen "goBackend/api/logistics/v1/gen"
-	entity "goBackend/auth_service/internal/entity"
-	mapper "goBackend/auth_service/internal/mapper"
+	ent "auth_service/ent"
 )
 
 type AuthMapperImpl struct{}

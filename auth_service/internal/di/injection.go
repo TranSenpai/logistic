@@ -3,10 +3,10 @@ package di
 import (
 	"os"
 
-	"goBackend/auth_service/internal/biz"
-	entclient "goBackend/auth_service/internal/common/ent_client"
-	"goBackend/auth_service/internal/delivery"
-	"goBackend/auth_service/internal/repo"
+	"auth_service/internal/biz"
+	entclient "auth_service/internal/common/ent_client"
+	"auth_service/internal/delivery"
+	"auth_service/internal/repo"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
@@ -35,7 +35,6 @@ func Injection(ginEngine *gin.Engine) error {
 	authRepo := repo.NewAuthRepo(clientDb)
 	authService := biz.NewAuthService(authRepo, jwtSecret, oauthConfig)
 
-	// Inject Usecase directly into HttpHandler
 	httpHandler := delivery.NewHttpHandler(authService)
 	httpHandler.RegisterRouter(ginEngine)
 

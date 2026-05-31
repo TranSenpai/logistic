@@ -1,12 +1,12 @@
 package repo
 
 import (
+	"auth_service/internal/biz"
+	"auth_service/internal/entity"
 	"context"
 	"fmt"
-	"goBackend/auth_service/internal/biz"
-	"goBackend/auth_service/internal/entity"
-	"goBackend/matching_service/ent"
-	"goBackend/matching_service/ent/users"
+	"auth_service/ent"
+	"auth_service/ent/users"
 )
 
 type authRepoImpl struct {

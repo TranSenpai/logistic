@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 	authdto "goBackend/api/logistics/v1/gen"
-	"goBackend/auth_service/internal/biz"
-	"goBackend/auth_service/internal/entity"
+	"auth_service/internal/biz"
+	"auth_service/internal/entity"
 	"net/http"
 	"time"
 

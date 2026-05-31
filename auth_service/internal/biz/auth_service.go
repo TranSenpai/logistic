@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"goBackend/auth_service/internal/entity"
+	"auth_service/internal/entity"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"goBackend/auth_service/internal/di"
+	"auth_service/internal/di"
 	"time"
 
 	"github.com/gin-contrib/cors"

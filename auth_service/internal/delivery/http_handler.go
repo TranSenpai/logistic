@@ -1,9 +1,9 @@
 package delivery
 
 import (
-	"goBackend/auth_service/internal/biz"
-	"goBackend/auth_service/internal/mapper"
-	"goBackend/auth_service/internal/mapper/generated"
+	"auth_service/internal/biz"
+	"auth_service/internal/mapper"
+	"auth_service/internal/mapper/generated"
 
 	"github.com/gin-gonic/gin"
 )

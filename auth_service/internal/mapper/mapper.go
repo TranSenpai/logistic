@@ -3,9 +3,9 @@ package mapper
 import (
 	"time"
 
-	"goBackend/matching_service/ent"
+	"auth_service/internal/entity"
 	dto "goBackend/api/logistics/v1/gen"
-	"goBackend/auth_service/internal/entity"
+	"auth_service/ent"
 )
 
 // goverter:converter

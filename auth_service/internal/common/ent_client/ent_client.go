@@ -1,14 +1,14 @@
 package entclient
 
 import (
+	"auth_service/internal/env"
 	"context"
 	"errors"
 	"fmt"
-	"goBackend/auth_service/internal/env"
-	"goBackend/matching_service/ent"
 	"log"
 
-	_ "goBackend/matching_service/ent/runtime"
+	"auth_service/ent"
+	_ "auth_service/ent/runtime"
 
 	_ "github.com/lib/pq"
 )

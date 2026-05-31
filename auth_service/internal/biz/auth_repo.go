@@ -2,7 +2,7 @@ package biz
 
 import (
 	"context"
-	"goBackend/auth_service/internal/entity"
+	"auth_service/internal/entity"
 )
 
 type AuthRepo interface {
