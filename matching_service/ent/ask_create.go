@@ -6,7 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"goBackend/matching_service/ent/ask"
+	"matching_service/ent/ask"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -77,6 +77,12 @@ func (_c *AskCreate) SetNillableMinPrice(v *float64) *AskCreate {
 	if v != nil {
 		_c.SetMinPrice(*v)
 	}
+	return _c
+}
+
+// SetZoneID sets the "zone_id" field.
+func (_c *AskCreate) SetZoneID(v string) *AskCreate {
+	_c.mutation.SetZoneID(v)
 	return _c
 }
 
@@ -191,6 +197,9 @@ func (_c *AskCreate) check() error {
 	if _, ok := _c.mutation.AvailableWeightKg(); !ok {
 		return &ValidationError{Name: "available_weight_kg", err: errors.New(`ent: missing required field "Ask.available_weight_kg"`)}
 	}
+	if _, ok := _c.mutation.ZoneID(); !ok {
+		return &ValidationError{Name: "zone_id", err: errors.New(`ent: missing required field "Ask.zone_id"`)}
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Ask.status"`)}
 	}
@@ -249,6 +258,10 @@ func (_c *AskCreate) createSpec() (*Ask, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.MinPrice(); ok {
 		_spec.SetField(ask.FieldMinPrice, field.TypeFloat64, value)
 		_node.MinPrice = &value
+	}
+	if value, ok := _c.mutation.ZoneID(); ok {
+		_spec.SetField(ask.FieldZoneID, field.TypeString, value)
+		_node.ZoneID = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(ask.FieldStatus, field.TypeInt, value)

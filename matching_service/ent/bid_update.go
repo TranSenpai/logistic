@@ -6,8 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"goBackend/matching_service/ent/bid"
-	"goBackend/matching_service/ent/predicate"
+	"matching_service/ent/bid"
+	"matching_service/ent/predicate"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -186,6 +186,20 @@ func (_u *BidUpdate) ClearMaxPrice() *BidUpdate {
 	return _u
 }
 
+// SetZoneID sets the "zone_id" field.
+func (_u *BidUpdate) SetZoneID(v string) *BidUpdate {
+	_u.mutation.SetZoneID(v)
+	return _u
+}
+
+// SetNillableZoneID sets the "zone_id" field if the given value is not nil.
+func (_u *BidUpdate) SetNillableZoneID(v *string) *BidUpdate {
+	if v != nil {
+		_u.SetZoneID(*v)
+	}
+	return _u
+}
+
 // SetItems sets the "items" field.
 func (_u *BidUpdate) SetItems(v map[string]interface{}) *BidUpdate {
 	_u.mutation.SetItems(v)
@@ -325,6 +339,9 @@ func (_u *BidUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.MaxPriceCleared() {
 		_spec.ClearField(bid.FieldMaxPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.ZoneID(); ok {
+		_spec.SetField(bid.FieldZoneID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Items(); ok {
 		_spec.SetField(bid.FieldItems, field.TypeJSON, value)
@@ -519,6 +536,20 @@ func (_u *BidUpdateOne) ClearMaxPrice() *BidUpdateOne {
 	return _u
 }
 
+// SetZoneID sets the "zone_id" field.
+func (_u *BidUpdateOne) SetZoneID(v string) *BidUpdateOne {
+	_u.mutation.SetZoneID(v)
+	return _u
+}
+
+// SetNillableZoneID sets the "zone_id" field if the given value is not nil.
+func (_u *BidUpdateOne) SetNillableZoneID(v *string) *BidUpdateOne {
+	if v != nil {
+		_u.SetZoneID(*v)
+	}
+	return _u
+}
+
 // SetItems sets the "items" field.
 func (_u *BidUpdateOne) SetItems(v map[string]interface{}) *BidUpdateOne {
 	_u.mutation.SetItems(v)
@@ -688,6 +719,9 @@ func (_u *BidUpdateOne) sqlSave(ctx context.Context) (_node *Bid, err error) {
 	}
 	if _u.mutation.MaxPriceCleared() {
 		_spec.ClearField(bid.FieldMaxPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.ZoneID(); ok {
+		_spec.SetField(bid.FieldZoneID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Items(); ok {
 		_spec.SetField(bid.FieldItems, field.TypeJSON, value)

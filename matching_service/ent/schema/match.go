@@ -1,7 +1,7 @@
 package schema
 
 import (
-	softdelete "goBackend/matching_service/ent/softdelete"
+	softdelete "matching_service/ent/softdelete"
 	"time"
 
 	"entgo.io/ent"

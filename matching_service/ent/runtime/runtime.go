@@ -3,11 +3,10 @@
 package runtime
 
 import (
-	"goBackend/matching_service/ent/ask"
-	"goBackend/matching_service/ent/bid"
-	"goBackend/matching_service/ent/match"
-	"goBackend/matching_service/ent/schema"
-	"goBackend/matching_service/ent/users"
+	"matching_service/ent/ask"
+	"matching_service/ent/bid"
+	"matching_service/ent/match"
+	"matching_service/ent/schema"
 	"time"
 )
 
@@ -23,15 +22,15 @@ func init() {
 	askFields := schema.Ask{}.Fields()
 	_ = askFields
 	// askDescStatus is the schema descriptor for status field.
-	askDescStatus := askFields[5].Descriptor()
+	askDescStatus := askFields[6].Descriptor()
 	// ask.DefaultStatus holds the default value on creation for the status field.
 	ask.DefaultStatus = askDescStatus.Default.(int)
 	// askDescCreatedAt is the schema descriptor for created_at field.
-	askDescCreatedAt := askFields[6].Descriptor()
+	askDescCreatedAt := askFields[7].Descriptor()
 	// ask.DefaultCreatedAt holds the default value on creation for the created_at field.
 	ask.DefaultCreatedAt = askDescCreatedAt.Default.(func() time.Time)
 	// askDescUpdatedAt is the schema descriptor for updated_at field.
-	askDescUpdatedAt := askFields[7].Descriptor()
+	askDescUpdatedAt := askFields[8].Descriptor()
 	// ask.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	ask.DefaultUpdatedAt = askDescUpdatedAt.Default.(func() time.Time)
 	// ask.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -44,15 +43,15 @@ func init() {
 	bidFields := schema.Bid{}.Fields()
 	_ = bidFields
 	// bidDescStatus is the schema descriptor for status field.
-	bidDescStatus := bidFields[8].Descriptor()
+	bidDescStatus := bidFields[9].Descriptor()
 	// bid.DefaultStatus holds the default value on creation for the status field.
 	bid.DefaultStatus = bidDescStatus.Default.(int)
 	// bidDescCreatedAt is the schema descriptor for created_at field.
-	bidDescCreatedAt := bidFields[9].Descriptor()
+	bidDescCreatedAt := bidFields[10].Descriptor()
 	// bid.DefaultCreatedAt holds the default value on creation for the created_at field.
 	bid.DefaultCreatedAt = bidDescCreatedAt.Default.(func() time.Time)
 	// bidDescUpdatedAt is the schema descriptor for updated_at field.
-	bidDescUpdatedAt := bidFields[10].Descriptor()
+	bidDescUpdatedAt := bidFields[11].Descriptor()
 	// bid.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	bid.DefaultUpdatedAt = bidDescUpdatedAt.Default.(func() time.Time)
 	// bid.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -78,23 +77,6 @@ func init() {
 	match.DefaultUpdatedAt = matchDescUpdatedAt.Default.(func() time.Time)
 	// match.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	match.UpdateDefaultUpdatedAt = matchDescUpdatedAt.UpdateDefault.(func() time.Time)
-	usersMixin := schema.Users{}.Mixin()
-	usersMixinHooks0 := usersMixin[0].Hooks()
-	users.Hooks[0] = usersMixinHooks0[0]
-	usersMixinInters0 := usersMixin[0].Interceptors()
-	users.Interceptors[0] = usersMixinInters0[0]
-	usersFields := schema.Users{}.Fields()
-	_ = usersFields
-	// usersDescCreatedAt is the schema descriptor for created_at field.
-	usersDescCreatedAt := usersFields[6].Descriptor()
-	// users.DefaultCreatedAt holds the default value on creation for the created_at field.
-	users.DefaultCreatedAt = usersDescCreatedAt.Default.(func() time.Time)
-	// usersDescUpdatedAt is the schema descriptor for updated_at field.
-	usersDescUpdatedAt := usersFields[7].Descriptor()
-	// users.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	users.DefaultUpdatedAt = usersDescUpdatedAt.Default.(func() time.Time)
-	// users.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	users.UpdateDefaultUpdatedAt = usersDescUpdatedAt.UpdateDefault.(func() time.Time)
 }
 
 const (

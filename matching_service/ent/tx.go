@@ -20,8 +20,6 @@ type Tx struct {
 	Bid *BidClient
 	// Match is the client for interacting with the Match builders.
 	Match *MatchClient
-	// Users is the client for interacting with the Users builders.
-	Users *UsersClient
 
 	// lazily loaded.
 	client     *Client
@@ -156,7 +154,6 @@ func (tx *Tx) init() {
 	tx.Ask = NewAskClient(tx.config)
 	tx.Bid = NewBidClient(tx.config)
 	tx.Match = NewMatchClient(tx.config)
-	tx.Users = NewUsersClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

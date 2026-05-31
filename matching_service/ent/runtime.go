@@ -2,4 +2,4 @@
 
 package ent
 
-// The schema-stitching logic is generated in goBackend/matching_service/ent/runtime/runtime.go
+// The schema-stitching logic is generated in matching_service/ent/runtime/runtime.go

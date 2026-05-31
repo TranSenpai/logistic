@@ -4,7 +4,7 @@ package ent
 
 import (
 	"fmt"
-	"goBackend/matching_service/ent/match"
+	"matching_service/ent/match"
 	"strings"
 	"time"
 

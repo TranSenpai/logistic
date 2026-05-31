@@ -5,7 +5,7 @@ package ent
 import (
 	"encoding/json"
 	"fmt"
-	"goBackend/matching_service/ent/bid"
+	"matching_service/ent/bid"
 	"strings"
 	"time"
 
@@ -34,6 +34,8 @@ type Bid struct {
 	PickupTime *time.Time `json:"pickup_time,omitempty"`
 	// MaxPrice holds the value of the "max_price" field.
 	MaxPrice *float64 `json:"max_price,omitempty"`
+	// ZoneID holds the value of the "zone_id" field.
+	ZoneID string `json:"zone_id,omitempty"`
 	// Items holds the value of the "items" field.
 	Items map[string]interface{} `json:"items,omitempty"`
 	// Status holds the value of the "status" field.
@@ -56,7 +58,7 @@ func (*Bid) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case bid.FieldID, bid.FieldUserID, bid.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case bid.FieldPickupCoordinates, bid.FieldDeliveryCoordinates:
+		case bid.FieldPickupCoordinates, bid.FieldDeliveryCoordinates, bid.FieldZoneID:
 			values[i] = new(sql.NullString)
 		case bid.FieldDeletedAt, bid.FieldPickupTime, bid.FieldCreatedAt, bid.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -130,6 +132,12 @@ func (_m *Bid) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.MaxPrice = new(float64)
 				*_m.MaxPrice = value.Float64
+			}
+		case bid.FieldZoneID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field zone_id", values[i])
+			} else if value.Valid {
+				_m.ZoneID = value.String
 			}
 		case bid.FieldItems:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -220,6 +228,9 @@ func (_m *Bid) String() string {
 		builder.WriteString("max_price=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("zone_id=")
+	builder.WriteString(_m.ZoneID)
 	builder.WriteString(", ")
 	builder.WriteString("items=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Items))

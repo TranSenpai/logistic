@@ -1,0 +1,90 @@
+basePath: /api/v1/matching-service
+host: localhost:8081
+info:
+  contact: {}
+  description: Microservice xử lý file và ảnh cho Logistics OS.
+  title: Media Service API
+  version: "1.0"
+paths:
+  /delete/{publicID}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an image from Cloudinary using its public_id.
+      parameters:
+      - description: The public_id of the image to delete
+        in: path
+        name: publicID
+        required: true
+        type: string
+      - description: Language for error messages (vi, en, jp)
+        in: header
+        name: Accept-Language
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'message: Delete successfully!'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Missing public_id
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error or Cloudinary error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete an image from Cloudinary
+      tags:
+      - Media
+  /upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads a file via multipart/form-data and streams it to Cloudinary.
+        Returns the public_id and url.
+      parameters:
+      - description: The image file to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: The target folder in Cloudinary (e.g., logistics_images)
+        in: formData
+        name: folder
+        type: string
+      - description: The prefix for the file name (e.g., img_)
+        in: formData
+        name: prefix
+        type: string
+      - description: Language for error messages (vi, en, jp)
+        in: header
+        name: Accept-Language
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: message, file_name, public_id, url
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Missing parameters
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error or Cloudinary error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Upload an image to Cloudinary
+      tags:
+      - Media
+swagger: "2.0"

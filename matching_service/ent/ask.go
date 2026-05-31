@@ -4,7 +4,7 @@ package ent
 
 import (
 	"fmt"
-	"goBackend/matching_service/ent/ask"
+	"matching_service/ent/ask"
 	"strings"
 	"time"
 
@@ -29,6 +29,8 @@ type Ask struct {
 	AvailableWeightKg float64 `json:"available_weight_kg,omitempty"`
 	// MinPrice holds the value of the "min_price" field.
 	MinPrice *float64 `json:"min_price,omitempty"`
+	// ZoneID holds the value of the "zone_id" field.
+	ZoneID string `json:"zone_id,omitempty"`
 	// Status holds the value of the "status" field.
 	Status int `json:"status,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -47,7 +49,7 @@ func (*Ask) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case ask.FieldID, ask.FieldDriverID, ask.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case ask.FieldCurrentCoordinates:
+		case ask.FieldCurrentCoordinates, ask.FieldZoneID:
 			values[i] = new(sql.NullString)
 		case ask.FieldDeletedAt, ask.FieldCreatedAt, ask.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -108,6 +110,12 @@ func (_m *Ask) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.MinPrice = new(float64)
 				*_m.MinPrice = value.Float64
+			}
+		case ask.FieldZoneID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field zone_id", values[i])
+			} else if value.Valid {
+				_m.ZoneID = value.String
 			}
 		case ask.FieldStatus:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -182,6 +190,9 @@ func (_m *Ask) String() string {
 		builder.WriteString("min_price=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("zone_id=")
+	builder.WriteString(_m.ZoneID)
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))

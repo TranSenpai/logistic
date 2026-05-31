@@ -14,6 +14,3 @@ type Bid func(*sql.Selector)
 
 // Match is the predicate function for match builders.
 type Match func(*sql.Selector)
-
-// Users is the predicate function for users builders.
-type Users func(*sql.Selector)

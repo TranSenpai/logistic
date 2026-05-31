@@ -6,7 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"goBackend/matching_service/ent/match"
+	"matching_service/ent/match"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"

@@ -6,6 +6,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// @title 				Auth Service API
+// @version 			1.0
+// @description 		Microservice quản lý xác thực và người dùng cho Logistics OS.
+// @host 				localhost:8080
+// @BasePath 			/api/v1/auth
 func main() {
 	if err := godotenv.Load("configs/.env"); err != nil {
 		log.Println("No .env file found or failed to load, falling back to system environment variables")

@@ -9,12 +9,11 @@ import (
 	"log"
 	"reflect"
 
-	"goBackend/matching_service/ent/migrate"
+	"matching_service/ent/migrate"
 
-	"goBackend/matching_service/ent/ask"
-	"goBackend/matching_service/ent/bid"
-	"goBackend/matching_service/ent/match"
-	"goBackend/matching_service/ent/users"
+	"matching_service/ent/ask"
+	"matching_service/ent/bid"
+	"matching_service/ent/match"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
@@ -34,8 +33,6 @@ type Client struct {
 	Bid *BidClient
 	// Match is the client for interacting with the Match builders.
 	Match *MatchClient
-	// Users is the client for interacting with the Users builders.
-	Users *UsersClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -50,7 +47,6 @@ func (c *Client) init() {
 	c.Ask = NewAskClient(c.config)
 	c.Bid = NewBidClient(c.config)
 	c.Match = NewMatchClient(c.config)
-	c.Users = NewUsersClient(c.config)
 }
 
 type (
@@ -146,7 +142,6 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Ask:    NewAskClient(cfg),
 		Bid:    NewBidClient(cfg),
 		Match:  NewMatchClient(cfg),
-		Users:  NewUsersClient(cfg),
 	}, nil
 }
 
@@ -169,7 +164,6 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Ask:    NewAskClient(cfg),
 		Bid:    NewBidClient(cfg),
 		Match:  NewMatchClient(cfg),
-		Users:  NewUsersClient(cfg),
 	}, nil
 }
 
@@ -201,7 +195,6 @@ func (c *Client) Use(hooks ...Hook) {
 	c.Ask.Use(hooks...)
 	c.Bid.Use(hooks...)
 	c.Match.Use(hooks...)
-	c.Users.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
@@ -210,7 +203,6 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.Ask.Intercept(interceptors...)
 	c.Bid.Intercept(interceptors...)
 	c.Match.Intercept(interceptors...)
-	c.Users.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -222,8 +214,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Bid.mutate(ctx, m)
 	case *MatchMutation:
 		return c.Match.mutate(ctx, m)
-	case *UsersMutation:
-		return c.Users.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -634,148 +624,13 @@ func (c *MatchClient) mutate(ctx context.Context, m *MatchMutation) (Value, erro
 	}
 }
 
-// UsersClient is a client for the Users schema.
-type UsersClient struct {
-	config
-}
-
-// NewUsersClient returns a client for the Users from the given config.
-func NewUsersClient(c config) *UsersClient {
-	return &UsersClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `users.Hooks(f(g(h())))`.
-func (c *UsersClient) Use(hooks ...Hook) {
-	c.hooks.Users = append(c.hooks.Users, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `users.Intercept(f(g(h())))`.
-func (c *UsersClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Users = append(c.inters.Users, interceptors...)
-}
-
-// Create returns a builder for creating a Users entity.
-func (c *UsersClient) Create() *UsersCreate {
-	mutation := newUsersMutation(c.config, OpCreate)
-	return &UsersCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of Users entities.
-func (c *UsersClient) CreateBulk(builders ...*UsersCreate) *UsersCreateBulk {
-	return &UsersCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *UsersClient) MapCreateBulk(slice any, setFunc func(*UsersCreate, int)) *UsersCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &UsersCreateBulk{err: fmt.Errorf("calling to UsersClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*UsersCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &UsersCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for Users.
-func (c *UsersClient) Update() *UsersUpdate {
-	mutation := newUsersMutation(c.config, OpUpdate)
-	return &UsersUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *UsersClient) UpdateOne(_m *Users) *UsersUpdateOne {
-	mutation := newUsersMutation(c.config, OpUpdateOne, withUsers(_m))
-	return &UsersUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *UsersClient) UpdateOneID(id int) *UsersUpdateOne {
-	mutation := newUsersMutation(c.config, OpUpdateOne, withUsersID(id))
-	return &UsersUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for Users.
-func (c *UsersClient) Delete() *UsersDelete {
-	mutation := newUsersMutation(c.config, OpDelete)
-	return &UsersDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *UsersClient) DeleteOne(_m *Users) *UsersDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *UsersClient) DeleteOneID(id int) *UsersDeleteOne {
-	builder := c.Delete().Where(users.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &UsersDeleteOne{builder}
-}
-
-// Query returns a query builder for Users.
-func (c *UsersClient) Query() *UsersQuery {
-	return &UsersQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeUsers},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a Users entity by its id.
-func (c *UsersClient) Get(ctx context.Context, id int) (*Users, error) {
-	return c.Query().Where(users.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *UsersClient) GetX(ctx context.Context, id int) *Users {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// Hooks returns the client hooks.
-func (c *UsersClient) Hooks() []Hook {
-	hooks := c.hooks.Users
-	return append(hooks[:len(hooks):len(hooks)], users.Hooks[:]...)
-}
-
-// Interceptors returns the client interceptors.
-func (c *UsersClient) Interceptors() []Interceptor {
-	inters := c.inters.Users
-	return append(inters[:len(inters):len(inters)], users.Interceptors[:]...)
-}
-
-func (c *UsersClient) mutate(ctx context.Context, m *UsersMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&UsersCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&UsersUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&UsersUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&UsersDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown Users mutation op: %q", m.Op())
-	}
-}
-
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Ask, Bid, Match, Users []ent.Hook
+		Ask, Bid, Match []ent.Hook
 	}
 	inters struct {
-		Ask, Bid, Match, Users []ent.Interceptor
+		Ask, Bid, Match []ent.Interceptor
 	}
 )
 

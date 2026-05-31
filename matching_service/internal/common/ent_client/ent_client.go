@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"goBackend/matching_service/ent"
-	"goBackend/matching_service/internal/env"
+	"matching_service/ent"
+	"matching_service/internal/env"
 	"log"
 
-	_ "goBackend/matching_service/ent/runtime"
+	_ "matching_service/ent/runtime"
 
 	_ "github.com/lib/pq"
 )

@@ -6,8 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"goBackend/matching_service/ent/ask"
-	"goBackend/matching_service/ent/predicate"
+	"matching_service/ent/ask"
+	"matching_service/ent/predicate"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -158,6 +158,20 @@ func (_u *AskUpdate) ClearMinPrice() *AskUpdate {
 	return _u
 }
 
+// SetZoneID sets the "zone_id" field.
+func (_u *AskUpdate) SetZoneID(v string) *AskUpdate {
+	_u.mutation.SetZoneID(v)
+	return _u
+}
+
+// SetNillableZoneID sets the "zone_id" field if the given value is not nil.
+func (_u *AskUpdate) SetNillableZoneID(v *string) *AskUpdate {
+	if v != nil {
+		_u.SetZoneID(*v)
+	}
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *AskUpdate) SetStatus(v int) *AskUpdate {
 	_u.mutation.ResetStatus()
@@ -279,6 +293,9 @@ func (_u *AskUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.MinPriceCleared() {
 		_spec.ClearField(ask.FieldMinPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.ZoneID(); ok {
+		_spec.SetField(ask.FieldZoneID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(ask.FieldStatus, field.TypeInt, value)
@@ -439,6 +456,20 @@ func (_u *AskUpdateOne) ClearMinPrice() *AskUpdateOne {
 	return _u
 }
 
+// SetZoneID sets the "zone_id" field.
+func (_u *AskUpdateOne) SetZoneID(v string) *AskUpdateOne {
+	_u.mutation.SetZoneID(v)
+	return _u
+}
+
+// SetNillableZoneID sets the "zone_id" field if the given value is not nil.
+func (_u *AskUpdateOne) SetNillableZoneID(v *string) *AskUpdateOne {
+	if v != nil {
+		_u.SetZoneID(*v)
+	}
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *AskUpdateOne) SetStatus(v int) *AskUpdateOne {
 	_u.mutation.ResetStatus()
@@ -590,6 +621,9 @@ func (_u *AskUpdateOne) sqlSave(ctx context.Context) (_node *Ask, err error) {
 	}
 	if _u.mutation.MinPriceCleared() {
 		_spec.ClearField(ask.FieldMinPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.ZoneID(); ok {
+		_spec.SetField(ask.FieldZoneID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(ask.FieldStatus, field.TypeInt, value)

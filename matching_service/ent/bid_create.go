@@ -6,7 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"goBackend/matching_service/ent/bid"
+	"matching_service/ent/bid"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -89,6 +89,12 @@ func (_c *BidCreate) SetNillableMaxPrice(v *float64) *BidCreate {
 	if v != nil {
 		_c.SetMaxPrice(*v)
 	}
+	return _c
+}
+
+// SetZoneID sets the "zone_id" field.
+func (_c *BidCreate) SetZoneID(v string) *BidCreate {
+	_c.mutation.SetZoneID(v)
 	return _c
 }
 
@@ -215,6 +221,9 @@ func (_c *BidCreate) check() error {
 	if _, ok := _c.mutation.WeightKg(); !ok {
 		return &ValidationError{Name: "weight_kg", err: errors.New(`ent: missing required field "Bid.weight_kg"`)}
 	}
+	if _, ok := _c.mutation.ZoneID(); !ok {
+		return &ValidationError{Name: "zone_id", err: errors.New(`ent: missing required field "Bid.zone_id"`)}
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Bid.status"`)}
 	}
@@ -281,6 +290,10 @@ func (_c *BidCreate) createSpec() (*Bid, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.MaxPrice(); ok {
 		_spec.SetField(bid.FieldMaxPrice, field.TypeFloat64, value)
 		_node.MaxPrice = &value
+	}
+	if value, ok := _c.mutation.ZoneID(); ok {
+		_spec.SetField(bid.FieldZoneID, field.TypeString, value)
+		_node.ZoneID = value
 	}
 	if value, ok := _c.mutation.Items(); ok {
 		_spec.SetField(bid.FieldItems, field.TypeJSON, value)

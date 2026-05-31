@@ -5,8 +5,8 @@ package ent
 import (
 	"context"
 	"fmt"
-	"goBackend/matching_service/ent/bid"
-	"goBackend/matching_service/ent/predicate"
+	"matching_service/ent/bid"
+	"matching_service/ent/predicate"
 	"math"
 
 	"entgo.io/ent"

@@ -1,0 +1,131 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Microservice xử lý file và ảnh cho Logistics OS.",
+        "title": "Media Service API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8082",
+    "basePath": "/api/v1/media",
+    "paths": {
+        "/delete/{publicID}": {
+            "delete": {
+                "description": "Deletes an image from Cloudinary using its public_id.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Delete an image from Cloudinary",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "The public_id of the image to delete",
+                        "name": "publicID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Language for error messages (vi, en, jp)",
+                        "name": "Accept-Language",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message: Delete successfully!",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Missing public_id",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error or Cloudinary error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/upload": {
+            "post": {
+                "description": "Uploads a file via multipart/form-data and streams it to Cloudinary. Returns the public_id and url.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Media"
+                ],
+                "summary": "Upload an image to Cloudinary",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "The image file to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "The target folder in Cloudinary (e.g., logistics_images)",
+                        "name": "folder",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "The prefix for the file name (e.g., img_)",
+                        "name": "prefix",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Language for error messages (vi, en, jp)",
+                        "name": "Accept-Language",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "message, file_name, public_id, url",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Missing parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error or Cloudinary error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

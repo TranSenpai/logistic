@@ -1,7 +1,7 @@
 package schema
 
 import (
-	softdelete "goBackend/matching_service/ent/softdelete"
+	softdelete "matching_service/ent/softdelete"
 	"time"
 
 	"entgo.io/ent"
@@ -21,6 +21,7 @@ func (Ask) Fields() []ent.Field {
 		field.Float("available_volume_m3"),
 		field.Float("available_weight_kg"),
 		field.Float("min_price").Optional().Nillable(),
+		field.String("zone_id"),
 		field.Int("status").Default(0), // 0: Pending, 1: Matched, 2: Offline
 		field.Time("created_at").Default(time.Now).Immutable(),
 		field.Time("updated_at").Default(time.Now).UpdateDefault(time.Now),

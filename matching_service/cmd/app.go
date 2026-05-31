@@ -1,38 +1,61 @@
 package main
 
 import (
-	"goBackend/matching_service/internal/di"
-	"time"
+	"matching_service/internal/di"
+	"net"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
+	"log"
+	_ "matching_service/docs"
+	"net/http"
+
 	_ "github.com/go-sql-driver/mysql"
+	httpSwagger "github.com/swaggo/http-swagger"
+	"google.golang.org/grpc"
 )
 
 type App struct {
-	engine *gin.Engine
+	grpcServer *grpc.Server
+	listener   net.Listener
 }
 
 func NewApp() (*App, error) {
-	ginEngine := gin.Default()
-
-	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{"http://localhost:3000", "http://localhost:8080"}
-	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
-	corsConfig.ExposeHeaders = []string{"Content-Length"}
-	corsConfig.AllowCredentials = true
-	corsConfig.MaxAge = 12 * time.Hour
-	ginEngine.Use(cors.New(corsConfig))
-
-	err := di.Injection(ginEngine)
+	lis, err := net.Listen("tcp", ":8081")
 	if err != nil {
 		return nil, err
 	}
 
-	return &App{engine: ginEngine}, nil
+	grpcServer := grpc.NewServer()
+
+	err = di.Injection(grpcServer)
+	if err != nil {
+		return nil, err
+	}
+
+	return &App{
+		grpcServer: grpcServer,
+		listener:   lis,
+	}, nil
 }
 
 func (a *App) Start() error {
-	return a.engine.Run(":8081") // Cổng mặc định cho Matching Service
+	// Start HTTP server for Swagger in a goroutine
+	go func() {
+		mux := http.NewServeMux()
+		// Serve the raw swagger.json file
+		mux.HandleFunc("/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, "docs/logistics/v1/logistics.swagger.json")
+		})
+
+		// Serve the Swagger UI
+		mux.HandleFunc("/swagger/", httpSwagger.Handler(
+			httpSwagger.URL("http://localhost:8083/swagger.json"),
+		))
+
+		log.Println("Starting Swagger UI for Matching Service on :8083...")
+		if err := http.ListenAndServe(":8083", mux); err != nil {
+			log.Fatalf("Swagger server crashed: %v", err)
+		}
+	}()
+
+	return a.grpcServer.Serve(a.listener) // Lắng nghe kết nối gRPC trên port 8081
 }

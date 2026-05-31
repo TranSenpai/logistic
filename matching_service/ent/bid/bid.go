@@ -30,6 +30,8 @@ const (
 	FieldPickupTime = "pickup_time"
 	// FieldMaxPrice holds the string denoting the max_price field in the database.
 	FieldMaxPrice = "max_price"
+	// FieldZoneID holds the string denoting the zone_id field in the database.
+	FieldZoneID = "zone_id"
 	// FieldItems holds the string denoting the items field in the database.
 	FieldItems = "items"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -53,6 +55,7 @@ var Columns = []string{
 	FieldWeightKg,
 	FieldPickupTime,
 	FieldMaxPrice,
+	FieldZoneID,
 	FieldItems,
 	FieldStatus,
 	FieldCreatedAt,
@@ -73,7 +76,7 @@ func ValidColumn(column string) bool {
 // package on the initialization of the application. Therefore,
 // it should be imported in the main as follows:
 //
-//	import _ "goBackend/matching_service/ent/runtime"
+//	import _ "matching_service/ent/runtime"
 var (
 	Hooks        [1]ent.Hook
 	Interceptors [1]ent.Interceptor
@@ -133,6 +136,11 @@ func ByPickupTime(opts ...sql.OrderTermOption) OrderOption {
 // ByMaxPrice orders the results by the max_price field.
 func ByMaxPrice(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMaxPrice, opts...).ToFunc()
+}
+
+// ByZoneID orders the results by the zone_id field.
+func ByZoneID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldZoneID, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

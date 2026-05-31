@@ -26,6 +26,8 @@ const (
 	FieldAvailableWeightKg = "available_weight_kg"
 	// FieldMinPrice holds the string denoting the min_price field in the database.
 	FieldMinPrice = "min_price"
+	// FieldZoneID holds the string denoting the zone_id field in the database.
+	FieldZoneID = "zone_id"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -45,6 +47,7 @@ var Columns = []string{
 	FieldAvailableVolumeM3,
 	FieldAvailableWeightKg,
 	FieldMinPrice,
+	FieldZoneID,
 	FieldStatus,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -64,7 +67,7 @@ func ValidColumn(column string) bool {
 // package on the initialization of the application. Therefore,
 // it should be imported in the main as follows:
 //
-//	import _ "goBackend/matching_service/ent/runtime"
+//	import _ "matching_service/ent/runtime"
 var (
 	Hooks        [1]ent.Hook
 	Interceptors [1]ent.Interceptor
@@ -114,6 +117,11 @@ func ByAvailableWeightKg(opts ...sql.OrderTermOption) OrderOption {
 // ByMinPrice orders the results by the min_price field.
 func ByMinPrice(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMinPrice, opts...).ToFunc()
+}
+
+// ByZoneID orders the results by the zone_id field.
+func ByZoneID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldZoneID, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

@@ -5,11 +5,11 @@ package enttest
 import (
 	"context"
 
-	"goBackend/matching_service/ent"
+	"matching_service/ent"
 	// required by schema hooks.
-	_ "goBackend/matching_service/ent/runtime"
+	_ "matching_service/ent/runtime"
 
-	"goBackend/matching_service/ent/migrate"
+	"matching_service/ent/migrate"
 
 	"entgo.io/ent/dialect/sql/schema"
 )

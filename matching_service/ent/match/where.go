@@ -3,7 +3,7 @@
 package match
 
 import (
-	"goBackend/matching_service/ent/predicate"
+	"matching_service/ent/predicate"
 	"time"
 
 	"entgo.io/ent/dialect/sql"

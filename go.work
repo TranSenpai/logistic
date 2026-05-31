@@ -1,0 +1,16 @@
+go 1.26.3
+
+// GIẢI THÍCH VỀ GO WORKSPACE (go.work)
+// File này ra mắt từ Go 1.18, chuyên dùng làm "Sổ hộ khẩu" cho cấu trúc Mono-repo.
+//
+// Tác dụng "thần thánh":
+// 1. Giúp Goland/VSCode không bị "ngu": IDE sẽ hiểu tất cả các thư mục này cùng chung 1 nhà.
+// 2. Cho phép gọi code chéo nhau cục bộ: Giúp media_service (có go.mod riêng) có thể gọi
+//    hàm từ module gốc (.) như thư mục pkg/i18n mà KHÔNG CẦN đẩy code lên Github
+//    hay viết lệnh 'replace' loằng ngoằng trong file go.mod.
+use (
+	. // Khai báo thư mục gốc (goBackend) là 1 module
+	./auth_service
+	./matching_service
+	./media_service // Khai báo media_service là 1 module con
+)

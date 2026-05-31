@@ -4,9 +4,13 @@ import (
 	"auth_service/internal/di"
 	"time"
 
+	_ "auth_service/docs"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type App struct {
@@ -24,6 +28,9 @@ func NewApp() (*App, error) {
 	corsConfig.AllowCredentials = true
 	corsConfig.MaxAge = 12 * time.Hour
 	ginEngine.Use(cors.New(corsConfig))
+
+	// Swagger route
+	ginEngine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	err := di.Injection(ginEngine)
 	if err != nil {

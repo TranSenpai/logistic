@@ -4,8 +4,8 @@ package ent
 
 import (
 	"context"
-	"goBackend/matching_service/ent/bid"
-	"goBackend/matching_service/ent/predicate"
+	"matching_service/ent/bid"
+	"matching_service/ent/predicate"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"

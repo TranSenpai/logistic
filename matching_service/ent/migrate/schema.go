@@ -17,6 +17,7 @@ var (
 		{Name: "available_volume_m3", Type: field.TypeFloat64},
 		{Name: "available_weight_kg", Type: field.TypeFloat64},
 		{Name: "min_price", Type: field.TypeFloat64, Nullable: true},
+		{Name: "zone_id", Type: field.TypeString},
 		{Name: "status", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -38,6 +39,7 @@ var (
 		{Name: "weight_kg", Type: field.TypeFloat64},
 		{Name: "pickup_time", Type: field.TypeTime, Nullable: true},
 		{Name: "max_price", Type: field.TypeFloat64, Nullable: true},
+		{Name: "zone_id", Type: field.TypeString},
 		{Name: "items", Type: field.TypeJSON, Nullable: true},
 		{Name: "status", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
@@ -66,31 +68,11 @@ var (
 		Columns:    MatchesColumns,
 		PrimaryKey: []*schema.Column{MatchesColumns[0]},
 	}
-	// UsersColumns holds the columns for the "users" table.
-	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "email", Type: field.TypeString, Unique: true},
-		{Name: "full_name", Type: field.TypeString, Nullable: true},
-		{Name: "avatar", Type: field.TypeString, Nullable: true},
-		{Name: "password", Type: field.TypeString, Nullable: true},
-		{Name: "totp_secret", Type: field.TypeString, Nullable: true},
-		{Name: "google_id", Type: field.TypeString, Nullable: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-	}
-	// UsersTable holds the schema information for the "users" table.
-	UsersTable = &schema.Table{
-		Name:       "users",
-		Columns:    UsersColumns,
-		PrimaryKey: []*schema.Column{UsersColumns[0]},
-	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AsksTable,
 		BidsTable,
 		MatchesTable,
-		UsersTable,
 	}
 )
 

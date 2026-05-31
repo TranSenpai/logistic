@@ -6,8 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"goBackend/matching_service/ent/match"
-	"goBackend/matching_service/ent/predicate"
+	"matching_service/ent/match"
+	"matching_service/ent/predicate"
 	"time"
 
 	"entgo.io/ent/dialect/sql"

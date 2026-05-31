@@ -3,7 +3,7 @@
 package ask
 
 import (
-	"goBackend/matching_service/ent/predicate"
+	"matching_service/ent/predicate"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -82,6 +82,11 @@ func AvailableWeightKg(v float64) predicate.Ask {
 // MinPrice applies equality check predicate on the "min_price" field. It's identical to MinPriceEQ.
 func MinPrice(v float64) predicate.Ask {
 	return predicate.Ask(sql.FieldEQ(FieldMinPrice, v))
+}
+
+// ZoneID applies equality check predicate on the "zone_id" field. It's identical to ZoneIDEQ.
+func ZoneID(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldEQ(FieldZoneID, v))
 }
 
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
@@ -392,6 +397,71 @@ func MinPriceIsNil() predicate.Ask {
 // MinPriceNotNil applies the NotNil predicate on the "min_price" field.
 func MinPriceNotNil() predicate.Ask {
 	return predicate.Ask(sql.FieldNotNull(FieldMinPrice))
+}
+
+// ZoneIDEQ applies the EQ predicate on the "zone_id" field.
+func ZoneIDEQ(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldEQ(FieldZoneID, v))
+}
+
+// ZoneIDNEQ applies the NEQ predicate on the "zone_id" field.
+func ZoneIDNEQ(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldNEQ(FieldZoneID, v))
+}
+
+// ZoneIDIn applies the In predicate on the "zone_id" field.
+func ZoneIDIn(vs ...string) predicate.Ask {
+	return predicate.Ask(sql.FieldIn(FieldZoneID, vs...))
+}
+
+// ZoneIDNotIn applies the NotIn predicate on the "zone_id" field.
+func ZoneIDNotIn(vs ...string) predicate.Ask {
+	return predicate.Ask(sql.FieldNotIn(FieldZoneID, vs...))
+}
+
+// ZoneIDGT applies the GT predicate on the "zone_id" field.
+func ZoneIDGT(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldGT(FieldZoneID, v))
+}
+
+// ZoneIDGTE applies the GTE predicate on the "zone_id" field.
+func ZoneIDGTE(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldGTE(FieldZoneID, v))
+}
+
+// ZoneIDLT applies the LT predicate on the "zone_id" field.
+func ZoneIDLT(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldLT(FieldZoneID, v))
+}
+
+// ZoneIDLTE applies the LTE predicate on the "zone_id" field.
+func ZoneIDLTE(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldLTE(FieldZoneID, v))
+}
+
+// ZoneIDContains applies the Contains predicate on the "zone_id" field.
+func ZoneIDContains(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldContains(FieldZoneID, v))
+}
+
+// ZoneIDHasPrefix applies the HasPrefix predicate on the "zone_id" field.
+func ZoneIDHasPrefix(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldHasPrefix(FieldZoneID, v))
+}
+
+// ZoneIDHasSuffix applies the HasSuffix predicate on the "zone_id" field.
+func ZoneIDHasSuffix(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldHasSuffix(FieldZoneID, v))
+}
+
+// ZoneIDEqualFold applies the EqualFold predicate on the "zone_id" field.
+func ZoneIDEqualFold(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldEqualFold(FieldZoneID, v))
+}
+
+// ZoneIDContainsFold applies the ContainsFold predicate on the "zone_id" field.
+func ZoneIDContainsFold(v string) predicate.Ask {
+	return predicate.Ask(sql.FieldContainsFold(FieldZoneID, v))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

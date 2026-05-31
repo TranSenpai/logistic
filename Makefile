@@ -33,13 +33,15 @@ help:
 
 ## api: Generate Go & gRPC code từ file .proto
 api: clean-api
-	@echo "==> Generating Protobuf code..."
+	@echo "==> Generating Protobuf code and Swagger JSON..."
 	@mkdir -p $(PROTO_GEN_OUT)
-	protoc --proto_path=$(PROTO_DIR) \
+	@mkdir -p matching_service/docs
+	protoc -I=$(PROTO_DIR) -I=. \
 		--go_out=$(PROTO_GEN_OUT) --go_opt=paths=source_relative \
 		--go-grpc_out=$(PROTO_GEN_OUT) --go-grpc_opt=paths=source_relative \
+		--openapiv2_out=matching_service/docs --openapiv2_opt=logtostderr=true \
 		$(shell find $(PROTO_DIR) -name "*.proto")
-	@echo "    Protobuf generation complete."
+	@echo "    Protobuf and Swagger generation complete."
 
 ## clean-api: Xóa các file .pb.go cũ để tránh xung đột
 clean-api:

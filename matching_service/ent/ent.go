@@ -6,10 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"goBackend/matching_service/ent/ask"
-	"goBackend/matching_service/ent/bid"
-	"goBackend/matching_service/ent/match"
-	"goBackend/matching_service/ent/users"
+	"matching_service/ent/ask"
+	"matching_service/ent/bid"
+	"matching_service/ent/match"
 	"reflect"
 	"sync"
 
@@ -79,7 +78,6 @@ func checkColumn(t, c string) error {
 			ask.Table:   ask.ValidColumn,
 			bid.Table:   bid.ValidColumn,
 			match.Table: match.ValidColumn,
-			users.Table: users.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

@@ -3,7 +3,7 @@
 package bid
 
 import (
-	"goBackend/matching_service/ent/predicate"
+	"matching_service/ent/predicate"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -92,6 +92,11 @@ func PickupTime(v time.Time) predicate.Bid {
 // MaxPrice applies equality check predicate on the "max_price" field. It's identical to MaxPriceEQ.
 func MaxPrice(v float64) predicate.Bid {
 	return predicate.Bid(sql.FieldEQ(FieldMaxPrice, v))
+}
+
+// ZoneID applies equality check predicate on the "zone_id" field. It's identical to ZoneIDEQ.
+func ZoneID(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldEQ(FieldZoneID, v))
 }
 
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
@@ -507,6 +512,71 @@ func MaxPriceIsNil() predicate.Bid {
 // MaxPriceNotNil applies the NotNil predicate on the "max_price" field.
 func MaxPriceNotNil() predicate.Bid {
 	return predicate.Bid(sql.FieldNotNull(FieldMaxPrice))
+}
+
+// ZoneIDEQ applies the EQ predicate on the "zone_id" field.
+func ZoneIDEQ(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldEQ(FieldZoneID, v))
+}
+
+// ZoneIDNEQ applies the NEQ predicate on the "zone_id" field.
+func ZoneIDNEQ(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldNEQ(FieldZoneID, v))
+}
+
+// ZoneIDIn applies the In predicate on the "zone_id" field.
+func ZoneIDIn(vs ...string) predicate.Bid {
+	return predicate.Bid(sql.FieldIn(FieldZoneID, vs...))
+}
+
+// ZoneIDNotIn applies the NotIn predicate on the "zone_id" field.
+func ZoneIDNotIn(vs ...string) predicate.Bid {
+	return predicate.Bid(sql.FieldNotIn(FieldZoneID, vs...))
+}
+
+// ZoneIDGT applies the GT predicate on the "zone_id" field.
+func ZoneIDGT(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldGT(FieldZoneID, v))
+}
+
+// ZoneIDGTE applies the GTE predicate on the "zone_id" field.
+func ZoneIDGTE(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldGTE(FieldZoneID, v))
+}
+
+// ZoneIDLT applies the LT predicate on the "zone_id" field.
+func ZoneIDLT(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldLT(FieldZoneID, v))
+}
+
+// ZoneIDLTE applies the LTE predicate on the "zone_id" field.
+func ZoneIDLTE(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldLTE(FieldZoneID, v))
+}
+
+// ZoneIDContains applies the Contains predicate on the "zone_id" field.
+func ZoneIDContains(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldContains(FieldZoneID, v))
+}
+
+// ZoneIDHasPrefix applies the HasPrefix predicate on the "zone_id" field.
+func ZoneIDHasPrefix(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldHasPrefix(FieldZoneID, v))
+}
+
+// ZoneIDHasSuffix applies the HasSuffix predicate on the "zone_id" field.
+func ZoneIDHasSuffix(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldHasSuffix(FieldZoneID, v))
+}
+
+// ZoneIDEqualFold applies the EqualFold predicate on the "zone_id" field.
+func ZoneIDEqualFold(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldEqualFold(FieldZoneID, v))
+}
+
+// ZoneIDContainsFold applies the ContainsFold predicate on the "zone_id" field.
+func ZoneIDContainsFold(v string) predicate.Bid {
+	return predicate.Bid(sql.FieldContainsFold(FieldZoneID, v))
 }
 
 // ItemsIsNil applies the IsNil predicate on the "items" field.

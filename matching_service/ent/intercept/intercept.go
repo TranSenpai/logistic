@@ -6,12 +6,11 @@ import (
 	"context"
 	"fmt"
 
-	"goBackend/matching_service/ent"
-	"goBackend/matching_service/ent/ask"
-	"goBackend/matching_service/ent/bid"
-	"goBackend/matching_service/ent/match"
-	"goBackend/matching_service/ent/predicate"
-	"goBackend/matching_service/ent/users"
+	"matching_service/ent"
+	"matching_service/ent/ask"
+	"matching_service/ent/bid"
+	"matching_service/ent/match"
+	"matching_service/ent/predicate"
 
 	"entgo.io/ent/dialect/sql"
 )
@@ -153,33 +152,6 @@ func (f TraverseMatch) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.MatchQuery", q)
 }
 
-// The UsersFunc type is an adapter to allow the use of ordinary function as a Querier.
-type UsersFunc func(context.Context, *ent.UsersQuery) (ent.Value, error)
-
-// Query calls f(ctx, q).
-func (f UsersFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
-	if q, ok := q.(*ent.UsersQuery); ok {
-		return f(ctx, q)
-	}
-	return nil, fmt.Errorf("unexpected query type %T. expect *ent.UsersQuery", q)
-}
-
-// The TraverseUsers type is an adapter to allow the use of ordinary function as Traverser.
-type TraverseUsers func(context.Context, *ent.UsersQuery) error
-
-// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
-func (f TraverseUsers) Intercept(next ent.Querier) ent.Querier {
-	return next
-}
-
-// Traverse calls f(ctx, q).
-func (f TraverseUsers) Traverse(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.UsersQuery); ok {
-		return f(ctx, q)
-	}
-	return fmt.Errorf("unexpected query type %T. expect *ent.UsersQuery", q)
-}
-
 // NewQuery returns the generic Query interface for the given typed query.
 func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
@@ -189,8 +161,6 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.BidQuery, predicate.Bid, bid.OrderOption]{typ: ent.TypeBid, tq: q}, nil
 	case *ent.MatchQuery:
 		return &query[*ent.MatchQuery, predicate.Match, match.OrderOption]{typ: ent.TypeMatch, tq: q}, nil
-	case *ent.UsersQuery:
-		return &query[*ent.UsersQuery, predicate.Users, users.OrderOption]{typ: ent.TypeUsers, tq: q}, nil
 	default:
 		return nil, fmt.Errorf("unknown query type %T", q)
 	}

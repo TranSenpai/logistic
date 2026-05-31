@@ -1,20 +1,26 @@
 package di
 
 import (
-	entclient "goBackend/matching_service/internal/common/ent_client"
+	logisticsv1 "goBackend/api/logistics/v1/gen/go/logistics/v1"
+	"matching_service/internal/biz"
+	entclient "matching_service/internal/common/ent_client"
+	"matching_service/internal/delivery"
+	"matching_service/internal/repo"
 
-	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
 )
 
-func Injection(ginEngine *gin.Engine) error {
-	_, err := entclient.NewConnection()
+func Injection(grpcServer *grpc.Server) error {
+	client, err := entclient.NewConnection()
 	if err != nil {
 		return err
 	}
 
-	// Matching Service only creates the engine and delivery.
-	// matchingEngine := biz.NewMatchingEngine()
-	// delivery.NewLogisticsDelivery(matchingEngine) // GRPC delivery would be registered here
+	repo := repo.NewMatchingRepo(client)
+	engine := biz.NewGeoHashEngine()
+	biz := biz.NewMatchingEngine(repo, engine)
+	delivery := delivery.NewLogisticsDelivery(biz)
+	logisticsv1.RegisterMatchingEngineServiceServer(grpcServer, delivery)
 
 	return nil
 }

@@ -1,18 +1,30 @@
 package delivery
 
 import (
+	"auth_service/internal/biz"
+	"auth_service/internal/entity"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	authdto "goBackend/api/logistics/v1/gen"
-	"auth_service/internal/biz"
-	"auth_service/internal/entity"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
+// Register godoc
+// @Summary      Đăng ký tài khoản
+// @Description  Tạo tài khoản mới bằng email và mật khẩu
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request body dto.RegisterRequest true "Thông tin đăng ký"
+// @Success      201 {object} dto.AuthResponse "Tạo tài khoản thành công"
+// @Failure      400 {object} map[string]interface{} "Lỗi xác thực dữ liệu"
+// @Failure      409 {object} map[string]interface{} "Email đã tồn tại"
+// @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
+// @Router       /register [post]
 func (h *HttpHandler) Register(ctx *gin.Context) {
 	var req authdto.RegisterRequest
 
@@ -56,6 +68,18 @@ func (h *HttpHandler) Register(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, resp)
 }
 
+// Login godoc
+// @Summary      Đăng nhập
+// @Description  Đăng nhập bằng email và mật khẩu
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request body dto.LoginRequest true "Thông tin đăng nhập"
+// @Success      200 {object} dto.AuthResponse "Đăng nhập thành công"
+// @Failure      400 {object} map[string]interface{} "Lỗi dữ liệu đầu vào"
+// @Failure      401 {object} map[string]interface{} "Sai email hoặc mật khẩu"
+// @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
+// @Router       /login [post]
 func (h *HttpHandler) Login(ctx *gin.Context) {
 	var req authdto.LoginRequest
 
@@ -140,6 +164,15 @@ func (h *HttpHandler) GoogleCallback(ctx *gin.Context) {
 	ctx.Redirect(http.StatusTemporaryRedirect, "http://127.0.0.1:3000/")
 }
 
+// GetInfo godoc
+// @Summary      Lấy thông tin người dùng
+// @Description  Lấy thông tin profile của người dùng hiện tại dựa trên token
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} map[string]interface{} "Lấy thông tin thành công"
+// @Failure      401 {object} map[string]interface{} "Token không hợp lệ hoặc không tìm thấy"
+// @Router       /get-info [get]
 func (h *HttpHandler) GetInfo(ctx *gin.Context) {
 	// Lấy token từ cookie
 	token, err := ctx.Cookie("access_token")
