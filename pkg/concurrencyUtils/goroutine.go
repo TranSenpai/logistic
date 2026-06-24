@@ -2,10 +2,6 @@ package concurrencyUtils
 
 import (
 	"context"
-	"fmt"
-	"math/rand/v2"
-	"runtime"
-	"time"
 )
 
 // Gom N tín hiệu hủy thành tín hiệu hủy tổng
@@ -218,31 +214,31 @@ func take(ctx context.Context, valueStream <-chan string, num int) <-chan string
 	return takeStream
 }
 
-func FanIn()
+// func FanIn()
 
-func FanOutFanIn(ctx context.Context) {
-	randFn := func() any {
-		return rand.IntN(50000000)
-	}
+// func FanOutFanIn(ctx context.Context) {
+// 	randFn := func() any {
+// 		return rand.IntN(50000000)
+// 	}
 
-	start := time.Now()
-	numFinders := runtime.NumCPU()
+// 	start := time.Now()
+// 	numFinders := runtime.NumCPU()
 
-	fmt.Printf("Spinning up %d prime finders.\n", numFinders)
-	finders := make([]<-chan interface{}, numFinders)
-	fmt.Println("Primes:")
+// 	fmt.Printf("Spinning up %d prime finders.\n", numFinders)
+// 	finders := make([]<-chan interface{}, numFinders)
+// 	fmt.Println("Primes:")
 
-	for i := 0; i < numFinders; i++ {
-		finders[i] = primeFinder(done, randIntStream)
-	}
+// 	for i := 0; i < numFinders; i++ {
+// 		finders[i] = primeFinder(done, randIntStream)
+// 	}
 
-	for prime := range take(done, fanIn(done, finders...), 10) {
-		fmt.Printf("\t%d\n", prime)
-	}
-	fmt.Printf("Search took: %v", time.Since(start))
-}
+// 	for prime := range take(done, fanIn(done, finders...), 10) {
+// 		fmt.Printf("\t%d\n", prime)
+// 	}
+// 	fmt.Printf("Search took: %v", time.Since(start))
+// }
 
-// func FanOut[T, U any](ctx context.Context, fn func(ctx context.Context, input T) (U error)) (<-chan ChanStruct[U], error) {
+// // func FanOut[T, U any](ctx context.Context, fn func(ctx context.Context, input T) (U error)) (<-chan ChanStruct[U], error) {
 // 	outStream := make(chan U)
 
 // loop:

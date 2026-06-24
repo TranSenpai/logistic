@@ -26,3 +26,24 @@ vendor/
 
 # Others
 techBook/
+
+# Bỏ qua thư mục chứa core/plugins của Terraform (rất nặng và tải lại được)
+**/.terraform/*
+
+# Bỏ qua file trạng thái (CHÚ Ý: Chứa rất nhiều thông tin nhạy cảm và IP)
+*.tfstate
+*.tfstate.*
+
+# Bỏ qua crash logs
+crash.log
+crash.*.log
+
+# Bỏ qua các file cấu hình biến chứa secret (nếu bạn có dùng)
+*.tfvars
+*.tfvars.json
+
+# Bỏ qua override files (thường chỉ dùng test local)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
