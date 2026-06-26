@@ -47,3 +47,7 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# Bỏ qua các file secret
+*.csv
+rootkey.csv
