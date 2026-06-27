@@ -19,8 +19,8 @@ COPY auth_service/ ./auth_service/
 # Di chuyển vào thư mục của auth_service để build
 WORKDIR /workspace/auth_service
 
-# Build file binary và xuất ra /app/auth_service
-RUN go build -o /app/auth_service ./cmd
+# Build file binary (lưu tại thư mục hiện tại)
+RUN go build -o auth_service ./cmd
 
 # --- Stage 2: Môi trường chạy siêu nhẹ ---
 FROM docker.io/library/alpine:3.24
@@ -28,10 +28,7 @@ FROM docker.io/library/alpine:3.24
 WORKDIR /app
 
 # Copy file binary đã build từ stage 'build' sang
-COPY --from=build /app/auth_service .
-
-# Copy thư mục configs chứa file .env
-COPY --from=build /workspace/auth_service/configs ./configs
+COPY --from=build /workspace/auth_service/auth_service .
 
 # Chạy file binary
 CMD ["./auth_service"]
