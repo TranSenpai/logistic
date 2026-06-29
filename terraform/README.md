@@ -1,197 +1,190 @@
-# Tài liệu học Terraform & DNS
+# HƯỚNG DẪN TRIỂN KHAI HẠ TẦNG VỚI TERRAFORM (INFRASTRUCTURE AS CODE)
 
-File này lưu trữ toàn bộ các ghi chú quan trọng về cú pháp Terraform và các khái niệm hệ thống mạng để bạn tra cứu khi cần.
-
----
-
-## Phần 1: Cấu trúc cơ bản của một file Terraform (`.tf`)
-Mỗi file code Terraform là tập hợp của nhiều "Khối" (Block). Có 4 khối quan trọng nhất:
-
-1. **`provider`**: Khai báo cho Terraform biết đang muốn làm việc với nền tảng nào (AWS, Cloudflare...).
-   - *Ví dụ:* `provider "aws" { region = "ap-southeast-1" }`
-2. **`resource`**: Khối quan trọng nhất, dùng để RA LỆNH tạo một tài nguyên mới trên Cloud.
-   - *Cú pháp:* `resource "<tên_nhà_cung_cấp>_<loại_tài_nguyên>" "tên_gọi_do_bạn_đặt" { ... }`
-   - *Ví dụ:* `resource "aws_instance" "logistic_server" { ... }`
-3. **`data`**: Dùng để truy vấn thông tin đã TỒN TẠI trên Cloud thay vì tạo mới.
-   - *Ví dụ:* Tìm hệ điều hành Ubuntu mới nhất do Canonical phát hành (`data "aws_ami" "Ubuntu"`).
-4. **`variable`**: Dùng để truyền dữ liệu động từ bên ngoài (như API Token, Zone ID) vào code để tránh lộ thông tin nhạy cảm.
+Tài liệu này định nghĩa kiến trúc hệ thống, quy trình khai báo tài nguyên và cú pháp chuẩn (HCL) để cấp phát hạ tầng cho dự án Logistics OS. Tài liệu sử dụng các khái niệm tổng quát (Agnostic Cloud) và ví dụ cụ thể trên AWS/Cloudflare.
 
 ---
 
-## Phần 1.5: Tư duy Cốt lõi - Viết code Terraform từ tờ giấy trắng (Không cần học thuộc)
-
-Nếu bạn lỡ xóa sạch code và nhìn vào tờ giấy trắng bị "mù tịt", đừng hoảng! Đừng cố nhớ cú pháp code, hãy nhớ **"Trình tự xây nhà"**. Khi code Terraform, bạn hãy tưởng tượng mình đang xây một căn nhà. Phải xây từ móng lên mái:
-
-1. **Bước 1: Mời thầu (Provider)**
-   - **Hỏi:** Mình định xây nhà ở nền tảng nào? (AWS, Google Cloud hay Azure?).
-   - **Code:** Khai báo block `provider "aws"` và `provider "cloudflare"`.
-
-2. **Bước 2: Xây hàng rào (Security Group)**
-   - **Hỏi:** Nhà này có mấy cái cửa? Chặn ai, cho ai vào?
-   - **Code:** Khai báo `resource "aws_security_group"`. Mở Ingress 22 (cho bạn chui vào gõ lệnh SSH), mở Ingress 80/443 (để đón khách từ Internet).
-
-3. **Bước 3: Đánh chìa khóa (Key Pair)**
-   - **Hỏi:** Làm sao để chủ nhà (là bạn) mở cửa vào nhà?
-   - **Code:** Nếu đã tạo khóa `.pem` trên web AWS, BẮT BUỘC phải nhớ tên khóa đó để lát ráp vào nhà.
-
-4. **Bước 4: Cất nhà (EC2 Instance)**
-   - **Hỏi:** Xây nhà to hay nhỏ? Dùng gạch gì?
-   - **Code:** Khai báo `resource "aws_instance"`. Chọn `ami` (Ubuntu) và `instance_type` (t3.large). 
-   - **Móc nối (Quan trọng nhất):** Lấy Hàng rào ở Bước 2 gắn vào nhà (`vpc_security_group_ids = [aws_security_group.tên_sg.id]`). Lấy Khóa ở Bước 3 gắn vào nhà (`key_name = "tên_khóa"`).
-
-5. **Bước 5: Cắm bảng số nhà (DNS & Cloudflare)**
-   - **Hỏi:** Cất nhà xong, làm sao khách tìm được địa chỉ?
-   - **Code:** Khai báo `resource "cloudflare_record"`. Lấy cái IP của căn nhà vừa xây (`aws_instance.tên_nhà.public_ip`) trỏ vào tên miền (`api.glolog.dev`).
-
-**💡 BÍ KÍP THOÁT KHỎI SỰ MÙ TỊT:** 
-Trong Terraform, bạn cứ tư duy logic từ trên xuống dưới. Cái nào tồn tại trước thì cái tạo sau mới có cái để "bám" vào. Đó gọi là **Tính phụ thuộc (Dependency)**. Khi bạn code tới máy ảo EC2, VS Code sẽ tự động gợi ý bạn gọi cái ID của Security Group đã định nghĩa bên trên. **Bạn không cần học thuộc code**, bạn chỉ cần nhớ Logic 5 bước này, lên trang chủ Terraform (Registry) copy syntax thả vào, rồi móc nối chúng lại với nhau bằng dấu chấm `.` là xong!
+## 1. Kiến trúc Hệ thống (System Architecture)
+- **Compute Provider**: Nền tảng cung cấp máy ảo (Ví dụ: AWS EC2, GCP Compute Engine, Azure VM).
+- **Network & Security**: Hạ tầng mạng (VPC), Tường lửa (Firewall / Security Group).
+- **DNS & Proxy Provider**: Nền tảng phân giải tên miền và bảo mật (Ví dụ: Cloudflare DNS, WAF).
+- **Network Topology**: Client -> Cloud Proxy (Port 443/80) -> Public Subnet (Port 80) -> Reverse Proxy nội bộ -> App Containers.
 
 ---
 
-## Phần 2: Phân biệt 3 loại "Tên" trong Terraform
-Rất dễ nhầm lẫn giữa các loại tên khi code:
-
-1. **Tên của loại tài nguyên (Resource Type)**: Chữ ĐẦU TIÊN trong block `resource`.
-   - *Ví dụ:* `aws_security_group`. Do AWS quy định chết, phải gõ đúng từng chữ.
-2. **Tên gọi nội bộ (Local Name)**: Chữ THỨ HAI trong block `resource`.
-   - *Ví dụ:* `lab_sg`. Do bạn tự đặt để gọi qua lại bên trong code. AWS không hề biết tên này.
-3. **Tên thực tế trên Cloud (Arguments)**: Các thuộc tính nằm bên trong dấu ngoặc `{ }`.
-   - *Ví dụ:* `name = "lab-security-group"` hoặc `tags = { Name = "Logistic-Lab" }`. Đây là tên thật hiển thị trên bảng điều khiển của AWS.
+## 2. Nguyên lý Đồ thị Phụ thuộc (Dependency Graph)
+Terraform quản lý vòng đời tài nguyên dựa trên tính phụ thuộc. Trình tự khai báo logic yêu cầu tài nguyên độc lập phải được khởi tạo trước tài nguyên phụ thuộc:
+1. **Provider**: Module thiết yếu để tương tác với Cloud API.
+2. **Data Source (OS Image)**: Cung cấp metadata về hệ điều hành gốc.
+3. **Firewall (Security Group)**: Tài nguyên mạng cơ sở, kiểm soát luồng giao thông.
+4. **Virtual Machine (Compute Instance)**: Máy ảo. Phụ thuộc trực tiếp vào OS Image, SSH Key Pair và Firewall ID.
+5. **DNS Record**: Phụ thuộc vào Public IP được cấp phát ngẫu nhiên từ Virtual Machine.
 
 ---
 
-## Phần 3: Lưu ý về Security Group (Tường lửa AWS)
-- **Ingress (Luồng vào)**: Cấu hình ai được phép gọi vào server.
-  - Port `22` (SSH): Dùng để gõ lệnh.
-  - Port `80/443` (HTTP/HTTPS): Dùng cho Web Server.
-  - Cấu hình `0.0.0.0/0` nghĩa là "Bất kỳ ai trên Internet". (Với port 22 ở môi trường Production thì nên set thành IP công ty thay vì `0.0.0.0/0`).
-- **Egress (Luồng ra)**: Cấu hình server được phép gọi đi đâu. Thường để `protocol = "-1"` (cho phép ra mạng tự do) để server tải package cài đặt.
+## 3. Cú pháp và Khai báo Tài nguyên (Resource Declaration)
+
+### 3.1. Cấu hình Cốt lõi (Provider & Backend Configuration)
+```hcl
+terraform {
+  required_providers {
+    aws = { source = "hashicorp/aws", version = "~> 5.0" }
+    cloudflare = { source = "cloudflare/cloudflare", version = "~> 4.0" }
+  }
+}
+
+provider "aws" { region = "ap-southeast-1" }
+provider "cloudflare" { api_token = var.cloudflare_api_token }
+```
+**Mục đích của Block này:**
+Khai báo cho Terraform biết mã nguồn này sẽ làm việc với những nền tảng Cloud nào, tải thư viện lõi phiên bản bao nhiêu, và sử dụng thông tin xác thực (API Token) nào để đăng nhập vào hệ thống.
+
+**Phân tích các dòng lệnh (Arguments):**
+- `terraform { required_providers { ... } }`: Nơi khóa (lock) phiên bản thư viện của AWS và Cloudflare. Dấu `~>` nghĩa là cho phép tự động cập nhật các bản vá lỗi nhỏ (ví dụ từ 5.0.1 lên 5.0.2) nhưng không tự động nhảy lên phiên bản lớn (6.0) để tránh lỗi không tương thích ngược.
+- `provider "aws" { region = "ap-southeast-1" }`: Chỉ định Terraform sẽ thao tác với Data Center AWS đặt tại Singapore. 
+- `provider "cloudflare" { api_token = ... }`: Khởi tạo phiên làm việc với Cloudflare. Tham số `api_token` đọc giá trị từ biến bên ngoài để không bị lộ secret vào mã nguồn. Đối với AWS, Terraform tự động dò tìm credential từ file config hệ thống nên không cần truyền tay vào đây.
+
+> **💡 Tại sao khối Provider của Cloudflare không khai báo luôn `zone_id`?**
+> Bởi vì Provider đại diện cho **Cấp độ Tài khoản (Account Level)**. Một tài khoản Cloudflare có thể quản lý hàng chục tên miền (Zone) khác nhau. Nếu gán cứng `zone_id` ngay tại Provider, file code này sẽ bị "khóa chết" vào một tên miền duy nhất. Terraform thiết kế đẩy `zone_id` xuống **Cấp độ Tài nguyên (Resource Level)** để một file code có thể linh hoạt cấu hình cho nhiều tên miền (nhiều Zone ID) khác nhau.
+
+### 3.2. Truy vấn Siêu dữ liệu (Data Source Query - OS Image)
+```hcl
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical ID
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+}
+```
+**Mục đích của Block này:**
+Dùng để truy vấn Metadata của một tài nguyên ĐÃ TỒN TẠI sẵn trên nền tảng Cloud. Ở đây, ta dùng nó để tự động tìm ID của file cài đặt hệ điều hành (OS Image) Ubuntu 24.04 mới nhất, thay vì phải tra cứu và dán ID cứng vào code.
+
+**Phân tích các dòng lệnh (Arguments):**
+- `data "aws_ami" "ubuntu"`: Khai báo lệnh truy vấn loại `aws_ami` (Machine Image), lưu kết quả vào biến cục bộ tên là `ubuntu`.
+- `most_recent = true`: Yêu cầu Terraform chỉ trả về kết quả mới nhất theo thời gian (giúp hệ thống luôn nhận được bản vá bảo mật mới nhất mỗi khi khởi tạo).
+- `owners = ["099720109477"]`: Account ID của công ty Canonical (cha đẻ của Ubuntu). Đây là cơ chế bảo mật bắt buộc để không vô tình cài nhầm hệ điều hành chứa mã độc do hacker ngụy tạo trên chợ ứng dụng ảo.
+- `filter { ... }`: Điều kiện lọc. Dùng Regex `*` kết hợp chuỗi tham chiếu để tìm đúng bản phân phối Ubuntu 24.04 LTS kiến trúc chip amd64 (x86_64).
+
+> **🔗 Tra cứu các Data Source (Siêu dữ liệu) có sẵn của AWS:**
+> Terraform không chỉ hỗ trợ truy vấn `aws_ami` mà còn hàng trăm khối `data` khác (như truy vấn thông tin VPC, Subnet, Database, hay IAM Roles đã có sẵn). 
+> Bạn có thể tra cứu danh sách toàn bộ các "Data Source" này tại thanh menu bên trái của tài liệu AWS chính thức:
+> 👉 [AWS Provider Documentation - Data Sources](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+
+### 3.3. Tường lửa Ứng dụng & Mạng (Firewall / Security Group)
+```hcl
+resource "aws_security_group" "logistic_sg" {
+  name        = "logistic-security-group"
+  description = "Security rules for Logistics application"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+```
+**Mục đích của Block này:**
+Tạo ra một bộ rào chắn mạng (Firewall). Nó làm nhiệm vụ chốt chặn, kiểm duyệt toàn bộ gói tin đi vào (Ingress) và đi ra (Egress) của máy ảo từ tầng Network Layer.
+
+**Phân tích các dòng lệnh (Arguments):**
+- `resource "aws_security_group" "logistic_sg"`: Ra lệnh TẠO MỚI một tài nguyên tường lửa, gán tên nội bộ là `logistic_sg` để lát nữa máy ảo gọi ra tái sử dụng.
+- `ingress { ... }` (Luồng vào): 
+  - `from_port` & `to_port`: Khoảng cổng (Port Range) được mở. Mở cổng 22 để quản trị viên SSH vào bảo trì. Mở cổng 80 để đón người dùng truy cập web.
+  - `protocol = "tcp"`: Giao thức truyền tải ở Layer 4 (Transport Layer).
+  - `cidr_blocks = ["0.0.0.0/0"]`: Dải mạng được cấp phép. `0.0.0.0/0` mang ý nghĩa là bất kỳ địa chỉ IP nào trên Internet cũng có quyền gọi vào. (Lưu ý: Với cổng 22 ở môi trường Production thực tế, bắt buộc phải đổi IP này thành dải IP nội bộ của công ty/VPN).
+- `egress { ... }` (Luồng ra): 
+  - Thiết lập `from_port = 0`, `to_port = 0`, `protocol = "-1"`: Đây là quy tắc wildcard cho phép máy ảo đi qua bất kỳ cổng và giao thức (TCP, UDP, ICMP) nào để ra ngoài Internet (Cực kỳ cần thiết để máy ảo tải thư viện, pull Docker image).
+
+### 3.4. Khởi tạo Nút Điện toán (Compute Instance / VM)
+```hcl
+resource "aws_instance" "logistic_server" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t3.large"
+  key_name      = "logistic-key" 
+  
+  vpc_security_group_ids = [aws_security_group.logistic_sg.id]
+
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+  }
+
+  tags = { Name = "Logistic-Production-Node" }
+}
+```
+**Mục đích của Block này:**
+Khởi tạo và cấp phát một Máy ảo (Virtual Machine) hoàn chỉnh. Đây là tiến trình lắp ghép tất cả các thành phần hạ tầng (Hệ điều hành, Tường lửa, Chìa khóa SSH, Ổ cứng) lại với nhau thành một khối điện toán hoạt động.
+
+**Phân tích các dòng lệnh (Arguments):**
+- `resource "aws_instance" "logistic_server"`: Ra lệnh cấp phát Compute Instance.
+- `ami = data.aws_ami.ubuntu.id`: Không điền mã ID chết (hardcode), mà móc nối động (dynamic reference) vào kết quả của block Data Source phía trên.
+- `instance_type = "t3.large"`: Lựa chọn cấu hình sức mạnh tính toán (số lượng vCPU và dung lượng RAM). Billing phí Cloud sẽ tính chủ yếu trên tham số này.
+- `key_name`: Tên của Public Key (SSH Key Pair) đã tạo và cấp phép trên Cloud. Quá trình boot máy ảo (Bootstrapping) sẽ tiêm chìa khóa này vào nhân HĐH. Bỏ sót dòng này, Administrator sẽ vĩnh viễn bị chặn quyền truy cập (Locked out).
+- `vpc_security_group_ids = [...]`: Gắn Tường lửa đã tạo ở trên vào máy ảo này. Việc gọi tham số `aws_security_group.logistic_sg.id` tạo ra một "Ràng buộc Phụ thuộc" (Dependency Edge). Trình biên dịch Terraform sẽ ngầm hiểu: Phải chờ API tạo Tường lửa thành công xong mới được cấp phát Máy ảo.
+- `root_block_device { ... }`: Cấu hình không gian ổ đĩa (Block Storage). Nâng dung lượng lên `30` GB và khai báo chuẩn ổ SSD `gp3` (Hiệu suất IOPS/Throughput cao hơn nhưng giá rẻ hơn chuẩn `gp2` cũ).
+- `tags { Name = ... }`: Định danh siêu dữ liệu (Metadata Tagging). Dùng để đặt tên cho máy ảo hiển thị trên giao diện Web UI, tiện cho quá trình thanh toán (Billing) và lọc tài nguyên.
+
+### 3.5. Cấu trúc Phân giải Tên miền & Đảo ngược Proxy (DNS & Edge Reverse Proxy)
+```hcl
+resource "cloudflare_record" "api_endpoint" {
+  zone_id = var.cloudflare_zone_id
+  name    = "api" 
+  content = aws_instance.logistic_server.public_ip
+  type    = "A"
+  proxied = true
+}
+```
+**Mục đích của Block này:**
+Tạo bản ghi DNS tại biên (Edge) để phân giải Tên miền văn bản (`api.glolog.dev`) về địa chỉ IP Public. Đồng thời kích hoạt tấm khiên bảo vệ lớp ứng dụng của hệ thống CDN.
+
+**Phân tích các dòng lệnh (Arguments):**
+- `zone_id`: Mã định danh phân vùng vùng quản trị Domain của bạn trên hệ thống Cloudflare.
+- `name = "api"`: Cấu hình Subdomain. Hệ thống tự động ghép với tên miền gốc sẽ thành `api.domain.com`.
+- `content = aws_instance.logistic_server.public_ip`: Gán địa chỉ đích (Destination Address). Tương tự như trên, Terraform bóc tách tham số `public_ip` trả về từ kết quả khởi tạo Máy ảo để chèn vào tự động.
+- `type = "A"`: Khai báo Bản ghi loại A (Address Record - dùng để trỏ dải FQDN về một địa chỉ IP chuẩn IPv4).
+- `proxied = true`: Cờ (Flag) thiết yếu. Bật tính năng Đám mây màu cam (Reverse Proxy Anycast). Khi cờ này kích hoạt, IP thật của máy ảo EC2 bị ẩn giấu 100%. Mọi TCP session từ bên ngoài sẽ bị Cloudflare đánh chặn (Intercept), đưa vào bộ lọc WAF quét mã độc trước khi mã hóa đóng gói đẩy về Origin Server (Máy ảo).
 
 ---
 
-## Phần 4: Cẩm nang các loại Bản ghi DNS (DNS Record Types)
+## 4. Quy trình Thực thi CLI (Execution Workflow)
 
-Hệ thống DNS như một danh bạ điện thoại khổng lồ. Dưới đây là các loại bản ghi phổ biến:
+- `terraform init`
+  Khởi tạo không gian làm việc (working directory), phân tích code và tải về các plugins/providers tương ứng.
 
-1. **Bản ghi A (Address):**
-   - Trỏ Tên miền về địa chỉ IPv4 (Ví dụ: `api.logistic.com -> 14.22.33.44`). Dùng để kết nối web.
-2. **Bản ghi CNAME (Canonical Name):**
-   - Trỏ Tên miền về một Tên miền khác (Bí danh). (Ví dụ: `www.logistic.com -> logistic.com`).
-   - *Lưu ý:* CNAME chỉ ẩn được tên miền thật, **KHÔNG GIẤU ĐƯỢC IP VÀ PORT**. 
-3. **Bản ghi MX (Mail Exchange):**
-   - Báo cho thế giới biết máy chủ nào nhận Email cho tên miền này (Dùng khi setup Google Workspace, Outlook).
-4. **Bản ghi TXT (Text):**
-   - Chứa văn bản thuần túy. Thường dùng để nhét "chữ ký" chứng minh bạn là chủ sở hữu tên miền (Google/Facebook hay yêu cầu).
+- `terraform fmt`
+  Tự động định dạng (format) lại source code theo tiêu chuẩn HCL conventions. Khuyến nghị chạy trước khi commit code.
 
-> **💡 Trả lời câu hỏi: Có nên dùng CNAME để giấu IP/Port không?**
-> **KHÔNG.** CNAME không có khả năng giấu IP hay Port. Nếu ai đó PING vào cái CNAME của bạn, nó vẫn sẽ lòi ra cái IP thật ở đằng sau.
-> **Cách duy nhất để giấu IP:** Phải sử dụng tính năng Proxy của Cloudflare (Xem chi tiết ở Phần 5).
-> **Cách giấu Port:** DNS không hiểu Port. Hệ thống DNS chỉ làm nhiệm vụ tra danh bạ tìm đường, nó không biết bên trong có port gì. Để giấu Port (ví dụ giấu port 8080 của Golang), bạn phải dùng Nginx làm Reverse Proxy. Nhận port 80/443 từ Cloudflare rồi Nginx tự đẩy ngầm về port 8080. Điều này hoàn toàn ăn khớp với Master Plan Nginx + Cloudflare của bạn!
+- `terraform validate`
+  Kiểm tra tính hợp lệ của cú pháp (syntax) và xác thực cấu trúc cấu hình mà không truy cập API của cloud.
 
----
+- `terraform plan`
+  Phân tích đồ thị phụ thuộc và hiển thị Execution Plan (Kế hoạch thực thi). Hiển thị chi tiết tài nguyên nào sẽ được tạo (`+`), sửa (`~`) hoặc xóa (`-`).
 
-## Phần 5: Tính năng `proxied = true` (Đám mây màu cam của Cloudflare)
+- `terraform apply`
+  Thực thi Execution Plan để cấp phát tài nguyên thực tế trên Cloud.
 
-Đây là tính năng "ăn tiền" nhất của Cloudflare khi cấu hình DNS, biến Cloudflare từ một cuốn danh bạ (DNS) bình thường thành một tấm khiên bảo vệ (Reverse Proxy).
-
-- **Khi `proxied = false` (Đám mây màu xám ☁️):**
-  - Cloudflare chỉ làm đúng chức năng danh bạ (DNS Only).
-  - Khi user gõ `api.logistic.com`, Cloudflare trả về đúng IP thật của server AWS (ví dụ: `13.212.x.x`).
-  - User kết nối **trực tiếp** vào server AWS. Hacker biết IP thật và có thể tấn công trực tiếp.
-
-- **Khi `proxied = true` (Đám mây màu cam ☁️):**
-  - Cloudflare đứng ra làm "bia đỡ đạn" (Reverse Proxy).
-  - Khi user gõ `api.logistic.com`, Cloudflare trả về một **IP ảo của Cloudflare** (ví dụ: `104.18.x.x`).
-  - Toàn bộ request từ user sẽ đập vào máy chủ của Cloudflare trước. Tại đây, Cloudflare sẽ chặn DDoS, lọc SQL Injection (WAF), cache hình ảnh...
-  - Những request "sạch" mới được Cloudflare âm thầm chuyển tiếp về IP thật của server AWS.
-  - **Kết quả:** IP thật của máy chủ AWS được giấu kín 100%. User không bao giờ biết được máy chủ thật nằm ở đâu. Hacker cũng không thể ping hay lấy được IP thật để tấn công.
+- `terraform destroy`
+  Dọn dẹp và hủy bỏ toàn bộ các tài nguyên đang được Terraform quản lý trong State file.
 
 ---
 
-## Phần 6: 3 Mô hình kết nối Server với Internet (và Cloudflare)
-
-Có 3 kỹ thuật để đưa máy chủ của bạn ra mạng Internet. Mỗi cách có mức độ bảo mật khác nhau:
-
-### 1. Mô hình Truyền thống (Direct DNS / Đám mây Xám)
-- **Cách hoạt động:** Dùng bản ghi DNS (A/CNAME) trỏ trực tiếp về IP Public của máy chủ AWS.
-- **Firewall (Security Group):** Phải mở port Ingress (80, 443) cho toàn bộ thế giới (`0.0.0.0/0`).
-- **Ưu điểm:** Dễ setup nhất, kết nối trực tiếp.
-- **Nhược điểm:** Server bị "trần trụi" trên Internet. Lộ IP thật, dễ dính DDoS, phải tự chống chọi mọi đợt rà quét port của hacker.
-
-### 2. Mô hình Reverse Proxy (Cloudflare Proxy / Đám mây Cam)
-- **Cách hoạt động:** Bật `proxied = true`. Cloudflare đứng giữa làm bia đỡ đạn. Trình duyệt gọi Cloudflare -> Cloudflare gọi về Server của bạn. Đây chính là cách bạn đang cấu hình bằng Terraform.
-- **Firewall (Security Group):** Vẫn phải mở port Ingress (80, 443). Tuy nhiên, **Best Practice** là không mở cho `0.0.0.0/0` mà chỉ cấu hình cho phép các "Dải IP của Cloudflare" được quyền đi vào, chặn đứng mọi IP khác.
-- **Ưu điểm:** Giấu được IP thật của máy chủ, chống DDoS tuyệt vời, có Web Application Firewall (WAF) lọc mã độc, miễn phí chứng chỉ HTTPS/SSL.
-- **Nhược điểm:** Vẫn cần cấp IP Public cho máy ảo AWS. Nếu cấu hình Firewall lỏng lẻo (vẫn để `0.0.0.0/0`), hacker vô tình dò ra được IP thật thì chúng sẽ "đi cửa sau" đâm thẳng vào server, vô hiệu hóa lớp bảo vệ Cloudflare.
-
-### 3. Mô hình Cloudflare Tunnel (Zero Trust / Đỉnh cao bảo mật)
-- **Cách hoạt động:** Cài một phần mềm tên là `cloudflared` lên thẳng máy chủ AWS. Phần mềm này sẽ chủ động đào một "đường hầm" (Tunnel) kết nối ĐI RA NGOÀI (Outbound) đến mạng lưới của Cloudflare.
-- **Firewall (Security Group):** **KHÔNG CẦN MỞ BẤT KỲ CỔNG INGRESS NÀO (đóng cửa hoàn toàn port 80, 443)**. Bạn thậm chí **không cần mua Public IP** cho máy EC2!
-- **Ưu điểm:** Bảo mật tối thượng. Server hoàn toàn vô hình trên Internet vì cửa đã khóa kín từ bên ngoài. Không tốn tiền duy trì Public IP. Bất chấp đứt cáp hay đổi nhà mạng vì Tunnel tự động kết nối lại.
-- **Nhược điểm:** Phải cài thêm phần mềm `cloudflared` lên server. Cấu hình phức tạp hơn (phải tạo Token cho Tunnel thay vì quản lý bằng IP).
-
----
-
-## Phần 7: Các thông số "xương sống" để build máy ảo EC2 (`aws_instance`)
-
-Để tạo thành công một máy chủ EC2 (`resource "aws_instance"`), bạn cần lắp ráp các mảnh ghép (thuộc tính) cơ bản sau:
-
-1. **`ami` (Amazon Machine Image - Hệ điều hành):** 
-   - Là hệ điều hành nền tảng (ví dụ: Ubuntu, Amazon Linux, Windows).
-   - *Bí kíp:* Thay vì điền một chuỗi ID chết cứng (như `ami-0xyz...`), hãy dùng block `data "aws_ami"` để Terraform tự động dò tìm bản cập nhật mới nhất của OS đó, giúp hệ thống luôn an toàn và mới nhất.
-
-2. **`instance_type` (Cấu hình phần cứng):**
-   - Quyết định số lượng CPU và RAM. 
-   - Ví dụ: `t2.micro` (1 CPU, 1GB RAM - Nằm trong Free Tier), `t3.large` (2 CPU, 8GB RAM). Lựa chọn này sẽ quyết định **giá tiền** bạn phải trả cho AWS!
-
-3. **`vpc_security_group_ids` (Tường lửa):**
-   - Danh sách các Security Group gắn vào máy. Nếu không gắn, máy sẽ dùng SG mặc định (thường khóa kín). Bạn cần chỉ định ID của SG mà bạn vừa tạo để mở các cổng cần thiết như SSH (22) và HTTP/S (80, 443).
-
-4. **`key_name` (Chìa khóa SSH - Sống còn):**
-   - Tên của cặp khóa bảo mật (Key Pair - file `.pem`) đã tạo trên web AWS.
-   - **Hậu quả nếu quên:** AWS vẫn tạo máy thành công, nhưng bạn sẽ **vĩnh viễn không thể đăng nhập (SSH)** vào cái máy đó được vì ổ khóa đã đóng mà bạn không có chìa. Máy ảo đó chỉ có nước đem hủy bỏ.
-   - **Lưu ý CỰC KỲ QUAN TRỌNG:** Key Pair là tài sản **của riêng từng Khu vực (Region)**. Tạo Key ở Mỹ (us-east-1) thì không thể dùng để mở khóa máy ảo ở Singapore (ap-southeast-1) được.
-
-5. **`root_block_device` (Ổ cứng chính):**
-   - Mặc định AWS chỉ cấp cho hệ điều hành Linux một cái ổ cứng bé tí (8GB). Cần khai báo block này để nâng cấp dung lượng (`volume_size = 30`) và đổi sang loại ổ cứng thể rắn tốc độ cao thế hệ mới (`volume_type = "gp3"`).
-
-6. **`tags` (Gắn nhãn định danh):**
-   - Rất quan trọng khi quản lý Cloud. Trong đó thuộc tính `Name = "..."` chính là cái tên sẽ hiển thị to rõ ràng trên giao diện Web của AWS giúp bạn phân biệt máy này với máy khác.
-
----
-
-## Phần 8: Các lệnh CLI cơ bản & thường dùng của Terraform
-
-Tư duy của Terraform xoay quanh Vòng đời (Lifecycle) cực kỳ đơn giản. 
-> **⚠️ LƯU Ý QUAN TRỌNG:** **Terraform KHÔNG CÓ lệnh khởi động lại (restart) máy chủ**. 
-> Terraform là công cụ "Xây nhà" và "Đập nhà". Để restart máy, bạn phải dùng giao diện Web của AWS, dùng AWS CLI, hoặc SSH vào máy gõ lệnh `sudo reboot`. 
-
-Tuy nhiên, Terraform cung cấp các lệnh quản lý vòng đời mà bạn sẽ xài mỗi ngày:
-
-### Nhóm lệnh Vòng đời (Sống còn)
-
-1. **`terraform init` (Khởi tạo)**
-   - Dùng lần đầu tiên khi kéo code về hoặc khi thêm Provider mới. Lệnh này tải các plugin (như thư viện AWS) về máy. Không chạy lệnh này, các lệnh khác sẽ báo lỗi.
-
-2. **`terraform plan` (Xem trước / Chạy nháp)**
-   - Khuyên dùng trước khi gõ `apply`. Nó sẽ in ra bản nháp những gì nó tính làm (Tạo mới `+`, Sửa `~`, Xóa `-`) để bạn kiểm tra xem có sai sót hay xóa nhầm cái gì không mà chưa áp dụng lên hệ thống thật.
-
-3. **`terraform apply` (Thực thi / Bật Lab)**
-   - Đọc code, tự động gọi API lên Cloud để xây dựng hệ thống y chang như code viết. Nó sẽ hỏi bạn gõ `yes` trước khi thực sự làm. Đây là lệnh để **Start** dàn lab lên học.
-
-4. **`terraform destroy` (Hủy diệt / Tắt Lab)**
-   - Đọc file State và dọn dẹp, **xóa sạch sành sanh** mọi thứ nó từng tạo. Khi đi ngủ gõ lệnh này để AWS ngừng tính tiền. Sáng mai gõ `apply` là có lại hệ thống mới.
-
-### Nhóm lệnh Thao tác & Quản lý
-
-5. **`terraform apply -replace="aws_instance.logistic_server"` (Đập đi xây lại)**
-   - Thay vì restart, nếu máy bạn cài bậy bạ bị hỏng Hệ điều hành, bạn xài lệnh này. Terraform sẽ "giết" riêng cái máy EC2 cũ và đẻ ra 1 cái máy EC2 mới tinh khôi thay vào đó. Các thành phần khác (Security Group, Cloudflare) vẫn giữ nguyên.
-
-6. **`terraform fmt` (Làm đẹp code)**
-   - Tự động canh lề, canh bằng dấu bằng `=`, thụt đầu dòng cho file `main.tf` đẹp chuẩn format y như DevOps chuyên nghiệp. Cứ code xong gõ lệnh này nhìn file cực kỳ sướng mắt.
-
-7. **`terraform validate` (Kiểm tra lỗi syntax)**
-   - Quét lỗi xem bạn gõ ngoặc nhọn `{ }` có đúng không, tên biến có bị sai chính tả không trước khi mất công chạy `apply`. Tương tự như tính năng kiểm tra lỗi (compile) của các ngôn ngữ lập trình.
-
-# Tham khảo cú pháp chính thức của Cloudflare Record tại:
-# https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs/resources/record
+## 5. Tham chiếu Tài liệu API Chính thức
+- [AWS Provider Documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
+- [Cloudflare Provider Documentation](https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs)

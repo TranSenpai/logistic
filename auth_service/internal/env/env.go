@@ -33,10 +33,8 @@ func (e *Env) loadProductionEnv() error {
 }
 
 func (e *Env) loadDevelopEnv() error {
-	err := godotenv.Load("configs/.env")
-	if err != nil {
-		return fmt.Errorf("%w: %v", ErrEnvLoad, err)
-	}
+	// Cố gắng đọc từ file, nếu không có thì bỏ qua để Docker tự truyền vào bằng system env
+	_ = godotenv.Load("configs/.env")
 
 	driverName := os.Getenv("DB_DRIVER_NAME")
 	user := os.Getenv("POSTGRES_USER")
