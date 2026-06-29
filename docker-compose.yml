@@ -1,7 +1,20 @@
+version: '3.8'
+
 services:
-  auth-services:
-    build: ./auth_service
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./auth_service/Dockerfile
     ports: 
       - "8080:8080"
+    env_file:
+      - .env
+  
+  media-service:
+    build:
+      context: .
+      dockerfile: ./media_service/Dockerfile
+    ports:
+      - "8082:8082"
     env_file:
       - .env

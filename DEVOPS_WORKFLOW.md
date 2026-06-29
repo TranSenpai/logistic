@@ -62,3 +62,36 @@ Giai đoạn đưa Source code (Backend, DB) lên chạy thực tế:
 - Khi làm Lab xong hoặc cuối tuần không xài tới, chỉ cần mở Terminal trên máy tính gõ: `terraform destroy`.
 - Terraform sẽ quét sạch mọi thứ (máy ảo, tường lửa, DNS) trả lại mặt bằng trống không để AWS ngừng tính tiền. 
 - Lần sau muốn làm việc tiếp? Chỉ việc gõ `terraform apply`, đi pha ly cafe quay lại là nguyên hệ thống đồ sộ lại tự động mọc lên y như cũ!
+
+---
+
+## 🛠 CHEATSHEET: CÁC LỆNH DOCKER / PODMAN SINH TỒN
+Dưới đây là các câu lệnh "cứu mạng" khi bạn thao tác với Container:
+
+**1. "Dive" (Chui) vào bên trong Container đang chạy:**
+Đây là lệnh quan trọng nhất để debug xem bên trong app có file gì, biến môi trường ra sao.
+- Cú pháp chuẩn: `podman exec -it <tên_container> /bin/sh` (hoặc `/bin/bash` nếu hệ điều hành hỗ trợ).
+- *Ví dụ chui vào con Auth Service (dùng Alpine nên chỉ có `/bin/sh`):*
+  ```bash
+  podman exec -it logistic-auth /bin/sh
+  ```
+- *Ví dụ chui vào con Postgres (chạy bash):*
+  ```bash
+  podman exec -it logistic-postgres /bin/bash
+  ```
+*(Vào xong gõ lệnh `ls` để xem file, `env` để xem biến môi trường. Muốn thoát ra gõ `exit`).*
+
+**2. Xem Log (Nhật ký lỗi) của App:**
+- Lệnh: `podman logs -f <tên_container>`
+- *Ví dụ:* `podman logs -f logistic-auth` (Cờ `-f` giúp log tự nhảy liên tục như thật).
+
+**3. Xem danh sách Container đang chạy:**
+- Lệnh: `podman ps` (Chỉ xem những con đang chạy).
+- Lệnh: `podman ps -a` (Xem cả những con đã chết/bị tắt).
+
+**4. Khởi động / Dừng Container thủ công:**
+- Lệnh: `podman start <tên_container>`
+- Lệnh: `podman stop <tên_container>`
+
+**5. Dọn dẹp Rác (Gỡ Image/Container thừa):**
+- Xóa mọi thứ lơ lửng không dùng đến (Image mồ côi, cache build): `podman system prune -f`

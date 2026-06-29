@@ -18,6 +18,36 @@ Mỗi file code Terraform là tập hợp của nhiều "Khối" (Block). Có 4 
 
 ---
 
+## Phần 1.5: Tư duy Cốt lõi - Viết code Terraform từ tờ giấy trắng (Không cần học thuộc)
+
+Nếu bạn lỡ xóa sạch code và nhìn vào tờ giấy trắng bị "mù tịt", đừng hoảng! Đừng cố nhớ cú pháp code, hãy nhớ **"Trình tự xây nhà"**. Khi code Terraform, bạn hãy tưởng tượng mình đang xây một căn nhà. Phải xây từ móng lên mái:
+
+1. **Bước 1: Mời thầu (Provider)**
+   - **Hỏi:** Mình định xây nhà ở nền tảng nào? (AWS, Google Cloud hay Azure?).
+   - **Code:** Khai báo block `provider "aws"` và `provider "cloudflare"`.
+
+2. **Bước 2: Xây hàng rào (Security Group)**
+   - **Hỏi:** Nhà này có mấy cái cửa? Chặn ai, cho ai vào?
+   - **Code:** Khai báo `resource "aws_security_group"`. Mở Ingress 22 (cho bạn chui vào gõ lệnh SSH), mở Ingress 80/443 (để đón khách từ Internet).
+
+3. **Bước 3: Đánh chìa khóa (Key Pair)**
+   - **Hỏi:** Làm sao để chủ nhà (là bạn) mở cửa vào nhà?
+   - **Code:** Nếu đã tạo khóa `.pem` trên web AWS, BẮT BUỘC phải nhớ tên khóa đó để lát ráp vào nhà.
+
+4. **Bước 4: Cất nhà (EC2 Instance)**
+   - **Hỏi:** Xây nhà to hay nhỏ? Dùng gạch gì?
+   - **Code:** Khai báo `resource "aws_instance"`. Chọn `ami` (Ubuntu) và `instance_type` (t3.large). 
+   - **Móc nối (Quan trọng nhất):** Lấy Hàng rào ở Bước 2 gắn vào nhà (`vpc_security_group_ids = [aws_security_group.tên_sg.id]`). Lấy Khóa ở Bước 3 gắn vào nhà (`key_name = "tên_khóa"`).
+
+5. **Bước 5: Cắm bảng số nhà (DNS & Cloudflare)**
+   - **Hỏi:** Cất nhà xong, làm sao khách tìm được địa chỉ?
+   - **Code:** Khai báo `resource "cloudflare_record"`. Lấy cái IP của căn nhà vừa xây (`aws_instance.tên_nhà.public_ip`) trỏ vào tên miền (`api.glolog.dev`).
+
+**💡 BÍ KÍP THOÁT KHỎI SỰ MÙ TỊT:** 
+Trong Terraform, bạn cứ tư duy logic từ trên xuống dưới. Cái nào tồn tại trước thì cái tạo sau mới có cái để "bám" vào. Đó gọi là **Tính phụ thuộc (Dependency)**. Khi bạn code tới máy ảo EC2, VS Code sẽ tự động gợi ý bạn gọi cái ID của Security Group đã định nghĩa bên trên. **Bạn không cần học thuộc code**, bạn chỉ cần nhớ Logic 5 bước này, lên trang chủ Terraform (Registry) copy syntax thả vào, rồi móc nối chúng lại với nhau bằng dấu chấm `.` là xong!
+
+---
+
 ## Phần 2: Phân biệt 3 loại "Tên" trong Terraform
 Rất dễ nhầm lẫn giữa các loại tên khi code:
 
