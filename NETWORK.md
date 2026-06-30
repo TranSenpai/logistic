@@ -184,7 +184,39 @@ Có hai thắc mắc kinh điển mà các Lập trình viên hay nhầm lẫn k
 
 ---
 
-## 6. CASE STUDY TOÀN DIỆN: Hành trình End-to-End của 1 Request
+## 6. Tường lửa (Firewall):
+
+Một khi mạng đã thông, dữ liệu đã được mã hóa TLS, bài toán sống còn tiếp theo là: *"Làm sao để cấm một gã ất ơ nào đó ở Nga không được quyền chọc vào Database của tôi?"*. Đó là lúc Firewall ra đời. Firewall giống như ông bảo vệ tòa nhà, đứng xét hỏi từng gói tin (Packet) đi qua.
+
+### 6.1. Tường lửa Lớp 3/4 (Network Firewall)
+Đây là loại tường lửa cổ điển và phổ biến nhất, hoạt động ở tầng **Network (IP)** và **Transport (Port)**. Trên Cloud AWS, nó chính là **Security Group** hoặc **Network ACL**.
+
+- **Cách hoạt động:** Ông bảo vệ Lớp 4 khá "nguyên tắc nhưng mù quáng". Ông ta chỉ nhìn vào cái phong bì (Header), kiểm tra `IP Nguồn`, `IP Đích` và `Port`. Ông không thèm bóc phong bì ra xem bên trong (Payload) chứa mã độc hay không.
+- **Ví dụ thực tiễn:** Cấu hình Security Group cho EC2 chạy Web Server:
+  - Cho phép `Inbound Port 443` từ `0.0.0.0/0` (Mở cửa cho toàn thế giới truy cập Web HTTPS).
+  - Cấm `Inbound Port 22` từ mọi nơi, Cụ thể chỉ cho phép IP tĩnh của Văn phòng Cty `14.55.x.x` được phép truy cập để SSH vào bảo trì hệ thống.
+- **Stateful vs Stateless:** 
+  - **Stateful (Lưu trữ trạng thái):** Điển hình là AWS Security Group. Nếu bạn cho phép một IP đi **VÀO** cổng 443, Firewall sẽ lưu vào trí nhớ tạm thời và tự động mở cửa cho phép luồng dữ liệu trả lời đi **RA** mà không cần bạn phải cấu hình thêm luật chiều ra.
+  - **Stateless (Không lưu trữ trạng thái):** Điển hình là AWS Network ACL. Trí nhớ bằng 0. Cấm hay cho phép chiều VÀO thì DevOps cũng phải tự tay viết thêm một luật tương ứng cho phép chiều RA, nếu không gói tin đi vào được nhưng lúc gửi trả Response lại bị kẹt mất hút.
+
+### 6.2. Tường lửa Lớp 7 (WAF - Web Application Firewall)
+Bảo vệ vòng ngoài bằng Lớp 4 là chưa đủ. Giả sử Hacker gọi đúng vào Port 443 được phép, nhưng bên trong gói hàng hắn nhét một dòng code SQL Injection (`' OR 1=1 --`) hòng xóa sạch Database thì sao? Ông bảo vệ Lớp 4 mù quáng sẽ cho đi qua tuốt vì vỏ thư ghi đúng Port 443! Lúc này ta cần WAF (Như Cloudflare WAF, AWS WAF).
+
+- **Cách hoạt động:** Ông bảo vệ Lớp 7 (WAF) là một chuyên gia soi mói. Ông ta bắt khách hàng mở khóa phong bì ra. Ông ta soi xét từng chữ trong cái Payload HTTP (Body JSON, URL query, Headers, Cookies). 
+- **Quyền năng của WAF:**
+  - Nếu thấy URL có chứa mã độc SQL/XSS: *Chặn đứng tắp lự (DROP).*
+  - Nếu thấy 1 IP từ một quốc gia lạ gọi Port 443 đến 500 lần/giây (Tấn công DDOS lụt mạng): *Ban IP.*
+  - Nếu Header `User-Agent` rỗng hoặc giống một con Bot cào dữ liệu (Scraping): *Bật ngay màn hình CAPTCHA bắt giải đố.*
+
+### 6.3. Kiến trúc Defense-in-Depth (Phòng thủ nhiều lớp)
+Kỹ sư hạ tầng (Platform Engineer) không bao giờ giao sinh mạng của hệ thống cho 1 loại Firewall. Họ quy hoạch mạng lưới theo nguyên tắc Phòng thủ nhiều lớp (Defense-in-Depth):
+1. **Ngoài cùng (Cloudflare / Edge WAF):** Hứng bão, lọc mọi cuộc tấn công DDOS Lớp 7, soi kỹ Payload để chặn SQL Injection/XSS trước cả khi gói tin chạm tới Cloud của bạn.
+2. **Lớp giữa (Public Subnet / DMZ):** Nơi cắm Load Balancer (ELB) hoặc Nginx. Dùng Security Group (Lớp 4) bóp chặt chỉ mở đúng Port 80 và 443. Mọi truy cập vào port khác lập tức bị từ chối.
+3. **Lõi (Private Subnet):** Trái tim của hệ thống chứa Database và Backend. Lớp Firewall ở đây thiết lập gắt gao nhất: Cắt hoàn toàn kết nối từ Internet, chỉ cho phép Inbound Port 3306/5432 **ĐỘC NHẤT** từ địa chỉ IP Private của chính con Backend/Nginx nội bộ. Bất kỳ Server nào khác trong mạng dù biết IP cũng không thể đụng vào DB.
+
+---
+
+## 7. CASE STUDY TOÀN DIỆN: Hành trình End-to-End của 1 Request
 
 Hãy theo dõi một kịch bản siêu chi tiết: User (IP LAN `192.168.1.5`) gõ URL mở App HTTPS được host trên Cloud AWS (IP Private nội bộ AWS `10.0.0.5`, IP Public `13.212.0.5`).
 
@@ -211,7 +243,7 @@ Mọi thứ diễn ra ngược lại hoàn toàn. Backend trả HTTP Response ->
 
 ---
 
-## 7. Kiến trúc Tường lửa (Security Group Layer 4)
+## 7. Tường lửa (Security Group Layer 4)
 
 - **Stateful Firewall:** Tường lửa hoạt động tại ranh giới mạng ảo (Layer 4). Nó can thiệp bằng cách đọc TCP/UDP Port. Chữ "Stateful" nghĩa là nó Ghi nhớ trạng thái phiên TCP. Nếu gói tin Ingress (Request) vượt qua tường lửa thành công, gói Egress (Response) tương ứng sẽ tự động được xả trạm mà không cần tạo Rule chiều ra.
 - **Zero Trust:** Đóng mọi Ingress từ Internet (`0.0.0.0/0`), chỉ mở tối thiểu (80/443). Tuyệt đối không mở các Port Database/Cache ra ngoài Public. Khóa ICMP (Ping) để chống dò quét.

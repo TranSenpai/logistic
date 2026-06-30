@@ -1,3 +1,5 @@
+// Khai báo terraform sẽ làm việc với provider nào để terrform biết 
+// mà cài các API call của provider đó. Trong case này là AWS và Cloudflare
 terraform {
   required_providers {
     aws = {
@@ -11,14 +13,19 @@ terraform {
   }
 }
 
+// Khai báo provider compute là AWS
 provider "aws" {
-  region = "ap-southeast-1"
+  region     = "ap-southeast-1"
+  access_key = var.aws_accesskey_id
+  secret_key = var.aws_secret_access_key
 }
 
+// Khai báo provider network là Cloudflare
 provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
 
+// Tạo 1 instance type ami của provider aws đặt tên local là ubuntu
 data "aws_ami" "ubuntu" {
   most_recent = true
   owners      = ["099720109477"]
@@ -29,6 +36,7 @@ data "aws_ami" "ubuntu" {
   }
 }
 
+// Tạo 1 security group của aws đặt tên local là logistic_sg
 resource "aws_security_group" "logistic_sg" {
   name        = "logistic-security-group"
   description = "Securiry rules for Logistic application"
@@ -56,7 +64,7 @@ resource "aws_security_group" "logistic_sg" {
 }
 
 resource "aws_instance" "logistic_server" {
-  ami           = data.aws_ami.ubuntu
+  ami           = data.aws_ami.ubuntu.id
   instance_type = "t3.large"
   key_name      = "logistic-key"
 
@@ -75,7 +83,7 @@ resource "aws_instance" "logistic_server" {
 resource "cloudflare_record" "api_endpoint" {
   zone_id = var.cloudflare_zone_id
   name    = "api"
-  content = aws_instance.logistic_server.ip
+  content = aws_instance.logistic_server.public_ip
   type    = "A"
   proxied = true
 }

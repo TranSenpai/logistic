@@ -51,3 +51,4 @@ override.tf.json
 # Bỏ qua các file secret
 *.csv
 rootkey.csv
+chuong_accessKeys.csv

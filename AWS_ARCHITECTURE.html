@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AWS Architecture Concepts</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 40px; 
+            background-color: #f8f9fa; 
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h2 {
+            text-align: center;
+            color: #232f3e; /* AWS dark blue */
+        }
+        .mermaid { 
+            background-color: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05); 
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        p.note {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>AWS Architecture Concepts</h2>
+        <p class="note">Structural topology covering VPC, Subnet, IGW, Security Group, and Compute Nodes</p>
+        
+        <div class="mermaid">
+            graph TD
+                Internet((Internet)) <--> IGW
+                
+                subgraph "AWS Cloud (Region: ap-southeast-1)"
+                    IGW[Internet Gateway]
+                    
+                    subgraph "VPC (Virtual Private Cloud)"
+                        IGW <--> PublicSubnet
+                        
+                        subgraph PublicSubnet ["Public Subnet (DMZ)"]
+                            
+                            subgraph SG ["Security Group (Instance-level Firewall)"]
+                                subgraph EC2 ["EC2 Instance (Compute Node)"]
+                                    Nginx[Nginx Reverse Proxy]
+                                    App[Backend Application]
+                                end
+                            end
+                            
+                        end
+                    end
+                end
+        </div>
+    </div>
+</body>
+</html>

@@ -41,13 +41,34 @@ Sử dụng Terraform để định nghĩa hạ tầng dưới dạng mã nguồ
 Sau khi phần cứng và mạng lưới đã được Provider cấp phát thành công, tiến hành truy cập máy chủ để cấu hình hệ điều hành và cài đặt Runtime Dependencies.
 
 1. **Xác thực Mạng Khách (SSH Authentication):**
-   - Kết nối tới Public IP gốc (Tuyệt đối không kết nối qua Tên miền do rào cản TLS Termination từ Cloudflare Proxy).
-   - Cú pháp: `ssh -i <path_to_pem_file> ubuntu@<PUBLIC_IP>`
-2. **Cập nhật Nhân Hệ điều hành:**
-   - Quét và cập nhật các bản vá lỗi bảo mật (Security Patches): `sudo apt update && sudo apt upgrade -y`
+   - **SSH (Secure Shell) là gì?** 
+     - Đây là giao thức mạng chuẩn công nghiệp dùng để đăng nhập và điều khiển máy chủ từ xa (Remote Login) một cách bảo mật. 
+     - Khác với HTTP truyền dữ liệu hiển thị Web, SSH truyền các **câu lệnh Terminal**. Nó chạy mặc định ở **Port 22**.
+     - Nhờ mã hóa mạnh (Asymmetric Cryptography với file `.pem`), dù hacker có đứng giữa chặn mạng cũng chỉ thấy các đoạn mã vô nghĩa, không thể biết bạn đang gõ lệnh gì hay ăn cắp mật khẩu.
+   - **Cú pháp Lệnh SSH:** 
+     - Mở Terminal tại thư mục chứa file chìa khóa (`.pem`) và gõ lệnh:
+       ```bash
+       ssh -i "logistic-key.pem" ubuntu@<PUBLIC_IP_CỦA_EC2>
+       ```
+     - *Phân tích tham số:*
+       - `ssh`: Tiện ích dòng lệnh Secure Shell Client.
+       - `-i "logistic-key.pem"`: Chỉ định đường dẫn tới Identity File (Private Key) để thực hiện quá trình xác thực phi đối xứng (Asymmetric Authentication).
+       - `ubuntu`: Người dùng mặc định (Default User) của hệ điều hành Ubuntu trên AWS.
+       - `<PUBLIC_IP_CỦA_EC2>`: Địa chỉ Public IPv4 của máy chủ. Yêu cầu kết nối trực tiếp vào IP thay vì FQDN (`api.glolog.dev`) nhằm bypass lớp Cloudflare Proxy đang giới hạn lưu lượng theo chuẩn HTTP/HTTPS.
+2. **Cập nhật Nhân Hệ điều hành (System Patching):**
+   - Cú pháp: `sudo apt update && sudo apt upgrade -y`
+   - *Đặc tả:* 
+     - `apt update`: Đồng bộ hóa metadata của các gói phần mềm từ Package Repository của Ubuntu.
+     - `apt upgrade -y`: Thực thi cập nhật hệ thống và tự động chấp nhận (`-y`) các bản vá bảo mật mới nhất nhằm giảm thiểu bề mặt tấn công hệ điều hành.
 3. **Thiết lập Môi trường Chạy ứng dụng (Runtime Setup):**
-   - Cài đặt **Nginx**: Cấu hình Service để đóng vai trò Reverse Proxy nội bộ chặn tại Port 80.
-   - Cài đặt **Podman/Docker**: Nền tảng Containerization để cô lập các tiến trình Microservices khỏi hệ điều hành vật lý.
+   - Cú pháp: `sudo apt install -y nginx docker.io docker-compose git`
+   - *Đặc tả:*
+     - `nginx`: Cài đặt Web Server để đảm nhiệm vai trò Edge Reverse Proxy cục bộ.
+     - `docker.io` & `docker-compose`: Triển khai nền tảng Containerization nhằm tiêu chuẩn hóa và cô lập môi trường runtime của ứng dụng.
+     - `git`: Cài đặt Version Control Client phục vụ đồng bộ mã nguồn.
+4. **Triển khai Mã nguồn (Source Code Synchronization):**
+   - Cú pháp: `git clone <URL_REPO> && cd <PROJECT_DIR>`
+   - *Đặc tả:* Đồng bộ mã nguồn nguyên bản từ Remote Repository về môi trường triển khai (Local) của máy chủ.
 
 ---
 
