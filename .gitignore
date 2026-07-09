@@ -50,5 +50,7 @@ override.tf.json
 
 # Bỏ qua các file secret
 *.csv
+*.pem
 rootkey.csv
 chuong_accessKeys.csv
+logistic-key.pem

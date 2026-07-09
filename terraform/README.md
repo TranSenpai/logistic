@@ -72,11 +72,37 @@ Dùng để truy vấn Metadata của một tài nguyên ĐÃ TỒN TẠI sẵn 
 > Bạn có thể tra cứu danh sách toàn bộ các "Data Source" này tại thanh menu bên trái của tài liệu AWS chính thức:
 > 👉 [AWS Provider Documentation - Data Sources](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
 
-### 3.3. Tường lửa Ứng dụng & Mạng (Firewall / Security Group)
+### 3.3. Quy hoạch Mạng Nội bộ (Custom VPC & Subnet)
+```hcl
+resource "aws_vpc" "logistic_vpc" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+}
+
+resource "aws_subnet" "logistic_public_subnet" {
+  vpc_id                  = aws_vpc.logistic_vpc.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+}
+```
+**Bản chất Kiến trúc chuyên sâu (Deep Architecture Essence):**
+- **VPC (Virtual Private Cloud - Network Perimeter):** 
+  - *Định nghĩa:* Là một vùng mạng riêng ảo độc lập hoàn toàn trên cơ sở hạ tầng AWS. VPC đóng vai trò là Network Perimeter (Vòng đai mạng) cô lập hoàn toàn hệ thống Logistic khỏi phần còn lại của Internet.
+  - *Tại sao phải tạo Custom VPC?* AWS cung cấp sẵn một Default VPC với cấu hình định tuyến rất lỏng lẻo (tất cả Subnet đều Public). Đối với hệ thống Enterprise đòi hỏi tính bảo mật dữ liệu cao, ta phải tuân thủ nguyên tắc **Zero Trust Network**. Việc tự định nghĩa Custom VPC từ con số 0 đảm bảo không một kết nối nào được phép ra/vào trừ khi được khai báo tường minh.
+  - *CIDR Block*: Cấu hình `10.0.0.0/16` áp dụng **RFC 1918** (Dải IP Private, không định tuyến được trên Internet toàn cầu), giúp hệ thống hoàn toàn ẩn danh. Prefix `/16` cung cấp không gian 65,536 IP, đáp ứng hoàn hảo khả năng Scale-out (Mở rộng theo chiều ngang) cho các cụm Microservices/Containers sau này.
+
+- **Public Subnet (DMZ / Public-Facing Subnet):** 
+  - *Định nghĩa:* Quá trình phân đoạn mạng (Network Segmentation). Phân mảnh không gian `/16` khổng lồ thành các vùng nhỏ hơn (Subnet) để gán Routing Policies (Chính sách định tuyến) chuyên biệt. Dải `10.0.1.0/24` cấp phát 256 IP cho cụm máy chủ Public.
+  - *Tại sao gọi là Public Subnet?* Vì Subnet này sẽ được liên kết trực tiếp với **Internet Gateway (IGW)** thông qua Route Table, đóng vai trò như một vùng phi quân sự (DMZ), nơi đặt các Application Load Balancer hoặc Edge Proxy Server để hứng Inbound Traffic từ người dùng cuối.
+  - *Resource Dependency (Ràng buộc tài nguyên)*: Khai báo `vpc_id = aws_vpc.logistic_vpc.id` tạo ra một Implicit Dependency trong luồng thực thi Terraform. Nó ép trình biên dịch (Terraform Core) phải hoàn thành việc gọi API tạo VPC trước, lấy được định danh VPC ID, rồi mới truyền xuống để tạo Subnet.
+
+### 3.4. Tường lửa Ứng dụng & Mạng (Firewall / Security Group)
 ```hcl
 resource "aws_security_group" "logistic_sg" {
   name        = "logistic-security-group"
   description = "Security rules for Logistics application"
+  vpc_id      = aws_vpc.logistic_vpc.id
 
   ingress {
     from_port   = 22
@@ -100,24 +126,27 @@ resource "aws_security_group" "logistic_sg" {
   }
 }
 ```
-**Mục đích của Block này:**
-Tạo ra một bộ rào chắn mạng (Firewall). Nó làm nhiệm vụ chốt chặn, kiểm duyệt toàn bộ gói tin đi vào (Ingress) và đi ra (Egress) của máy ảo từ tầng Network Layer.
+**Bản chất Kiến trúc chuyên sâu (Deep Architecture Essence):**
+- **Security Group (Stateful Firewall / L4 Packet Filtering):** 
+  - *Định nghĩa:* Hoạt động như một Tường lửa trạng thái (Stateful Firewall) kiểm soát Inbound/Outbound traffic ở cấp độ Máy ảo (Instance-level), thuộc Layer 4 (Transport Layer) trong mô hình OSI. Khác với NACL (Network Access Control List) hoạt động ở cấp độ Subnet, Security Group bám sát vào từng Network Interface (ENI).
+  - *Tại sao phải tạo?* Việc đặt Compute Node trong Public Subnet khiến nó bộc lộ bề mặt tấn công (Attack Surface) ra Internet. Security Group áp dụng chính sách **Default Deny** (Chặn toàn bộ Inbound traffic mặc định), ngăn chặn triệt để các cuộc rà quét cổng (Port Scanning). Tham số `vpc_id` khóa chặt tập luật này vào đúng vùng mạng Logistic VPC.
 
-**Phân tích các dòng lệnh (Arguments):**
-- `resource "aws_security_group" "logistic_sg"`: Ra lệnh TẠO MỚI một tài nguyên tường lửa, gán tên nội bộ là `logistic_sg` để lát nữa máy ảo gọi ra tái sử dụng.
-- `ingress { ... }` (Luồng vào): 
-  - `from_port` & `to_port`: Khoảng cổng (Port Range) được mở. Mở cổng 22 để quản trị viên SSH vào bảo trì. Mở cổng 80 để đón người dùng truy cập web.
-  - `protocol = "tcp"`: Giao thức truyền tải ở Layer 4 (Transport Layer).
-  - `cidr_blocks = ["0.0.0.0/0"]`: Dải mạng được cấp phép. `0.0.0.0/0` mang ý nghĩa là bất kỳ địa chỉ IP nào trên Internet cũng có quyền gọi vào. (Lưu ý: Với cổng 22 ở môi trường Production thực tế, bắt buộc phải đổi IP này thành dải IP nội bộ của công ty/VPN).
-- `egress { ... }` (Luồng ra): 
-  - Thiết lập `from_port = 0`, `to_port = 0`, `protocol = "-1"`: Đây là quy tắc wildcard cho phép máy ảo đi qua bất kỳ cổng và giao thức (TCP, UDP, ICMP) nào để ra ngoài Internet (Cực kỳ cần thiết để máy ảo tải thư viện, pull Docker image).
+- **Ingress Rules (Luồng mạng đi vào):**
+  - Chỉ cho phép Mở luồng Explicit (Tường minh):
+  - `Port 22 (TCP)`: Giới hạn riêng cho Administrator kết nối SSH (Secure Shell) để Provisioning (Cấu hình) máy chủ. (Trong môi trường Production, `0.0.0.0/0` nên được siết chặt lại thành dải IP VPN của công ty).
+  - `Port 80 (TCP)`: Tiếp nhận HTTP traffic từ end-user để phục vụ Web Application.
+  - Bất kỳ TCP SYN packet nào nhắm vào các cổng không khai báo (ví dụ: 3306, 6379) đều bị "Drop" (Loại bỏ) ngay tại Network Layer, giúp hệ điều hành bên trong giải phóng chu kỳ CPU (không phải mất công phản hồi RST packet), giảm thiểu nguy cơ SYN Flood DDoS.
 
-### 3.4. Khởi tạo Nút Điện toán (Compute Instance / VM)
+- **Egress Rules (Luồng mạng đi ra):**
+  - Cấu hình wildcard `protocol = "-1"` cho phép Node nội bộ khởi tạo kết nối đến mọi đích đến trên Internet. Điều này là bắt buộc trong giai đoạn Bootstrapping để hệ điều hành có thể phân giải DNS, chạy `apt update` (tải Linux packages), kết nối GitHub để clone source code, hoặc giao tiếp với Docker Hub để pull images.
+
+### 3.5. Khởi tạo Nút Điện toán (Compute Instance / VM)
 ```hcl
 resource "aws_instance" "logistic_server" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = "t3.large"
   key_name      = "logistic-key" 
+  subnet_id     = aws_subnet.logistic_public_subnet.id
   
   vpc_security_group_ids = [aws_security_group.logistic_sg.id]
 
@@ -129,17 +158,20 @@ resource "aws_instance" "logistic_server" {
   tags = { Name = "Logistic-Production-Node" }
 }
 ```
-**Mục đích của Block này:**
-Khởi tạo và cấp phát một Máy ảo (Virtual Machine) hoàn chỉnh. Đây là tiến trình lắp ghép tất cả các thành phần hạ tầng (Hệ điều hành, Tường lửa, Chìa khóa SSH, Ổ cứng) lại với nhau thành một khối điện toán hoạt động.
+**Bản chất Kiến trúc chuyên sâu (Deep Architecture Essence):**
+- **EC2 Instance (Compute Node / Raw Compute Capacity):** 
+  - *Định nghĩa:* Elastic Compute Cloud (EC2) cung cấp năng lực tính toán cốt lõi (vCPU, RAM, Block Storage). Ở trạng thái khởi tạo ban đầu (Vanilla State), nó chỉ là một hạt nhân Linux thuần túy chưa có Application Stack (Docker, Go Runtime, Database).
+  - *Thứ tự biên dịch (Dependency Graph)*: Compute Node bắt buộc phải được tạo cuối cùng trong chuỗi cung ứng Hạ tầng Mạng. Terraform Core xây dựng Dependency Graph nội bộ và nhận diện rõ EC2 phải đợi VPC, Subnet và Security Group đạt trạng thái `Available` thì mới được kích hoạt API `RunInstances`.
 
-**Phân tích các dòng lệnh (Arguments):**
-- `resource "aws_instance" "logistic_server"`: Ra lệnh cấp phát Compute Instance.
-- `ami = data.aws_ami.ubuntu.id`: Không điền mã ID chết (hardcode), mà móc nối động (dynamic reference) vào kết quả của block Data Source phía trên.
-- `instance_type = "t3.large"`: Lựa chọn cấu hình sức mạnh tính toán (số lượng vCPU và dung lượng RAM). Billing phí Cloud sẽ tính chủ yếu trên tham số này.
-- `key_name`: Tên của Public Key (SSH Key Pair) đã tạo và cấp phép trên Cloud. Quá trình boot máy ảo (Bootstrapping) sẽ tiêm chìa khóa này vào nhân HĐH. Bỏ sót dòng này, Administrator sẽ vĩnh viễn bị chặn quyền truy cập (Locked out).
-- `vpc_security_group_ids = [...]`: Gắn Tường lửa đã tạo ở trên vào máy ảo này. Việc gọi tham số `aws_security_group.logistic_sg.id` tạo ra một "Ràng buộc Phụ thuộc" (Dependency Edge). Trình biên dịch Terraform sẽ ngầm hiểu: Phải chờ API tạo Tường lửa thành công xong mới được cấp phát Máy ảo.
-- `root_block_device { ... }`: Cấu hình không gian ổ đĩa (Block Storage). Nâng dung lượng lên `30` GB và khai báo chuẩn ổ SSD `gp3` (Hiệu suất IOPS/Throughput cao hơn nhưng giá rẻ hơn chuẩn `gp2` cũ).
-- `tags { Name = ... }`: Định danh siêu dữ liệu (Metadata Tagging). Dùng để đặt tên cho máy ảo hiển thị trên giao diện Web UI, tiện cho quá trình thanh toán (Billing) và lọc tài nguyên.
+- **Network Interface Placement (Subnet Binding):**
+  - Tham số `subnet_id` quyết định vị trí Vùng khả dụng (Availability Zone) và gán Elastic Network Interface (ENI) của máy ảo vào đích danh môi trường DMZ (Public Subnet). Khuyết thiếu cấu hình này sẽ gây ra tình trạng Drift Configuration, khiến AWS tự động đặt Node vào Default VPC.
+
+- **Traffic Filtering Enforcement (Security Binding):** 
+  - Tham số `vpc_security_group_ids` đính kèm tập luật Stateful Firewall vào trực tiếp ENI của EC2 Instance. Khẳng định cơ chế an ninh phân tán: Việc thanh lọc Packet xảy ra ngay tại Network Interface của từng máy ảo độc lập, thay vì dồn về một Gateway trung tâm.
+
+- **Access Provisioning (Key Injection / Cloud-Init):** 
+  - Khai báo `key_name = "logistic-key"`. Khi máy ảo được cung cấp năng lượng lần đầu (First Boot), tiến trình `cloud-init` của AWS sẽ tự động lấy đoạn văn bản Public Key (RSA) tương ứng tiêm thẳng vào nhân HĐH (tại đường dẫn `~/.ssh/authorized_keys`). 
+  - Đảm bảo cơ chế Asymmetric Cryptography (Mật mã Bất đối xứng) cho phiên SSH đầu tiên. Nếu lược bỏ tham số này, môi trường sẽ rơi vào trạng thái "Blackbox" (Chạy thành công nhưng Administrator hoàn toàn mất quyền truy cập SSH để thực thi Configuration Management).
 
 ### 3.5. Cấu trúc Phân giải Tên miền & Đảo ngược Proxy (DNS & Edge Reverse Proxy)
 ```hcl

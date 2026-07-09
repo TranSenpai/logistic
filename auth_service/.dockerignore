@@ -4,3 +4,8 @@ tmp
 Makefile
 *.tfvars
 *.tfstate
+*.pem
+*.pem.pub
+.git
+.gitignore
+.dockerignore
