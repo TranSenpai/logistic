@@ -191,6 +191,7 @@ Nếu chỉ dùng 1 loại mã hóa thì mạng Internet sẽ hoặc là "Quá c
      - **Bước 2 (Client mã hóa):** Trình duyệt của User sử dụng Public Key vừa nhận được để mã hóa dữ liệu nhạy cảm (ví dụ: mã hóa cái Khóa đối xứng). Theo quy luật hàm một chiều, dữ liệu sau khi mã hóa bởi Public Key sẽ biến thành một khối byte hỗn độn mà **chỉ có Private Key tương ứng mới có khả năng tính toán dịch ngược lại được**.
      - **Bước 3 (Server giải mã):** Server nhận được khối byte mã hóa, sử dụng Private Key của mình làm tham số bí mật để giải phương trình toán học ngược, từ đó thu lại được dữ liệu gốc của User.
      - **Góc nhìn của Hacker:** Hacker đứng lén giữa mạng lưới bắt được trọn vẹn cả "Public Key" (ở Bước 1) và "Dữ liệu đã mã hóa" (ở Bước 2). Tuy nhiên, vì không có Private Key, Hacker phải sử dụng siêu máy tính để cố gắng Brute-force (mò) ngược từ Public Key ra Private Key. Dựa trên rào cản của bài toán Phân tích thừa số nguyên tố (phải tìm 2 số nguyên tố cấu thành một tích dài hàng nghìn bit), mạng lưới siêu máy tính của Hacker sẽ phải chạy liên tục trong **vài triệu năm** mới giải ra được. Điều này khiến nỗ lực bẻ khóa trở nên hoàn toàn vô vọng!
+
    - **Đặc điểm:** Giải quyết triệt để bài toán phân phối khóa trên môi trường Public không an toàn. Nhược điểm chí mạng là phép toán lũy thừa số lớn (Modular Exponentiation) cực kỳ cồng kềnh, **Tốc độ cực kỳ chậm**, ngốn rất nhiều tài nguyên CPU.
    
 2. **Mã hóa Đối xứng (Symmetric Cryptography - Tiêu biểu: AES, ChaCha20):**
@@ -213,51 +214,51 @@ Thay vì đắn đo chọn 1 trong 2, TLS đã kết hợp cả hai để tạo 
 > **2. Bức tranh Toàn cảnh về Định lý Euler (The Big Picture):**
 > Trước khi đi vào tính toán, hãy cùng hiểu gốc rễ: **Tại sao thuật toán RSA lại chọn định lý Euler làm nền tảng?**
 > 
-> - **Mục đích (Dùng để làm gì?):** 
->   Mục tiêu tối thượng của mã hóa Bất đối xứng là tạo ra một "Hàm một chiều" (Trapdoor function). Tức là một hàm toán học mà: Đi xuôi (mã hóa) thì cực kỳ dễ, nhưng Đi ngược (giải mã) thì vô phương cứu chữa... trừ khi bạn có một "cửa sập bí mật" (Private Key). Định lý Euler chính là công cụ toán học hoàn hảo để xây dựng cái "cửa sập" này.
+> - **Mục đích:** 
+>   Mục tiêu tối thượng của mã hóa Bất đối xứng là tạo ra một "Hàm một chiều" (Trapdoor function) - một hàm toán học mà: Đi xuôi (mã hóa) thì cực kỳ dễ, nhưng Đi ngược (giải mã) thì vô phương cứu chữa... trừ khi bạn có một "cửa sập bí mật" (Private Key). Định lý Euler chính là công cụ toán học hoàn hảo để xây dựng "cửa sập" này.
 > 
-> - **Nguyên lý cốt lõi (Nó hoạt động dựa trên nguyên lý nào?):**
->   Mọi thứ bắt nguồn từ sự bất đối xứng trong bài toán thừa số nguyên tố:
->   - Rất DỄ để lấy 2 số nguyên tố khổng lồ $p$ và $q$ nhân lại với nhau để ra một tích số $n$ (Máy tính mất $0.001$ giây).
+> - **Nguyên lý cốt lõi (Sự bất đối xứng của bài toán phân tích thừa số nguyên tố):**
+>   - Rất DỄ để lấy 2 số nguyên tố khổng lồ $p$ và $q$ nhân lại với nhau để ra một tích số $n$ (Máy tính chỉ mất vài mili-giây).
 >   - Nhưng cực kỳ KHÓ để làm ngược lại: Đưa cho siêu máy tính tích số $n$, yêu cầu nó phân tích ngược ra $p$ và $q$. 
->   *Góc nhìn Toán học (Tại sao lại khó?)*: Với một con số hợp số bình thường (như 24), nó có vô số cách phân tích ($2 \times 12, 3 \times 8, 4 \times 6$). Máy tính chỉ cần thử vài phép chia là có thể "khoanh vùng" tìm ra quy luật rất nhanh. Tuy nhiên, tích $n$ của 2 số nguyên tố là một "vùng đất chết" (Semi-prime). Nó CHỈ chia hết cho $p$ và $q$. Mà các số nguyên tố thì xuất hiện hoàn toàn ngẫu nhiên trên trục số, không tuân theo bất kỳ phương trình dự đoán nào. Do đó, máy tính không có "đường tắt" (shortcut), buộc phải mò mẫm (brute-force) chia thử cho từng số lẻ một từ 3 cho tới tận căn bậc hai của $n$. Khi $n$ là một số dài 600 chữ số, tập hợp các phép thử này lớn hơn tổng số nguyên tử trong vũ trụ. Quá trình chia mò mẫm vô vọng này ngốn của siêu máy tính... hàng triệu năm.
->   Định lý Phi Euler, ký hiệu là $\phi(n)$, chính là cầu nối. Xin lưu ý: **$\phi(n)$ hoàn toàn khác với $n$**. 
->   Số $n$ đơn thuần chỉ là tích ($n = p \times q$). Còn $\phi(n)$ là "tổng số lượng các con số nguyên tố cùng nhau với $n$". 
->   *(Ghi chú: Hai số được gọi là "nguyên tố cùng nhau" - Coprime - nếu chúng KHÔNG có bất kỳ ước số chung nào ngoài số 1. Ví dụ đếm thử $\phi(10)$: Đếm các số từ 1 đến 9 xem số nào "trong sạch" với 10.*
->   *- Số 1, 3, 7, 9: Nhận (Vì không có ước chung với 10).*
->   *- Số 2, 4, 6, 8: Loại (Vì cùng chia hết cho 2).*
->   *- Số 5: Loại (Vì cùng chia hết cho 5).*
->   *-> Tổng cộng đếm được 4 số. Vậy $\phi(10) = 4$).*
+>   *Góc nhìn Toán học:* Với một hợp số bình thường (như 24), nó có vô số cách phân tích ($2 \times 12, 3 \times 8, 4 \times 6$). Máy tính có thể tìm ra quy luật rất nhanh. Tuy nhiên, tích $n$ của 2 số nguyên tố là một "vùng đất chết" (Semi-prime). Nó CHỈ chia hết cho đúng $p$ và $q$. Do các số nguyên tố không tuân theo quy luật dự đoán nào, siêu máy tính buộc phải chia thử (brute-force) từng số lẻ một. Khi $n$ đủ lớn (vd: 600 chữ số), tập hợp các phép thử này lớn hơn cả số nguyên tử trong vũ trụ, ngốn hàng triệu năm để giải.
+> 
+> - **Cầu nối Toán học - Hàm Phi Euler $\phi(n)$:**
+>   Hàm $\phi(n)$ đếm "tổng số lượng các con số nhỏ hơn $n$ và nguyên tố cùng nhau với $n$". 
+>   *(Ghi chú cực kỳ quan trọng: Đừng nhầm lẫn giữa "Số nguyên tố" và "Hai số nguyên tố cùng nhau". Hai số là "nguyên tố cùng nhau" (Coprime) nếu chúng KHÔNG có ước số chung nào ngoài số 1. Bản thân từng số đó KHÔNG bắt buộc phải là số nguyên tố! Ví dụ: Xét $\phi(10)$, các số 1, 3, 7, 9 không có ước chung nào với 10 nên được nhận. Nhận thấy số 9 vốn không phải là số nguyên tố (vì chia hết cho 3), nhưng 9 và 10 lại là "nguyên tố cùng nhau" vì chúng không có chung bảng cửu chương. Tổng cộng ta đếm được 4 số $\rightarrow \phi(10) = 4$).*
 >   
->   Điểm kỳ diệu của toán học nằm ở đây:
->   - **Mục đích của $\phi(n)$ không phải là lấy các con số coprime đó ra phân phát cho User**. $\phi(n)$ chỉ là một "hằng số đếm" trung gian. Khi có được số đếm này, Toán học Euler chứng minh rằng $M^{\phi(n)} \equiv 1 \pmod{n}$. Từ cái mỏ neo bằng 1 này, Server mới chế tạo ra được cặp khóa $(e, d)$ sao cho $e \times d \equiv 1 \pmod{\phi(n)}$. Tạo xong cặp khóa thì giá trị $\phi(n)$ hết nhiệm vụ. Server chỉ cần tạo 1 cặp khóa duy nhất này để dùng chung cho hàng triệu User.
->   - Theo định nghĩa, nếu $p$ là số nguyên tố, mọi số nhỏ hơn $p$ đều không chia hết cho nó. Suy ra $\phi(p) = p - 1$.
->   - Vì hàm Phi Euler có tính chất nhân (multiplicative) đối với 2 số nguyên tố cùng nhau, nên $\phi(n) = \phi(p \times q) = \phi(p) \times \phi(q) = (p - 1) \times (q - 1)$.
->   - Nhờ vậy, nếu bạn nắm giữ $p$ và $q$ (như Server), bạn có thể tính ra lượng số $\phi(n)$ cực nhanh bằng công thức tắt: $(p-1) \times (q-1)$.
->   - Còn nếu bạn CHỈ bắt được số $n$ trôi nổi trên mạng (như Hacker), bạn không có bất kỳ công thức nào để tính ra $\phi(n)$, trừ khi bạn giải được bài toán đập vỡ $n$ ra thành $p$ và $q$ (mất hàng triệu năm).
+>   **Cách tính $\phi(n)$ cực kỳ thú vị:**
+>   - Theo định nghĩa, nếu $p$ là số nguyên tố, mọi số nhỏ hơn $p$ đều nguyên tố cùng nhau với nó $\rightarrow \phi(p) = p - 1$.
+>   - Vì hàm Phi có tính chất nhân (multiplicative) $\rightarrow \phi(n) = \phi(p \times q) = \phi(p) \times \phi(q) = (p - 1) \times (q - 1)$.
+>   - Nhờ vậy, nếu bạn là **Server** (biết trước $p$ và $q$), bạn tính ra $\phi(n)$ ngay lập tức.
+>   - Nếu bạn là **Hacker** (chỉ biết số $n$ trôi nổi trên mạng), bạn vĩnh viễn không thể tính ra $\phi(n)$ trừ khi bạn đập vỡ được $n$ ra thành $p$ và $q$.
 > 
-> - **Áp dụng vào bài toán RSA (Tại sao nó giải quyết được bài toán?):**
->   Toán học gia Euler đã chứng minh một định lý vĩ đại: Mọi con số $M$ (nếu nguyên tố cùng nhau với $n$) khi đem lũy thừa cho $\phi(n)$ rồi chia lấy dư cho $n$, thì phần dư LUÔN LUÔN BẰNG 1. Công thức: $M^{\phi(n)} \equiv 1 \pmod{n}$.
->   *Ví dụ chứng minh:* Ở trên ta tính được $\phi(10) = 4$. Hãy chọn một số $M = 3$ (nguyên tố cùng nhau với 10). Ta thử lấy $3^{\phi(10)} = 3^4 = 81$. Đem $81$ chia lấy dư cho $10$, ta được phần dư chính xác bằng $1$. (Dù bạn chọn $M=7$, thì $7^4 = 2401$, đem chia 10 cũng vẫn dư 1!).
+> - **Định lý Euler - Trái tim của RSA:**
+>   Toán học gia Euler chứng minh rằng: Mọi con số $M$ (nếu nguyên tố cùng nhau với $n$) khi đem lũy thừa cho $\phi(n)$ rồi chia lấy dư cho $n$, phần dư LUÔN LUÔN BẰNG 1. 
+>   Công thức: **$M^{\phi(n)} \equiv 1 \pmod{n}$**.
+>   *Ví dụ:* $\phi(10) = 4$. Chọn $M = 3$. Ta có $3^4 = 81$. Đem $81$ chia $10$ dư đúng $1$.
 > 
->   Từ "cái mỏ neo bằng 1" tuyệt đẹp này, thuật toán RSA chế tạo ra cặp khóa sinh đôi $e$ (Public) và $d$ (Private) sao cho tích $e \times d$ lớn hơn một bội số của $\phi(n)$ đúng 1 đơn vị. Nghĩa là: $e \times d = k \times \phi(n) + 1$.
->   Hệ quả sinh ra một phép màu Toán học:
+>   **Tại sao lại sinh ra công thức $e \times d = k \times \phi(n) + 1$?**
+>   Ba nhà khoa học RSA cần tìm một cách để "triệt tiêu số mũ", tức là họ cần giải bài toán: **$M^{e \times d} \equiv M$** (Mã hóa xong giải mã phải ra đúng chữ gốc). 
+>   Họ nhìn vào chân lý của Euler và suy luận ngược:
+>   - Nếu $M^{\phi(n)}$ luôn sinh ra $1$, thì đem lũy thừa lên $k$ lần cũng vẫn bằng $1$: $(M^{\phi(n)})^k = 1^k = 1 \rightarrow M^{k \times \phi(n)} \equiv 1$.
+>   - Nhân thêm một số $M$ vào cả hai vế: $M^{k \times \phi(n)} \times M \equiv 1 \times M \rightarrow$ **$M^{k \times \phi(n) + 1} \equiv M$**.
+>   
+>   Đối chiếu bài toán RSA cần giải (**$M^{e \times d} \equiv M$**) với phương trình vừa suy ra (**$M^{k \times \phi(n) + 1} \equiv M$**), ta thấy hai số mũ bắt buộc phải bằng nhau!
+>   Đó là lý do RSA quy định điều kiện bắt buộc để chọn cặp khóa $(e, d)$ là: **$e \times d = k \times \phi(n) + 1$**.
+>
+>   Nhờ điều kiện này, hệ quả sinh ra một phép màu Toán học:
 >   $M^{(e \times d)} = M^{k \times \phi(n) + 1} = (M^{\phi(n)})^k \times M$
->   Mà theo định lý Euler, cụm $M^{\phi(n)}$ luôn bằng $1$. Nên phương trình lập tức rút gọn thành: $1^k \times M = M$.
+>   Mà cụm $M^{\phi(n)}$ luôn bằng $1$. Nên phương trình rút gọn thành: $1^k \times M = M$.
 >   **Kết luận tối thượng:** **$M^{(e \times d)} \equiv M \pmod{n}$**.
->   Nghĩa là: Nếu bạn lấy dữ liệu gốc $M$, đem mũ $e$ (Mã hóa bằng Public Key), rồi lại đem mũ tiếp cho $d$ (Giải mã bằng Private Key), số mũ sẽ tự động triệt tiêu và trả về đúng dữ liệu $M$ ban đầu một cách hoàn hảo!
+>   Nghĩa là: Lấy dữ liệu $M$, đem mũ $e$ (Mã hóa), rồi lại đem mũ $d$ (Giải mã), số mũ tự động triệt tiêu và trả về đúng dữ liệu $M$ ban đầu!
 > 
-> - **Sự phân vai Đích đáng (Ai cầm cái gì?):**
->   Server (Người tạo khóa) biết $p$ và $q$ -> Dễ dàng tính được $\phi(n)$ -> Tính ra được chìa khóa bí mật $d$.
->   Hacker (Kẻ cắp) chỉ nhìn thấy số $n$ trên mạng -> Không thể tính ra $\phi(n)$ -> Vĩnh viễn không thể tìm ra $d$. 
->   Đây chính là bức tường thành Toán học bảo vệ toàn bộ mạng lưới Internet.
-> 
-> **3. Khóa là gì? (Ứng dụng thực tế Định lý Euler với 3 con số `e`, `d`, `n`):** 
-> Server chọn 2 số nguyên tố ngẫu nhiên (Lấy ví dụ với số cực nhỏ: $p=11$, $q=3$).
-> - Tính số **n** (Modulus - Vũ trụ số học): $n = p \times q = 33$. (Mọi phép tính mã hóa sẽ bị giam lỏng trong vòng tròn 33 này).
-> - Tính **Hàm Phi Euler** $\phi(n)$ (Số lượng các số nguyên tố cùng nhau với n): Công thức $\phi(n) = (p-1) \times (q-1) = 10 \times 2 = 20$.
-> - Tìm số **e** (Encrypt Exponent - Khóa mã hóa): Chọn một số `e` sao cho `e` nhỏ hơn $\phi(n)$ và không có ước chung nào với $\phi(n)$. Ta chọn được **e = 3** (vì 3 và 20 là nguyên tố cùng nhau).
-> - Tìm số **d** (Decrypt Exponent - Khóa giải mã): Tìm số `d` sao cho $(d \times e)$ chia lấy dư cho $\phi(n)$ bằng 1. Tức là $(d \times 3) \pmod{20} = 1$. Nhẩm tính nhanh: $7 \times 3 = 21$; $21$ chia $20$ dư $1$. Vậy ta tính ra được **d = 7**.
+> **3. Ứng dụng thực tế Định lý Euler với cặp khóa `(e, d)`:** 
+> Server chọn 2 số nguyên tố ngẫu nhiên (Ví dụ cực nhỏ: $p=11$, $q=3$).
+> - Tính **$n$** (Modulus): $n = p \times q = 33$. (Mọi phép tính bị giam trong vòng tròn 33).
+> - Tính **$\phi(n)$**: $\phi(n) = (11-1) \times (3-1) = 10 \times 2 = 20$.
+> - Tìm khóa mã hóa **$e$** (Public): Chọn $e < \phi(n)$ và nguyên tố cùng nhau với $\phi(n)$. Chọn $e = 3$.
+> - Tìm khóa giải mã **$d$** (Private): Tìm $d$ sao cho $(d \times e) \pmod{\phi(n)} = 1$. Tức là $(d \times 3) \pmod{20} = 1$. Nhẩm tính: $7 \times 3 = 21$, chia 20 dư 1. Vậy $d = 7$.
+> $\rightarrow$ Server công bố Public Key $(e=3, n=33)$ và giấu kín Private Key $(d=7)$.
 > -> Server ném Public Key **(e=3, n=33)** ra Internet công cộng. Server giấu chặt Private Key **(d=7, n=33)** trong két sắt.
 > 
 > **4. Client Mã hóa (Công thức: `C = M^e mod n`):** 

@@ -5,11 +5,65 @@ Tài liệu này định nghĩa kiến trúc hệ thống, quy trình khai báo 
 ---
 
 ## 1. Kiến trúc Hệ thống (System Architecture)
-- **Compute Provider**: Nền tảng cung cấp máy ảo (Ví dụ: AWS EC2, GCP Compute Engine, Azure VM).
-- **Network & Security**: Hạ tầng mạng (VPC), Tường lửa (Firewall / Security Group).
-- **DNS & Proxy Provider**: Nền tảng phân giải tên miền và bảo mật (Ví dụ: Cloudflare DNS, WAF).
-- **Network Topology**: Client -> Cloud Proxy (Port 443/80) -> Public Subnet (Port 80) -> Reverse Proxy nội bộ -> App Containers.
 
+### 1.1. Các thành phần cốt lõi (Core Components)
+
+#### 1.1.1. Các khối cú pháp chính trong Terraform:
+- **Provider (Nền tảng kết nối):** Đóng vai trò cầu nối. Terraform sẽ thao tác gọi API tới các Provider này (ví dụ: AWS cho máy ảo, Cloudflare cho tên miền) để cấp phát tài nguyên thực tế.
+- **Data (Truy vấn dữ liệu):** Dùng để lấy thông tin của các tài nguyên **đã tồn tại sẵn** do Provider cung cấp. Việc này giúp đóng gói thông tin (ví dụ: ID của bản OS mới nhất), tăng tính tái sử dụng và tránh sai sót do cấu hình thủ công.
+- **Resource (Tài nguyên):** Khối khai báo các tài nguyên **cần được quản lý (tạo mới, cập nhật, xóa)** trên Cloud (như máy ảo, mạng, tường lửa). Các tài nguyên này có thể được cấu hình độc lập hoặc nhận dữ liệu tham chiếu từ khối `Data`.
+
+#### 1.1.2. Các khối tài nguyên Hạ tầng quan trọng:
+- **Network & Security (Mạng & Bảo mật):** Đây là phần cốt lõi bảo vệ hệ thống:
+  1. **Hạ tầng mạng ảo (VPC):** Khoanh vùng mạng độc lập cho dự án. Vì Cloud là môi trường dùng chung phần cứng vật lý (Multi-tenant), VPC giúp cô lập hệ thống của bạn với các khách hàng khác, ngăn chặn triệt để nguy cơ bị rà quét IP/Port hay bị "nghe lén" gói tin. 
+  2. **Kiểm soát truy cập:** Áp dụng nguyên tắc "đặc quyền tối thiểu". Chỉ mở những Port/IP thực sự cần thiết. Càng ít đường vào, hệ thống càng an toàn, giúp DevOps dễ dàng kiểm soát và truy vết khi có sự cố.
+  3. **Phân mảnh mạng (Subnetting):** Tiếp tục chia nhỏ VPC thành các mạng nội bộ cho từng cụm service/database. Nếu một cụm bị tấn công, sự cố sẽ không thể lây lan (Lateral Movement) sang vùng khác. Khi khác dải mạng, luồng dữ liệu buộc phải đi qua Router và sẽ bị Tường lửa đánh chặn hoặc DevOps có thể cấu hình cách ly nóng ngay lập tức.
+- **DNS & Proxy Provider (Phân giải tên miền & Reverse Proxy):** Hệ thống phân giải DNS và bảo vệ tại biên (Ví dụ: Cloudflare). Cơ chế **Reverse Proxy (Đảo ngược Proxy)** hoạt động như sau:
+  1. **Nhận Request:** Khi người dùng truy cập Domain, trình duyệt phân giải DNS và gửi Request tới máy chủ của Cloudflare (thay vì server gốc).
+  2. **Đánh chặn & Quét (WAF):** Cloudflare chặn Request lại để lọc DDoS và quét các cuộc tấn công web (SQL Injection, XSS...).
+  3. **Đại diện kết nối:** Nếu Request an toàn, Cloudflare đối chiếu bản ghi để tìm IP Public thực sự của Server AWS. Sau đó nó đứng ra làm đại diện gửi Request đó tới AWS.
+  4. **Trả kết quả:** Server AWS xử lý xong trả Response về cho Cloudflare, Cloudflare cầm kết quả trả lại cho Client. Nhờ vậy, IP thật của AWS được ẩn giấu và bảo vệ 100%.
+- **Network Topology (Mô hình Định tuyến):** Tổng quan luồng đi của dữ liệu (Traffic Flow) sẽ diễn ra theo trình tự khép kín:
+  1. `Client`: Thiết bị của người dùng (Mobile App, Web Browser) khởi tạo Request.
+  2. `Cloud Proxy (Port 443/80)`: Trạm gác Cloudflare. Tiếp nhận Request, giải mã HTTPS (Port 443), lọc mã độc, và mã hóa lại trước khi gửi đi.
+  3. `Public Subnet (Port 80)`: Vùng đệm mạng trên AWS (DMZ). Chứa điểm tiếp nhận (như Load Balancer hoặc Nginx Edge Server).
+  4. `Internal Reverse Proxy`: Máy chủ Nginx nội bộ. Nhận Request từ vùng đệm, phân tích URL (ví dụ `/api/auth` hay `/api/media`) để điều phối (Routing) luồng dữ liệu.
+  5. `App Containers`: Các container Docker chứa mã nguồn xử lý logic kinh doanh (Auth, Matching, Media). Nằm sâu trong vùng Private, không bao giờ lộ mặt ra Internet.
+
+#### 1.1.3. Giao thức Quản trị (SSH) & Lựa chọn Hệ điều hành Server
+- **SSH (Secure Shell) là gì? Tại sao phải dùng nó?**
+  - **Bản chất (Nó giải quyết bài toán gì?):** Các máy chủ Cloud (đặc biệt là Linux) thường **KHÔNG CÓ Giao diện Đồ họa (GUI)**. Bạn không thể cắm dây cáp màn hình vào máy ảo đặt tại Singapore được. Bài toán là: *Làm sao để một kỹ sư ở Việt Nam gõ một lệnh trên Terminal/Powershell của máy tính cá nhân, và lệnh đó được thực thi ngay trên máy chủ ở Singapore?* SSH sinh ra để làm "sợi dây cáp tàng hình" đó. Nó cho phép bạn mở Terminal ở máy nhà, nhưng thực chất là đang điều khiển máy chủ từ xa.
+  - **Bảo mật (Chữ "Secure" trong SSH nghĩa là gì?):** 
+    - *Chuyện gì xảy ra nếu không dùng SSH?* Ngày xưa, người ta dùng giao thức **Telnet** (gõ lệnh từ xa không mã hóa). Nếu dùng Terminal thuần bằng Telnet và bạn gõ `password: 123456`, đoạn text đó truyền qua hàng trăm trạm trung chuyển Internet dưới dạng chữ thô (Plain Text). Bất kỳ hacker nào dùng tool "bắt gói tin" (Wireshark) đều có thể đọc được mật khẩu của bạn dễ như ăn kẹo.
+    - *Cách SSH bảo vệ:* SSH áp dụng **Mật mã bất đối xứng (Asymmetric Cryptography)** với Public Key và Private Key. Khi bạn gõ `123456`, SSH lập tức băm nó thành chuỗi vô nghĩa `hj!@#dsd890` trước khi gửi đi. Hacker bắt được gói tin này trên đường truyền cũng vô dụng vì không có Private Key (chỉ được lưu ẩn trên máy tính cá nhân của bạn) để giải mã.
+  - **Ưu điểm:**
+    - **Bảo mật tuyệt đối:** Chống nghe lén (Sniffing) và chống giả mạo máy chủ (Man-in-the-middle).
+    - **Đăng nhập không cần Password:** SSH hỗ trợ xác thực bằng Key Pair (file `.pem` bạn hay tải từ AWS). Nếu dùng Key, dù hacker có dò mật khẩu (Brute-force) hàng triệu lần cũng không thể vào được server vì Server đã cấm hoàn toàn việc gõ password.
+    - **Đa dụng:** SSH không chỉ để gõ lệnh. Nó còn tạo "Hầm bí mật" (SSH Tunneling) để chui vào các vùng mạng Private nội bộ một cách an toàn.
+  - **Nhược điểm:**
+    - Yêu cầu người dùng phải quen xài dòng lệnh (CLI).
+    - **Rủi ro mất Key:** Nếu bạn làm mất file Private Key, bạn sẽ mất quyền truy cập vĩnh viễn vào server đó (vì không cho gõ password nữa). Nếu lộ Key vào tay kẻ gian, hệ thống coi như sập.
+    - Vì cổng mặc định của SSH là 22, nó luôn là mục tiêu bị các con Botnet trên mạng càn quét 24/7.
+- **So sánh OS (Hệ điều hành) Server: Tại sao Linux là vua?**
+  1. **Linux (Ubuntu, CentOS, Alpine...):** 
+     - *Ưu điểm:* Mã nguồn mở, hoàn toàn **Miễn phí** (không tốn phí bản quyền License). Siêu nhẹ: một server Linux không có giao diện chỉ tốn khoảng 100MB-200MB RAM để chạy hệ điều hành (dành toàn bộ tài nguyên còn lại cho ứng dụng). Độ ổn định cực kỳ cao (chạy hàng năm trời không cần Restart). Là môi trường gốc rễ sản sinh ra Docker và Kubernetes.
+     - *Nhược điểm:* Khó học với người mới, đòi hỏi DevOps phải thuộc lòng các câu lệnh (CLI commands) thay vì click chuột.
+  2. **Windows Server:**
+     - *Ưu điểm:* Có giao diện đồ họa (GUI) trực quan y hệt máy cá nhân, dễ làm quen bằng cách click chuột. Phù hợp nếu công ty đang bị khóa chặt (Vendor Lock-in) vào hệ sinh thái của Microsoft (như code C# .NET đời cũ, dùng SQL Server, quản lý bằng Active Directory).
+     - *Nhược điểm:* **Chi phí cực đắt** (phải đóng phí bản quyền cho Microsoft theo từng nhân CPU). Quá nặng nề (HĐH tốn vài GB RAM và hàng chục GB ổ cứng chỉ để render cái giao diện hình ảnh đồ họa). Thường xuyên phải khởi động lại (Restart) mỗi khi cập nhật (Update), gây gián đoạn dịch vụ.
+  3. **macOS Server:**
+     - *Ưu điểm:* Môi trường Unix tuyệt vời. **Bắt buộc** phải dùng nếu công ty bạn làm luồng CI/CD (tự động hóa build app) cho ứng dụng iOS/macOS (vì Apple cấm build code iOS trên HĐH khác).
+     - *Nhược điểm:* Apple không bán HĐH rời cho các nhà cung cấp Cloud. Để có macOS trên Cloud, bạn phải thuê nguyên một chiếc máy tính "Mac Mini vật lý" đặt ở Data Center (Dedicated Host). Chi phí đắt khủng khiếp và cực kỳ khó nhân bản (scale) so với việc khởi tạo máy ảo linh hoạt.
+  - **Kết luận:** Người ta luôn chọn **Linux** làm tiêu chuẩn vàng cho Server/Cloud deployment vì 3 tiêu chí cốt lõi: **Miễn phí, Tiết kiệm tài nguyên (Siêu nhẹ), và Độ ổn định cao.** Windows chỉ dùng khi bất đắc dĩ bị ép framework, còn macOS chỉ dùng làm máy build app iOS.
+
+### 1.2. Terraform State (`terraform.tfstate`)
+- **Bản đồ Hạ tầng (Mapping & Metadata):** Là nơi lưu trữ trạng thái hiện tại của hạ tầng và thứ tự phụ thuộc của tài nguyên (cái nào tạo trước, cái nào tạo sau). Nhờ đó, Terraform biết chính xác cần thêm, xóa, sửa tài nguyên nào và theo trình tự nào.
+- **Lưu trữ sự ràng buộc (Bindings):** Ví dụ, khi bạn tạo máy ảo bằng lệnh `resource "aws_instance" "web" {}`, Terraform sẽ ghi vào file state rằng: *block code "web" tương ứng với máy ảo có ID `i-1234567890abcdef0` trên AWS*. Lần sau nếu bạn sửa cấu hình của block "web", Terraform biết chính xác phải sửa ID nào trên thực tế.
+- **Tối ưu Hiệu năng (Performance):** Nếu không có file state, Terraform sẽ bị "mù". Mỗi lần chạy lệnh, nó sẽ phải gọi API bắt AWS liệt kê toàn bộ tài nguyên của tài khoản ra để dò tìm. Việc này cực kỳ chậm và dễ bị chặn (Rate Limit). State giúp Terraform tra cứu trực tiếp bằng ID siêu nhanh.
+- **Cơ chế hoạt động (Refresh ➡️ Plan ➡️ Apply):** Trước khi quyết định thay đổi hạ tầng, Terraform thực hiện quy trình sau:
+  1. **Refresh (Cập nhật thực tại):** Đọc file state để lấy danh sách ID, sau đó gọi API lên Cloud kiểm tra hiện trạng thực tế của các ID này (đề phòng trường hợp ai đó lén sửa bằng tay trên giao diện Web). Nếu có sai lệch, nó ngầm cập nhật lại file state.
+  2. **Plan (Lập kế hoạch):** Lấy source code (`.tf`) so sánh với file state (vừa được refresh) để phát hiện thay đổi, từ đó in ra màn hình Kế hoạch thực thi.
+  3. **Apply (Áp dụng):** Chờ người dùng (DevOps) review. Nếu OK, Terraform mới thực sự gọi API lên Cloud để áp dụng các sửa đổi.
 ---
 
 ## 2. Nguyên lý Đồ thị Phụ thuộc (Dependency Graph)
@@ -87,10 +141,15 @@ resource "aws_subnet" "logistic_public_subnet" {
 }
 ```
 **Bản chất Kiến trúc chuyên sâu (Deep Architecture Essence):**
-- **VPC (Virtual Private Cloud - Network Perimeter):** 
-  - *Định nghĩa:* Là một vùng mạng riêng ảo độc lập hoàn toàn trên cơ sở hạ tầng AWS. VPC đóng vai trò là Network Perimeter (Vòng đai mạng) cô lập hoàn toàn hệ thống Logistic khỏi phần còn lại của Internet.
-  - *Tại sao phải tạo Custom VPC?* AWS cung cấp sẵn một Default VPC với cấu hình định tuyến rất lỏng lẻo (tất cả Subnet đều Public). Đối với hệ thống Enterprise đòi hỏi tính bảo mật dữ liệu cao, ta phải tuân thủ nguyên tắc **Zero Trust Network**. Việc tự định nghĩa Custom VPC từ con số 0 đảm bảo không một kết nối nào được phép ra/vào trừ khi được khai báo tường minh.
-  - *CIDR Block*: Cấu hình `10.0.0.0/16` áp dụng **RFC 1918** (Dải IP Private, không định tuyến được trên Internet toàn cầu), giúp hệ thống hoàn toàn ẩn danh. Prefix `/16` cung cấp không gian 65,536 IP, đáp ứng hoàn hảo khả năng Scale-out (Mở rộng theo chiều ngang) cho các cụm Microservices/Containers sau này.
+- **VPC (Virtual Private Cloud) - Bản chất Backbone của Điện toán Đám mây:** 
+  - **1. Nó là gì? (Bản chất):** VPC là một không gian mạng ảo (Software-Defined Networking) độc lập và bị cô lập hoàn toàn về mặt logic trên cơ sở hạ tầng vật lý của AWS. Nó chính là "Bao bì" (Network Perimeter) gói gọn toàn bộ kiến trúc (EC2, RDS, Load Balancer) vào một Data Center riêng tư ảo của bạn trên Cloud.
+  - **2. Tại sao các hệ thống Cloud lại sinh ra khái niệm này?** Thời kỳ đầu (trước 2009), AWS sử dụng mạng "EC2-Classic": Máy ảo của bạn, của đối thủ cạnh tranh, và của Hacker đều bị ném chung vào một mạng lưới phẳng khổng lồ (Flat Network). Các khách hàng chia sẻ chung cơ sở hạ tầng mạng (Multi-tenant) dẫn đến nguy cơ bảo mật cực kỳ khủng khiếp (Bị rà quét IP chéo nhau). Để cứu vãn lỗ hổng chết người này, AWS buộc phải đẻ ra VPC, sử dụng công nghệ ảo hóa mạng để "chia lô", đảm bảo máy ảo của công ty A vĩnh viễn không thể "nhìn thấy" gói tin mạng của công ty B.
+  - **3. Nó tồn tại để giải quyết bài toán gì?** Bài toán "Tính riêng tư trên một phần cứng công cộng" (Privacy on Public Cloud). VPC cho phép bạn mang nguyên xi cấu trúc mạng LAN ở dưới mặt đất (IP nội bộ, Router, Subnet, Firewall) lên thẳng Cloud mà không sợ bị trùng lặp IP hay lộ lọt dữ liệu ra ngoài Internet. Nhờ áp dụng dải IP Private (`10.0.0.0/16` theo chuẩn RFC 1918), hệ thống hoàn toàn vô hình trước các máy quét trên Internet.
+  - **4. Thiếu nó sẽ ra sao?** Hệ thống của bạn sẽ phơi mình 100% ra Public Internet giống như một chiếc máy tính ngoài quán Net. Không có ranh giới mạng, không có khả năng ẩn giấu Database (Private Subnet), mọi EC2 khởi tạo ra đều buộc phải gánh IP Public và chịu những đợt tấn công DDoS, Brute-force vô tận từ Hacker 24/7.
+  - **5. Cái giá phải trả (Trade-off) của VPC là gì?** 
+    - *Độ phức tạp (Complexity):* Chuyển gánh nặng quản trị mạng từ tay AWS sang tay kỹ sư DevOps. Bạn phải tự quy hoạch Routing Table, NAT Gateway, Internet Gateway, Subnetting. Sai một ly (cấu hình sai Route) là toàn bộ máy chủ bị ngắt kết nối (Network Outage) dẫn tới sập hệ thống.
+    - *Chi phí ẩn (Hidden Cost):* Bản thân VPC thì miễn phí, nhưng các thành phần giải quyết bài toán "đi xuyên qua VPC" lại đắt đỏ. Ví dụ: NAT Gateway (công cụ để Private Subnet chui ra Internet tải báo cáo/update) tính phí theo mỗi GB dữ liệu đi qua. Càng bảo mật, chi phí truyền tải càng cao.
+  - **6. Tại sao lại dùng Custom VPC mà cạch mặt Default VPC?** AWS luôn cấp sẵn một "Default VPC" cho tài khoản mới. Nhưng nó được thiết kế quá dễ dãi: TẤT CẢ các Subnet bên trong đều tự động nối thẳng ra Internet (Tất cả đều là sân trước). Dùng Default VPC cho hệ thống Enterprise chứa thông tin khách hàng (Logistic) là một thảm họa bảo mật. Việc tự code ra Custom VPC đảm bảo nguyên lý tối thượng **Zero Trust**: Bắt đầu từ số 0, mọi cánh cửa mặc định là khóa kín tuyệt đối, cho đến khi kỹ sư chủ động cấu hình mở ra từng lỗ một.
 
 - **Public Subnet (DMZ / Public-Facing Subnet):** 
   - *Định nghĩa:* Quá trình phân đoạn mạng (Network Segmentation). Phân mảnh không gian `/16` khổng lồ thành các vùng nhỏ hơn (Subnet) để gán Routing Policies (Chính sách định tuyến) chuyên biệt. Dải `10.0.1.0/24` cấp phát 256 IP cho cụm máy chủ Public.
