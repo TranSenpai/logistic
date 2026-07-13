@@ -234,46 +234,58 @@ Thay vì đắn đo chọn 1 trong 2, TLS đã kết hợp cả hai để tạo 
 > 
 > - **Định lý Euler - Trái tim của RSA:**
 >   Toán học gia Euler chứng minh rằng: Mọi con số $M$ (nếu nguyên tố cùng nhau với $n$) khi đem lũy thừa cho $\phi(n)$ rồi chia lấy dư cho $n$, phần dư LUÔN LUÔN BẰNG 1. 
->   Công thức: **$M^{\phi(n)} \equiv 1 \pmod{n}$**.
+>   Công thức: **$M^{\phi(n)}$ % $n = 1$**.
 >   *Ví dụ:* $\phi(10) = 4$. Chọn $M = 3$. Ta có $3^4 = 81$. Đem $81$ chia $10$ dư đúng $1$.
 > 
 >   **Tại sao lại sinh ra công thức $e \times d = k \times \phi(n) + 1$?**
->   Ba nhà khoa học RSA cần tìm một cách để "triệt tiêu số mũ", tức là họ cần giải bài toán: **$M^{e \times d} \equiv M$** (Mã hóa xong giải mã phải ra đúng chữ gốc). 
+>   Ba nhà khoa học RSA cần tìm một cách để "triệt tiêu số mũ", tức là họ cần giải bài toán: **$M^{e \times d}$ % $n = M$** (Mã hóa xong giải mã phải ra đúng chữ gốc). 
 >   Họ nhìn vào chân lý của Euler và suy luận ngược:
->   - Nếu $M^{\phi(n)}$ luôn sinh ra $1$, thì đem lũy thừa lên $k$ lần cũng vẫn bằng $1$: $(M^{\phi(n)})^k = 1^k = 1 \rightarrow M^{k \times \phi(n)} \equiv 1$.
->   - Nhân thêm một số $M$ vào cả hai vế: $M^{k \times \phi(n)} \times M \equiv 1 \times M \rightarrow$ **$M^{k \times \phi(n) + 1} \equiv M$**.
+>   - Nếu $M^{\phi(n)}$ % $n$ luôn sinh ra $1$, thì đem lũy thừa lên $k$ lần cũng vẫn bằng $1$: $(M^{\phi(n)})^k = 1^k = 1 \rightarrow M^{k \times \phi(n)}$ % $n = 1$.
+>   - Nhân thêm một số $M$ vào cả hai vế: $M^{k \times \phi(n)} \times M$ % $n = 1 \times M \rightarrow$ **$M^{k \times \phi(n) + 1}$ % $n = M$**.
 >   
->   Đối chiếu bài toán RSA cần giải (**$M^{e \times d} \equiv M$**) với phương trình vừa suy ra (**$M^{k \times \phi(n) + 1} \equiv M$**), ta thấy hai số mũ bắt buộc phải bằng nhau!
+>   Đối chiếu bài toán RSA cần giải (**$M^{e \times d}$ % $n = M$**) với phương trình vừa suy ra (**$M^{k \times \phi(n) + 1}$ % $n = M$**), ta thấy hai số mũ bắt buộc phải bằng nhau!
 >   Đó là lý do RSA quy định điều kiện bắt buộc để chọn cặp khóa $(e, d)$ là: **$e \times d = k \times \phi(n) + 1$**.
+>
+>   *(💡 **Giải phẫu biến k**: Tại sao phải nhét thêm $k$ vào công thức? Nếu rút gọn phương trình trên ta có $d = \frac{\phi(n) + 1}{e}$ (bỏ qua $k$). Về mặt Toán lý thuyết thì đúng, nhưng đưa vào máy tính sẽ **LỖI NGAY LẬP TỨC** nếu phép chia ra số thập phân (vì Mật mã học chỉ chạy bằng số nguyên). Bằng cách nhân $\phi(n)$ lên $k$ lần, biến đệm $k$ linh hoạt này ($k = 1, 2, 3...$) đóng vai trò làm công cụ "trượt", đảm bảo luôn có thể đẩy cái tử số lên đủ lớn để chia chẵn cho $e$. Nó cam kết 100% hệ thống luôn sinh ra được một Private Key $d$ nguyên vẹn, bất chấp bạn chọn Public Key $e$ xấu cỡ nào!)*
 >
 >   Nhờ điều kiện này, hệ quả sinh ra một phép màu Toán học:
 >   $M^{(e \times d)} = M^{k \times \phi(n) + 1} = (M^{\phi(n)})^k \times M$
->   Mà cụm $M^{\phi(n)}$ luôn bằng $1$. Nên phương trình rút gọn thành: $1^k \times M = M$.
->   **Kết luận tối thượng:** **$M^{(e \times d)} \equiv M \pmod{n}$**.
+>   Mà cụm $M^{\phi(n)}$ luôn chia dư ra $1$. Nên phương trình rút gọn thành: $1^k \times M = M$.
+>   **Kết luận:** **$M^{(e \times d)}$ % $n = M$**.
 >   Nghĩa là: Lấy dữ liệu $M$, đem mũ $e$ (Mã hóa), rồi lại đem mũ $d$ (Giải mã), số mũ tự động triệt tiêu và trả về đúng dữ liệu $M$ ban đầu!
+>
+>   **Chạy thử Ví dụ (Thay số vào công thức tự triệt tiêu):**
+>   Giả sử ta dùng bộ số: $n = 33$, $\phi(n) = 20$. Cặp khóa $e = 3$, $d = 7$. Dữ liệu cần mã hóa $M = 4$.
+>   Kiểm tra điều kiện số mũ: $e \times d = 3 \times 7 = 21$. Phân tích theo công thức $k \times \phi(n) + 1$, ta có: $21 = 1 \times 20 + 1$ (tương ứng với $k = 1$).
+>   
+>   Bây giờ ta đem thế số vào chuỗi công thức hệ quả Toán học:
+>   - Bắt đầu với bài toán gốc (Mã hóa rồi giải mã): $M^{(e \times d)}$ % $n$
+>   - Thay số $M, e, d$: $\rightarrow 4^{21}$ % $33$
+>   - Tách số $21$ thành $(1 \times 20 + 1)$: $\rightarrow 4^{(1 \times 20 + 1)}$ % $33$
+>   - Theo luật lũy thừa, bung phép cộng thành phép nhân: $\rightarrow (4^{20})^1 \times 4^1$ % $33$
+>   - *Lúc này Định lý Euler lên tiếng:* Theo Euler, $4^{\phi(33)}$ chính là $4^{20}$. Định lý khẳng định cụm này đem `% 33` thì LUÔN LUÔN BẰNG **$1$**.
+>   - Gạch bỏ $4^{20}$ và thay bằng số $1$: $\rightarrow (1)^1 \times 4$ % $33$
+>   - Phương trình triệt tiêu sạch sẽ: $\rightarrow 1 \times 4$ % $33$ = **$4$**.
+>   Thật kỳ diệu! Cái lũy thừa $20$ khổng lồ đã bốc hơi hoàn toàn nhờ phép màu của định lý Euler, trả lại đúng con số $M = 4$ nguyên vẹn.
 > 
-> **3. Ứng dụng thực tế Định lý Euler với cặp khóa `(e, d)`:** 
-> Server chọn 2 số nguyên tố ngẫu nhiên (Ví dụ cực nhỏ: $p=11$, $q=3$).
-> - Tính **$n$** (Modulus): $n = p \times q = 33$. (Mọi phép tính bị giam trong vòng tròn 33).
-> - Tính **$\phi(n)$**: $\phi(n) = (11-1) \times (3-1) = 10 \times 2 = 20$.
-> - Tìm khóa mã hóa **$e$** (Public): Chọn $e < \phi(n)$ và nguyên tố cùng nhau với $\phi(n)$. Chọn $e = 3$.
-> - Tìm khóa giải mã **$d$** (Private): Tìm $d$ sao cho $(d \times e) \pmod{\phi(n)} = 1$. Tức là $(d \times 3) \pmod{20} = 1$. Nhẩm tính: $7 \times 3 = 21$, chia 20 dư 1. Vậy $d = 7$.
-> $\rightarrow$ Server công bố Public Key $(e=3, n=33)$ và giấu kín Private Key $(d=7)$.
-> -> Server ném Public Key **(e=3, n=33)** ra Internet công cộng. Server giấu chặt Private Key **(d=7, n=33)** trong két sắt.
+> **3. Ứng dụng thực tế: Toàn cảnh 9 Bước hoạt động của RSA:** 
 > 
-> **4. Client Mã hóa (Công thức: `C = M^e mod n`):** 
-> Trình duyệt nhận được `(3, 33)`. Nó mã hóa số `M = 4` bằng phương trình duy nhất: Lũy thừa và chia lấy phần dư.
-> Lấy $4^3 = 64$. Đem $64$ chia lấy phần dư cho $33$ ta được phần dư là $31$.
-> -> Kết quả sinh ra con số rác rưởi là **C = 31** (Ciphertext). Khối byte `31` này được gửi qua cáp đại dương.
-> 
-> **5. Hàm một chiều chặn đứng Hacker:** 
-> Phép chia lấy dư (Modulo) là **Hàm một chiều**. Hacker bắt lén trên mạng được số dư là `31`, vĩnh viễn không thể suy ngược ra số gốc là `4` (vì có hàng ngàn số đem chia 33 cũng dư 31). Do đó, Public Key `e` chỉ có thể tiến tới chứ không thể lùi lại.
-> 
-> **6. Server giải mã (Công thức: `M = C^d mod n`):** 
-> Server nhận số `C = 31`. Nó lôi chìa khóa vạn năng `d = 7` ra để giải mã:
-> Lấy $31^7 = 27,512,614,111$.
-> Đem $27,512,614,111$ chia lấy phần dư cho $33$. Kết quả trả về phần dư chính xác bằng... **4**. 
-> BÙM! Dữ liệu gốc `M = 4` đã được phục hồi hoàn hảo mà không cần gửi chìa khóa $d$ đi qua mạng.
+> **[GIAI ĐOẠN 1: SERVER TẠO KHÓA]**
+> - **Step 1:** Server random sinh ra 2 số nguyên tố cực lớn ($p$ và $q$). *(Ví dụ thu nhỏ: $p=11$, $q=3$)*.
+> - **Step 2 (Tạo Modulus):** Server nhân lại để tạo ra tích số nguyên tố $n = p \times q$. *(Ví dụ thu nhỏ: $n = 33$)*.
+> - **Step 3 (Hàm Euler):** Server tính nhanh hằng số đếm $\phi(n) = (p-1) \times (q-1)$. *(Ví dụ: $\phi(n) = 10 \times 2 = 20$)*.
+> - **Step 4 (Public Key):** Server chọn một số $e$ sao cho $e < \phi(n)$ và là nguyên tố cùng nhau với $\phi(n)$. *(Ví dụ: Chọn $e = 3$)*.
+> - **Step 5 (Private Key):** Server tìm số $d$ bằng công thức: $d = (k \times \phi(n) + 1) / e$ (chọn $k$ sao cho phép chia ra số nguyên). *(Ví dụ: Chọn $k=1 \rightarrow d = (1 \times 20 + 1) / 3 = 7$)*.
+> - **Step 6 (Phân phối):** Server **XÓA VĨNH VIỄN** $p$, $q$ và $\phi(n)$ khỏi bộ nhớ (để Hacker không thể tìm được). Nó giấu kín **$d=7$** (Private Key) vào két sắt, và gộp cặp số **$(e=3, n=33)$** thành Public Key để phát ném qua mạng cho User.
+>
+> **[GIAI ĐOẠN 2: MẠNG LƯỚI HOẠT ĐỘNG (CLIENT & SERVER)]**
+> - **Step 7 (User Mã hóa):** Trình duyệt của User lấy data (ví dụ mã ASCII $M = 4$). Máy tính User áp dụng công thức mã hóa: Lấy dữ liệu lũy thừa $e$ rồi chia dư cho $n$.
+>   $\rightarrow$ Công thức: $C = M^e$ % $n$.
+>   *(Ví dụ: $C = 4^3$ % $33 = 64$ % $33 = 31$. Khối data được mã hóa $C=31$ này được truyền qua đại dương).*
+> - **Step 8 (Server Giải mã):** Server nhận được khối được mã hóa $C=31$. Server không cần phân tích đa thức gì cả, CPU của Server cứ vô tri lôi $d$ ra và chạy công thức giải mã: 
+>   $\rightarrow$ Công thức: $M' = C^d$ % $n$.
+>   *(Ví dụ: CPU lấy $31^7$ % $33 = 27,512,614,111$ % $33$. Phép chia dư ra đúng số... **4**).*
+> - **Step 9 (Phép màu Toán học):** Nhờ có định lý Euler "bảo kê" từ trước (đã chứng minh trên giấy ở mục 2), phép tính vô tri của CPU ở Step 8 tự động ra kết quả $M'$ trùng khớp hoàn hảo 100% với $M=4$ ban đầu. Dữ liệu được phục hồi mà chiếc chìa khóa $d$ chưa từng phải rời khỏi Server.
 > 
 > *Góc nhìn Hacker (Hệ phương trình Vô vọng):* 
 > Để tìm được khóa bí mật `d`, Hacker bắt buộc phải tính được giá trị $\phi(n)$. 
@@ -298,27 +310,47 @@ Trước khi bàn chuyện bảo mật, Client phải thiết lập một Socket
 -> *Kết quả: Kênh truyền tải đã sẵn sàng, nhưng CHƯA có byte dữ liệu Web nào được gửi.*
 
 **GIAI ĐOẠN 2: THỎA THUẬN BẢO MẬT (TLS Handshake - Lớp 7)**
-Sử dụng ống TCP vừa mở, quá trình trao đổi khóa mã hóa bắt đầu diễn ra:
+Sử dụng ống TCP vừa mở, hai bên bắt đầu một cuộc đàm phán cực kỳ phức tạp để thiết lập mã hóa. (Lưu ý: Trước khi quá trình này diễn ra, Server đã phải tự sinh ra một cặp khóa Bất đối xứng **RSA Keypair (Public Key & Private Key)** và nộp Public Key cho một tổ chức ủy quyền để xin cấp Chứng thư số).
 
-4. **ClientHello** `[Client -> Server]:` Client khởi tạo luồng kết nối bảo mật, gửi bản tin bao gồm: Phiên bản giao thức (ví dụ: TLS 1.2/1.3), danh sách các bộ thuật toán mã hóa (Cipher Suites) được hỗ trợ, và một chuỗi ngẫu nhiên `Client Random`.
+4. **ClientHello** `[Client -> Server]:` Client khởi tạo luồng kết nối bảo mật, gửi bản tin bao gồm: Phiên bản giao thức (TLS 1.2/1.3), danh sách các bộ thuật toán mã hóa (Cipher Suites) được hỗ trợ, và một chuỗi ngẫu nhiên gọi là `Client Random`.
 5. **ServerHello** `[Server -> Client]:` Server phản hồi, chốt chọn một bộ Cipher Suite chung mạnh nhất, kèm theo chuỗi ngẫu nhiên `Server Random` của riêng mình.
-6. **Certificate Exchange (Chứng thư số)** `[Server -> Client]:` Server gửi tiếp Chứng chỉ số X.509 (SSL Certificate). Điểm cốt lõi là bên trong chứng chỉ này có đính kèm **Public Key** của Server.
-7. **CA Validation (Xác thực nội bộ tại Client):** Trình duyệt Client dùng danh sách Root CA (như Let's Encrypt, DigiCert) cài sẵn trong HĐH để xác minh chữ ký số trên Chứng chỉ. Nếu chữ ký hợp lệ, Client tin tưởng Server này là thật (chống tấn công giả mạo Man-in-the-Middle).
-8. **Key Exchange (Trao đổi Khóa bí mật):** 
-   - Client tự tạo ra một chuỗi bí mật tên là `Pre-Master Secret`.
-   - Client dùng **Public Key** của Server để bọc (mã hóa) chuỗi `Pre-Master Secret` này và truyền qua mạng. Do cơ chế hàm một chiều, gói tin này bất khả xâm phạm đối với Hacker chặn giữa.
-9. **Session Key Generation (Sinh Khóa phiên):** 
-   - Server nhận gói tin, lôi **Private Key** giấu tuyệt mật trong ổ cứng ra để giải mã, thu thập thành công `Pre-Master Secret`. 
-   - Lúc này, cả hai bên độc lập sử dụng tập hợp (`Client Random` + `Server Random` + `Pre-Master Secret`) đưa vào hàm băm toán học để tính ra chung một Khóa phiên duy nhất (**Master Secret / Session Key** - Khóa đối xứng).
-   - *(Giải ngố: Tại sao lại cần ghép thêm `Client Random` và `Server Random`? Mục đích là để chống lại **Replay Attack** (Tấn công phát lại). Giả sử không có chuỗi Random, Hacker dù không giải mã được gói tin nhưng hắn copy y nguyên gói tin đó và ngày mai gửi lại cho Server, Server vẫn tưởng đó là bạn. Việc bơm thêm chuỗi Random ở hai phía đảm bảo rằng mỗi một phiên làm việc (Session) sẽ luôn sinh ra một chìa khóa độc nhất vô nhị dựa trên thời gian thực. Sang phiên khác, chuỗi Random đổi, khóa Session Key đổi, gói tin cũ thu âm từ hôm qua mang ra gửi lại sẽ tự động trở thành rác rưởi không thể giải mã).*
-10. **Secure Payload (Thiết lập kênh truyền):** Cả hai bên gửi bản tin `ChangeCipherSpec` và `Finished`, cam kết từ giây phút này mọi dữ liệu sẽ được mã hóa bằng Khóa phiên đối xứng tốc độ cao (như thuật toán AES-GCM). Bộ khóa Bất đối xứng (RSA) chính thức bị vứt bỏ vì đã hoàn thành nhiệm vụ trao đổi.
+6. **Certificate Exchange (Truyền tải Chứng thư số)** `[Server -> Client]:` Server gửi cho Client một **Chứng thư số (Digital Certificate chuẩn X.509)**. 
+   - *Chứng thư số là cái gì?* Nó đóng vai trò như một "Căn cước công dân Điện tử". Bên trong nó chứa: Tên miền của Server (vd: `facebook.com`), thông tin tổ chức sở hữu, và quan trọng nhất là **Public Key** của Server. Toàn bộ thông tin này được niêm phong bằng Chữ ký số (Digital Signature) của một Tổ chức xác thực uy tín toàn cầu (gọi là **CA - Certificate Authority**, ví dụ: DigiCert, Let's Encrypt).
+7. **CA Validation (Xác thực Căn cước):** 
+   - Trình duyệt Client không hề tin tưởng Server một cách mù quáng. Nó lôi danh sách các khóa gốc của các Tổ chức CA (Root CA) đã được cài cắm sẵn (hardcode) trong Hệ điều hành Windows/macOS ra để đối chiếu chữ ký số trên Chứng thư.
+   - Nếu chữ ký hợp lệ và tên miền khớp, Client chính thức xác nhận: *"À, cái Public Key này đích thực là của facebook.com, không phải của Hacker lừa đảo chặn giữa mạng"*. (Đây là cơ chế chống tấn công giả mạo **Man-in-the-Middle**).
+8. **Key Exchange (Trao đổi Khóa bí mật - Sự ra đời của Client Secret):** 
+   - *Tại sao lại đẻ ra cái này?* Vì mã hóa Bất đối xứng (RSA) tính toán quá cồng kềnh, tốc độ như rùa bò, không thể dùng để mã hóa cả bộ phim Netflix hay luồng Livestream. Ta bắt buộc phải chuyển sang xài Mã hóa Đối xứng (AES) có tốc độ ánh sáng. Nhưng Mã hóa Đối xứng lại yêu cầu cả hai bên phải có chung 1 cái "Chìa khóa Đối xứng" (Session Key). Làm sao gửi cái chìa khóa này qua mạng Internet đầy rẫy Hacker?
+   - *Cách giải quyết:* Trình duyệt tự random sinh ra một chuỗi bit cực kỳ bảo mật gọi là **Pre-Master Secret (hay Client Secret)**. Sau đó, nó bọc cái `Client Secret` này lại, khóa chặt bằng cái **Public Key** của Server (vừa nhận ở bước 6) rồi ném qua mạng. 
+   - *Kết quả:* Nhờ tính chất Hàm một chiều của RSA, gói tin chứa `Client Secret` bay qua Internet an toàn tuyệt đối. Hacker dù có chộp được cũng chỉ nhìn thấy một đống rác nhiễu loạn.
+9. **Session Key Generation (Sinh Khóa Phiên Đối xứng):** 
+   - Server nhận gói tin, lập tức móc **Private Key** (đang giấu sâu trong két sắt ổ cứng) ra để giải mã, và bóc tách thành công `Client Secret` nguyên vẹn. 
+   - Lúc này, phép màu hoàn tất: Cả Client và Server đều độc lập nắm trong tay 3 nguyên liệu: (`Client Random` + `Server Random` + `Client Secret`). Cả hai nhét 3 nguyên liệu này vào một hàm băm (Hash Function) để nhào nặn ra chung một cái chìa khóa duy nhất: **Master Secret (Khóa Phiên/Session Key)**.
+   - *(Giải ngố kỹ thuật: Tại sao lại rườm rà trộn thêm `Client Random` và `Server Random`? Mục đích là để chống **Tấn công phát lại (Replay Attack)**. Nếu Hacker nghe lén hôm nay, copy y chang gói tin mã hóa rồi ngày mai phát lại gửi cho Server, thì do chuỗi `Server Random` của ngày mai đã bị đổi, cái Session Key sinh ra sẽ hoàn toàn khác. Gói tin cũ hôm qua vĩnh viễn không thể xài lại ở phiên hôm nay!)*
+10. **Secure Payload (Thiết lập kênh truyền):** Cả hai bên gửi bản tin `ChangeCipherSpec` và `Finished`, cam kết từ giây phút này sẽ vứt bỏ bộ khóa Bất đối xứng nặng nề (RSA) vào sọt rác. Toàn bộ hình ảnh, tin nhắn, dữ liệu từ đây về sau sẽ được băm nát và mã hóa bằng cái **Session Key** (thuật toán AES) với tốc độ ánh sáng.
 
 **GIAI ĐOẠN 3: BƠM DỮ LIỆU THỰC TẾ (HTTPS Traffic)**
+
 11. `[Client -> Server]:` **HTTP GET /** *(Toàn bộ Payload HTTP lúc này đã bị băm nát và mã hóa bằng Khóa phiên Đối xứng, đóng vào TCP Segment ném qua mạng).*
 12. `[Server -> Client]:` **HTTP 200 OK** *(Server giải mã bằng Khóa phiên, xử lý logic Web, và trả về HTML/JSON cũng được mã hóa bằng Khóa phiên).*
 -> *Kết quả: Khóa phiên đối xứng chỉ tồn tại tạm thời trong RAM và sẽ bị HĐH xóa sổ vĩnh viễn khi tắt tab trình duyệt (Cơ chế Perfect Forward Secrecy).*
 
-### 5.5. Góc đính chính: Hacker chôm Public Key và Lỗi CORS
+### 5.4. Quy trình Server "Xin" Chứng thư số (CSR - Certificate Signing Request)
+Trước khi Giai đoạn 2 (TLS Handshake) ở trên có thể diễn ra, Server (ví dụ: `facebook.com`) phải có Chứng thư số. Quy trình lấy Chứng thư diễn ra như sau:
+1. **Tạo Keypair cục bộ:** Máy chủ `facebook.com` tự chạy thuật toán RSA để sinh ra một cặp (Public Key & Private Key). Private Key được cất kỹ vào thư mục `/etc/ssl/private` (không ai được đụng vào).
+2. **Làm đơn xin cấp phép (CSR):** Máy chủ gom Public Key vừa sinh ra, kẹp chung với thông tin tên miền `facebook.com`, rồi gói lại thành một tờ đơn gọi là CSR (Certificate Signing Request).
+3. **Nộp đơn cho Tổ chức CA:** Máy chủ nộp tờ đơn CSR này cho các tổ chức CA (Certificate Authority - Tổ chức cấp phát chứng chỉ uy tín toàn cầu như Let's Encrypt, DigiCert). CA sẽ bắt Server làm vài bài test (ví dụ: yêu cầu tạo một bản ghi TXT trong cấu hình DNS để chứng minh anh thực sự là chủ sở hữu của domain `facebook.com`).
+4. **Đóng dấu (Digital Signature):** Sau khi xác minh thành công, tổ chức CA lấy **Private Key của chính CA (Root Private Key)** đập một "Chữ ký số" lên tờ đơn CSR. Tờ đơn lúc này lột xác trở thành "Chứng thư số X.509" chính thức. Server mang Chứng thư này về cắm vào Nginx/Apache để xài.
+
+### 5.5. Giải ngố: Hệ điều hành cập nhật danh sách CA như thế nào?
+Có một sự hiểu lầm cực kỳ tai hại: *"Nếu Trình duyệt lôi danh sách trong Hệ điều hành ra để đối chiếu, vậy không lẽ mỗi khi có một trang web mới ra đời (hoặc xóa đi) thì Microsoft/Apple phải tung ra bản cập nhật OS?"*.
+
+**Câu trả lời là: KHÔNG HỀ!**
+- **Sự thật về Trust Store:** Hệ điều hành **KHÔNG LƯU** danh sách hàng tỷ tên miền trên thế giới. Nó CHỈ LƯU duy nhất một danh sách nhỏ gọi là **Trust Store (Kho lưu trữ niềm tin)**. Trong Trust Store này chứa khoảng 100 - 200 cái **Public Key của các tổ chức Root CA** (như Let's Encrypt, GlobalSign, DigiCert,...).
+- **Cơ chế Chuỗi niềm tin (Chain of Trust):** Máy tính của bạn không hề quen biết cái tên miền lạ hoắc `facebook.com`. Nhưng khi Facebook chìa cái Chứng thư ra, máy tính thấy trên đó có "Con dấu đỏ" (Chữ ký số) của ông lớn DigiCert. Vì Public Key của DigiCert đã nằm sẵn (hardcode) trong Hệ điều hành từ lúc bạn cài Win rồi, nên máy tính dùng khóa gốc của DigiCert soi vào con dấu. Thấy con dấu chuẩn 100%, máy tính suy luận: *"Mình không biết thằng Facebook là ai, nhưng ông DigiCert đã đóng mộc bảo kê cho cái Public Key của nó, mà mình thì tin ông DigiCert tuyệt đối, nên mình sẽ tin cái Public Key này đích thực là của thằng Facebook"*.
+- **Khi nào thì thực sự phải update OS?** Bạn đã đoán đúng, ta CHỈ CẦN update OS khi có **một tổ chức CA mới ra đời** (hoặc một CA cũ bị tước giấy phép do làm lộ Private Key). Bạn có nhớ hiện tượng máy tính xài Windows XP hoặc Windows 7 dạo gần đây không vào được các trang web HTTPS hiện đại không? Lý do chính là vì Win 7 quá cũ, Microsoft ngừng hỗ trợ nên cái Trust Store của nó không được bơm thêm các Public Key của các tổ chức CA mới (như Let's Encrypt). Trình duyệt nhìn thấy con dấu Let's Encrypt nhưng tìm mỏi mắt không thấy khóa Let's Encrypt trong máy để xác minh, thế là nó văng màn hình đỏ *"Kết nối không bảo mật"* dù bản thân trang web không hề có lỗi!
+
+### 5.6. Góc đính chính: Hacker chôm Public Key và Lỗi CORS
 Có hai thắc mắc kinh điển mà các Lập trình viên hay nhầm lẫn khi cấu hình Web Server (như Nginx kết nối FE với BE):
 
 **Câu hỏi 1: Tại sao Server ném Public Key công khai qua mạng mà không sợ Hacker bắt được và giả mạo (Man-in-the-Middle Attack)?**
@@ -438,3 +470,49 @@ Nhiều người nghĩ cáp biển truyền dữ liệu bằng xung điện (Vol
 - **Nghịch lý của dòng điện 10.000 Volt:** Dù thủy tinh siêu trong suốt, ánh sáng đi được khoảng 50-100km dưới đáy biển vẫn bị mờ đi. Người ta bắt buộc phải đặt các Cục kích sáng (Optical Amplifiers / Repeaters) dọc đường để hút ánh sáng yếu vào và bắn ánh sáng mạnh ra. **Và để nuôi sống các cục Repeater này ở độ sâu 4.000 mét dưới đáy biển, lớp vỏ của sợi cáp quang chứa một ống đồng khổng lồ truyền dòng điện một chiều (DC) lên tới 10.000 Volt!** 
 
 > **Kết luận:** Dưới đáy biển, **Dữ liệu chạy bằng Ánh sáng Laser, còn Dòng điện 10.000 Volt chạy song song dọc theo cáp chỉ để làm duy nhất một việc: Cấp nguồn nuôi hệ thống kích sáng (Repeater) dọc đường!**
+
+---
+
+## 11. Giải mã tệp .pem của AWS và Thuật toán Băm HMAC-SHA256
+
+### 11.1. Tệp key.pem của AWS thực chất chứa cái gì?
+Khi bạn khởi tạo một máy ảo EC2 trên AWS, AWS yêu cầu bạn tải về một tệp key.pem để dùng cho việc SSH (Remote Connect). Vậy tại sao không nhập User/Password như bình thường (ví dụ Telnet) mà phải dùng cái file này?
+- **Vấn đề của Password:** Nếu dùng Password, Hacker có thể dùng Tool Brute-force (đoán mật khẩu tự động 10,000 lần/giây) rà trúng mật khẩu của bạn. Hơn nữa, truyền mật khẩu qua mạng (như Telnet cũ) cực kỳ dễ bị nghe lén. SSH (Secure Shell) sinh ra để khai tử Password bằng sức mạnh Toán học (Mã hóa Bất đối xứng RSA hoặc ED25519).
+- **Vậy tệp .pem chứa gì?** Chữ PEM viết tắt của *Privacy Enhanced Mail* - thực chất nó chỉ là một định dạng file text đơn thuần để lưu trữ khóa mã hóa.
+Khi bạn bấm nút "Create Key Pair", AWS tự động chạy thuật toán sinh ra một cặp Khóa sinh đôi: **Public Key** và **Private Key**.
+  - **Public Key:** AWS bí mật nhét sẵn cái khóa công khai này vào bên trong máy ảo EC2 (nằm ở đường dẫn ~/.ssh/authorized_keys).
+  - **Private Key:** AWS mã hóa nó dưới định dạng văn bản Base64, nhét vào tệp key.pem và đưa cho bạn tải về. Bên trong tệp này, nếu bạn mở bằng Notepad, nó sẽ là một chuỗi ký tự rác khổng lồ nằm giữa hai dòng chữ: -----BEGIN RSA PRIVATE KEY----- và -----END RSA PRIVATE KEY-----.
+
+**Luồng hoạt động CHUẨN XÁC của SSH (Sử dụng Chữ ký số - Digital Signature):**
+Rất nhiều người lầm tưởng Server sẽ dùng Public Key để mã hóa bài toán rồi bắt Client giải. Nhưng KHÔNG, SSH Authentication dùng cơ chế **Chữ ký số (Ký bằng Private Key, Xác minh bằng Public Key)**:
+
+1. **Client Gõ cửa:** Lệnh `ssh` của bạn kết nối và báo với EC2: *"Tôi muốn login bằng cái Public Key này nè, anh coi trong kho có không?"*
+2. **Server Kiểm tra:** Server lôi file `~/.ssh/authorized_keys` ra tìm. *"À có Public Key này. Nhưng làm sao tao biết mầy là chủ nhân thực sự? Tao sẽ gửi cho mầy một chuỗi số ngẫu nhiên (Challenge), hãy dùng chìa khóa của mầy KÝ TÊN vào đây để chứng minh đi!"*. Server gửi chuỗi Challenge trần trụi về cho Client.
+3. **Client Ký tên (Tạo Chữ ký số):** Máy tính của bạn lập tức đọc cái **Private Key** (từ tệp `.pem`). Nó băm cái chuỗi Challenge kia ra, rồi dùng Private Key **MÃ HÓA** cục băm đó. Kết quả sinh ra một khối dữ liệu gọi là **Chữ ký số (Digital Signature)**, rồi ném ngược lên Server.
+4. **Server Xác minh:** Server nhận được Chữ ký số. Nó lôi ngay cái **Public Key** (lưu sẵn trong `authorized_keys`) ra để **GIẢI MÃ** cái chữ ký đó.
+   - *Phép màu Toán học:* Định lý RSA quy định, thứ gì bị khóa bởi Private Key, thì CHỈ CÓ Public Key sinh đôi với nó mới mở ra được.
+   - *Kết luận:* Server giải mã thành công và đối chiếu thấy khớp 100% với chuỗi ban đầu $\rightarrow$ Server chốt hạ: *"Trong vũ trụ này, chỉ có kẻ nắm giữ Private Key thật mới có thể tạo ra được cái chữ ký mà Public Key của tao mở được!"*. 
+   - BÙM! Mở cổng kết nối. Bạn được login thành công mà Hacker có bắt lén trọn vẹn gói tin trên mạng cũng vô dụng, vì Hacker vĩnh viễn không thể làm giả Chữ ký số nếu không có file `.pem` trong tay!
+
+### 11.2. Giải ngố về Mã hóa Một chiều: HMAC-SHA256
+Bạn đang thắc mắc thuật toán băm (Hashing) một chiều như HMAC-SHA256 hoạt động ra sao, có phải là dịch ra số ASCII rồi chạy công thức không? Chính xác là vậy, nhưng phức tạp và tàn bạo hơn nhiều!
+
+**A. SHA-256 (Secure Hash Algorithm 256-bit) là gì?**
+Nó **KHÔNG PHẢI LÀ MÃ HÓA** (Encryption). Mã hóa (như RSA/AES) là có đi có lại: Gói vào được thì tháo ra được. SHA-256 là **HÀM BĂM MỘT CHIỀU (Hashing)**: Tức là cho 1 con bò đi qua máy xay thịt, ra được cây xúc xích. Bạn không bao giờ có thể từ cây xúc xích đó nhào nặn ngược lại thành con bò.
+
+**Cơ chế hoạt động của SHA-256:**
+1. **Dịch bit:** Máy tính biến file chữ, file ảnh, file video thành dải nhị phân (0 và 1) khổng lồ dựa trên bảng mã (ví dụ ASCII).
+2. **Băm nát:** Khối dữ liệu đó được chặt ra thành từng khúc dài bằng nhau (512-bit/khúc).
+3. **Cối xay ma thuật (64 vòng lặp):** Máy tính đưa từng khúc 512-bit đó vào một "cối xay toán học". Nó sẽ thực hiện **64 vòng lặp** với các phép toán nhị phân cực kỳ man rợ như: **AND, OR, XOR (Dịch bit, đảo bit)** xen kẽ liên tục. Cái đống 0 và 1 bị trộn nát tới mức không còn nhận ra hình thù ban đầu.
+4. **Đầu ra duy nhất:** Cuối cùng, dù bạn ném vào đó 1 chữ "A" hay ném nguyên bộ phim 4K nặng 50GB, cái lỗ output của SHA-256 luôn luôn ọt ra một chuỗi cố định gồm đúng 256 số 0 và 1 (Quy đổi ra chuỗi 64 ký tự chữ và số hệ Hex).
+-> *Hiệu ứng Cánh bướm (Avalanche effect):* Bạn chỉ cần thay một chữ "a" thường thành "A" hoa trong bộ phim 50GB, toàn bộ 64 ký tự đầu ra sẽ thay đổi hoàn toàn khác biệt.
+
+**B. Vậy thêm chữ "HMAC" vào SHA-256 để làm gì?**
+Chữ HMAC viết tắt của *Hash-based Message Authentication Code*.
+Giả sử bạn gửi một tin nhắn *"Chuyển 5 tỷ cho anh Trank"* và đính kèm cái mã Hash SHA-256 của tin nhắn đó. Hacker ở giữa mạng chụp được, hắn tráo tin nhắn thành *"Chuyển 5 tỷ cho Hacker"*, rồi hắn tự chạy SHA-256 sinh ra cái mã Hash mới ghép vào. Thế là toang!
+
+**HMAC** ra đời để chống trò này. Để tính HMAC-SHA256, hai bên (Client và Server) phải có chung 1 cái **Khóa Bí Mật (Secret Key)**.
+- Khi tính toán, máy tính không chỉ băm cái Data, mà nó sẽ băm cái Data **trộn chung** với cái Khóa Bí Mật thông qua 2 lớp đệm toán học (gọi là ipad và opad).
+- Tức là: Output = SHA256(SecretKey + SHA256(SecretKey + Data)) (viết tóm tắt cho dễ hiểu).
+- Hacker chặn giữa đường, tráo Data, muốn tính lại mã HMAC mới nhưng chịu chết vì... **hắn không biết cái Secret Key là gì để đưa vào cối xay!** 
+-> HMAC vừa có khả năng băm một chiều (chống dịch ngược) của SHA-256, vừa chứng minh được "Danh tính người gửi" (Authentication) nhờ cái Secret Key bí mật.
