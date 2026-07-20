@@ -49,6 +49,12 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ap-southeast-1
 
+    # Bước 2.5: Cài đặt Terraform lên máy ảo
+    # Máy ảo ubuntu mặc định của GitHub KHÔNG CÓ CÀI SẴN Terraform.
+    # Ta phải gọi action của hãng HashiCorp để nó tải file chạy (binary) terraform về.
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+
     # Bước 3: Khởi tạo Terraform (Đoạn này móc vào S3 state)
     - name: Terraform Init
       run: terraform init
