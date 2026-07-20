@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package logistics.v1;
+option go_package = "goBackend/internal/dto/gen/go/logistics/v1;logisticsv1";
+
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+
+// MatchingEngineService handles Real-time Freight Bidding
+// This is the core protocol for matching empty vehicle space with cargo
+service MatchingEngineService {
+  // SubmitBid is called by Shippers who have cargo that needs to be moved
+  rpc SubmitBid(SubmitBidRequest) returns (SubmitBidResponse) {
+    option (google.api.http) = {
+      post: "/v1/logistics/bids"
+      body: "*"
+    };
+  }
+  
+  // SubmitAsk is called by Drivers who have empty space on their vehicles
+  rpc SubmitAsk(SubmitAskRequest) returns (SubmitAskResponse) {
+    option (google.api.http) = {
+      post: "/v1/logistics/asks"
+      body: "*"
+    };
+  }
+}
+
+// Location represents a geographic point and a logical zone for simplified matching
+message Location {
+  double latitude = 1;
+  double longitude = 2;
+  // zone_id is used for quick in-memory spatial partitioning (e.g., "VN-HCM-Q1")
+  // Reference: DDIA partitioning concepts
+  string zone_id = 3; 
+}
+
+// SubmitBidRequest represents the demand side (Cargo)
+message SubmitBidRequest {
+  string user_id = 1;               // The shipper ID
+  Location origin = 2;              // Pickup location
+  Location destination = 3;         // Dropoff location
+  double volume_m3 = 4;             // Volume of the cargo
+  double weight_kg = 5;             // Weight of the cargo
+  double max_price = 6;             // Maximum price the shipper is willing to pay
+  google.protobuf.Timestamp expires_at = 7; // When this bid is no longer valid
+}
+
+message SubmitBidResponse {
+  string bid_id = 1;
+  string status = 2; // e.g., "PENDING", "MATCHED", "EXPIRED"
+}
+
+// SubmitAskRequest represents the supply side (Empty Vehicle)
+message SubmitAskRequest {
+  string vehicle_id = 1;            // The vehicle ID
+  string driver_id = 2;             // The driver ID
+  Location current_location = 3;    // Where the empty vehicle is now
+  Location destination = 4;         // Where the vehicle is heading
+  double available_volume_m3 = 5;   // Remaining space
+  double available_weight_kg = 6;   // Remaining weight capacity
+  double min_price = 7;             // Minimum acceptable price for the trip
+  google.protobuf.Timestamp expires_at = 8; // When the driver stops waiting
+}
+
+message SubmitAskResponse {
+  string ask_id = 1;
+  string status = 2; // e.g., "PENDING", "MATCHED", "EXPIRED"
+}

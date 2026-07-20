@@ -1,0 +1,161 @@
+basePath: /api/v1/auth
+definitions:
+  dto.AuthResponse:
+    properties:
+      accessToken:
+        type: string
+      expiresIn:
+        description: Unix timestamp — client biết khi nào cần refresh
+        type: integer
+      refreshToken:
+        type: string
+      user:
+        $ref: '#/definitions/dto.UserProfileResponse'
+    type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.RegisterRequest:
+    properties:
+      confirmPassword:
+        type: string
+      email:
+        type: string
+      fullName:
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - confirmPassword
+    - email
+    - fullName
+    - password
+    type: object
+  dto.UserProfileResponse:
+    properties:
+      avatar:
+        type: string
+      createdAt:
+        description: Unix timestamp (số nguyên) — dễ xử lý hơn ở frontend so với ISO
+          string
+        type: integer
+      email:
+        type: string
+      fullName:
+        type: string
+      id:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Microservice quản lý xác thực và người dùng cho Logistics OS.
+  title: Auth Service API
+  version: "1.0"
+paths:
+  /get-info:
+    get:
+      consumes:
+      - application/json
+      description: Lấy thông tin profile của người dùng hiện tại dựa trên token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lấy thông tin thành công
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Token không hợp lệ hoặc không tìm thấy
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Lấy thông tin người dùng
+      tags:
+      - Auth
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Đăng nhập bằng email và mật khẩu
+      parameters:
+      - description: Thông tin đăng nhập
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Đăng nhập thành công
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Lỗi dữ liệu đầu vào
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Sai email hoặc mật khẩu
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Đăng nhập
+      tags:
+      - Auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Tạo tài khoản mới bằng email và mật khẩu
+      parameters:
+      - description: Thông tin đăng ký
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Tạo tài khoản thành công
+          schema:
+            $ref: '#/definitions/dto.AuthResponse'
+        "400":
+          description: Lỗi xác thực dữ liệu
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Email đã tồn tại
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Đăng ký tài khoản
+      tags:
+      - Auth
+swagger: "2.0"

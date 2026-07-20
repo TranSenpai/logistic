@@ -1,0 +1,238 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "logistics/v1/logistics.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "MatchingEngineService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/logistics/asks": {
+      "post": {
+        "summary": "SubmitAsk is called by Drivers who have empty space on their vehicles",
+        "operationId": "MatchingEngineService_SubmitAsk",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SubmitAskResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1SubmitAskRequest"
+            }
+          }
+        ],
+        "tags": [
+          "MatchingEngineService"
+        ]
+      }
+    },
+    "/v1/logistics/bids": {
+      "post": {
+        "summary": "SubmitBid is called by Shippers who have cargo that needs to be moved",
+        "operationId": "MatchingEngineService_SubmitBid",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SubmitBidResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1SubmitBidRequest"
+            }
+          }
+        ],
+        "tags": [
+          "MatchingEngineService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "logisticsV1Location": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "format": "double"
+        },
+        "longitude": {
+          "type": "number",
+          "format": "double"
+        },
+        "zoneId": {
+          "type": "string",
+          "title": "zone_id is used for quick in-memory spatial partitioning (e.g., \"VN-HCM-Q1\")\nReference: DDIA partitioning concepts"
+        }
+      },
+      "title": "Location represents a geographic point and a logical zone for simplified matching"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1SubmitAskRequest": {
+      "type": "object",
+      "properties": {
+        "vehicleId": {
+          "type": "string",
+          "title": "The vehicle ID"
+        },
+        "driverId": {
+          "type": "string",
+          "title": "The driver ID"
+        },
+        "currentLocation": {
+          "$ref": "#/definitions/logisticsV1Location",
+          "title": "Where the empty vehicle is now"
+        },
+        "destination": {
+          "$ref": "#/definitions/logisticsV1Location",
+          "title": "Where the vehicle is heading"
+        },
+        "availableVolumeM3": {
+          "type": "number",
+          "format": "double",
+          "title": "Remaining space"
+        },
+        "availableWeightKg": {
+          "type": "number",
+          "format": "double",
+          "title": "Remaining weight capacity"
+        },
+        "minPrice": {
+          "type": "number",
+          "format": "double",
+          "title": "Minimum acceptable price for the trip"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "When the driver stops waiting"
+        }
+      },
+      "title": "SubmitAskRequest represents the supply side (Empty Vehicle)"
+    },
+    "v1SubmitAskResponse": {
+      "type": "object",
+      "properties": {
+        "askId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "title": "e.g., \"PENDING\", \"MATCHED\", \"EXPIRED\""
+        }
+      }
+    },
+    "v1SubmitBidRequest": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "title": "The shipper ID"
+        },
+        "origin": {
+          "$ref": "#/definitions/logisticsV1Location",
+          "title": "Pickup location"
+        },
+        "destination": {
+          "$ref": "#/definitions/logisticsV1Location",
+          "title": "Dropoff location"
+        },
+        "volumeM3": {
+          "type": "number",
+          "format": "double",
+          "title": "Volume of the cargo"
+        },
+        "weightKg": {
+          "type": "number",
+          "format": "double",
+          "title": "Weight of the cargo"
+        },
+        "maxPrice": {
+          "type": "number",
+          "format": "double",
+          "title": "Maximum price the shipper is willing to pay"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "When this bid is no longer valid"
+        }
+      },
+      "title": "SubmitBidRequest represents the demand side (Cargo)"
+    },
+    "v1SubmitBidResponse": {
+      "type": "object",
+      "properties": {
+        "bidId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "title": "e.g., \"PENDING\", \"MATCHED\", \"EXPIRED\""
+        }
+      }
+    }
+  }
+}
