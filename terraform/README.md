@@ -44,6 +44,18 @@ Tài liệu này định nghĩa kiến trúc hệ thống, quy trình khai báo 
     - Yêu cầu người dùng phải quen xài dòng lệnh (CLI).
     - **Rủi ro mất Key:** Nếu bạn làm mất file Private Key, bạn sẽ mất quyền truy cập vĩnh viễn vào server đó (vì không cho gõ password nữa). Nếu lộ Key vào tay kẻ gian, hệ thống coi như sập.
     - Vì cổng mặc định của SSH là 22, nó luôn là mục tiêu bị các con Botnet trên mạng càn quét 24/7.
+
+  - **Cú pháp Lệnh kết nối thực tế:**
+    Để remote vào máy chủ EC2 (Ubuntu) trên AWS, bạn mở Terminal tại thư mục chứa file `.pem` và gõ:
+    ```bash
+    # Bước 1: Siết chặt quyền của file key (Bắt buộc trên Mac/Linux để chống lỗi "Unprotected Private Key")
+    chmod 400 logistic-key.pem 
+    
+    # Bước 2: Kích hoạt kết nối SSH
+    ssh -i logistic-key.pem ubuntu@<IP_PUBLIC_CUA_EC2>
+    ```
+    *(Ghi chú: Thay `<IP_PUBLIC_CUA_EC2>` bằng địa chỉ IP thực tế mà Terraform in ra sau khi chạy lệnh apply. User mặc định của hệ điều hành Ubuntu luôn là `ubuntu`).*
+
 - **So sánh OS (Hệ điều hành) Server: Tại sao Linux là vua?**
   1. **Linux (Ubuntu, CentOS, Alpine...):** 
      - *Ưu điểm:* Mã nguồn mở, hoàn toàn **Miễn phí** (không tốn phí bản quyền License). Siêu nhẹ: một server Linux không có giao diện chỉ tốn khoảng 100MB-200MB RAM để chạy hệ điều hành (dành toàn bộ tài nguyên còn lại cho ứng dụng). Độ ổn định cực kỳ cao (chạy hàng năm trời không cần Restart). Là môi trường gốc rễ sản sinh ra Docker và Kubernetes.

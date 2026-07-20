@@ -287,6 +287,19 @@ Thay vì đắn đo chọn 1 trong 2, TLS đã kết hợp cả hai để tạo 
 >   *(Ví dụ: CPU lấy $31^7$ % $33 = 27,512,614,111$ % $33$. Phép chia dư ra đúng số... **4**).*
 > - **Step 9 (Phép màu Toán học):** Nhờ có định lý Euler "bảo kê" từ trước (đã chứng minh trên giấy ở mục 2), phép tính vô tri của CPU ở Step 8 tự động ra kết quả $M'$ trùng khớp hoàn hảo 100% với $M=4$ ban đầu. Dữ liệu được phục hồi mà chiếc chìa khóa $d$ chưa từng phải rời khỏi Server.
 > 
+> **[GIAI ĐOẠN 3: ĐẢO NGƯỢC RSA - CHỮ KÝ SỐ (DIGITAL SIGNATURE)]**
+> Sự vĩ đại của RSA nằm ở chỗ: $e$ và $d$ có tính chất đối xứng hoàn hảo. Khóa bằng chìa nào thì Mở bằng chìa còn lại!
+> Do đó, thay vì dùng Public Key để mã hóa như Giai đoạn 2, ta có thể đảo ngược lại để làm công cụ **Chứng minh Danh tính (Xác thực SSH / JWT / TLS)**:
+> - **Step 10 (Server thách thức):** Server muốn kiểm tra xem BẠN có đúng là chủ nhân của Private Key không. Server ném cho BẠN một chuỗi số ngẫu nhiên (Ví dụ $M = 4$). 
+> - **Step 11 (BẠN Ký tên):** Bạn dùng **Private Key ($d=7$)** của bạn để MÃ HÓA chuỗi đó (Hành động này gọi là Tạo chữ ký). 
+>   $\rightarrow$ Công thức y hệt: $S = M^d$ % $n$.
+>   *(Ví dụ: $S = 4^7$ % $33 = 16384$ % $33 = 16$. Bạn ném Chữ ký số $S=16$ này lên Server).*
+> - **Step 12 (Server Xác minh):** Server nhận được $S=16$. Nó liền lôi **Public Key ($e=3$)** của bạn ra để GIẢI MÃ chữ ký đó.
+>   $\rightarrow$ Công thức: $M' = S^e$ % $n$.
+>   *(Ví dụ: $M' = 16^3$ % $33 = 4096$ % $33 = 4$. Kết quả giải mã ra đúng số 4 ban đầu!)*
+>   $\rightarrow$ Server chốt hạ: *"Giải mã bằng Public Key ra đúng dữ liệu gốc. Vậy tao cá chắc 100% cái chữ ký này phải được tạo ra từ Private Key thực sự!"*.
+> - **Chống Replay Attack:** Hacker không thể lấy trộm gói tin $S=16$ gửi lại cho Server vào ngày mai, vì ngày mai Server sẽ ném một Challenge mới tinh (Ví dụ $M = 5$). Chữ ký cũ $S=16$ đem giải mã sẽ bung bét và không bao giờ khớp với 5!
+> 
 > *Góc nhìn Hacker (Hệ phương trình Vô vọng):* 
 > Để tìm được khóa bí mật `d`, Hacker bắt buộc phải tính được giá trị $\phi(n)$. 
 > Hãy thử tư duy ngược: Nếu Hacker BẰNG MỘT PHÉP MÀU NÀO ĐÓ biết trước được con số đếm $\phi(n) = 20$ (cùng với $n = 33$ công khai trên mạng). Hắn sẽ lập tức giải ra $p$ và $q$ thông qua hệ phương trình Viète lớp 9:
@@ -494,7 +507,7 @@ Rất nhiều người lầm tưởng Server sẽ dùng Public Key để mã hó
    - *Kết luận:* Server giải mã thành công và đối chiếu thấy khớp 100% với chuỗi ban đầu $\rightarrow$ Server chốt hạ: *"Trong vũ trụ này, chỉ có kẻ nắm giữ Private Key thật mới có thể tạo ra được cái chữ ký mà Public Key của tao mở được!"*. 
    - BÙM! Mở cổng kết nối. Bạn được login thành công mà Hacker có bắt lén trọn vẹn gói tin trên mạng cũng vô dụng, vì Hacker vĩnh viễn không thể làm giả Chữ ký số nếu không có file `.pem` trong tay!
 
-### 11.2. Giải ngố về Mã hóa Một chiều: HMAC-SHA256
+### 11.2. Mã hóa Một chiều: HMAC-SHA256
 Bạn đang thắc mắc thuật toán băm (Hashing) một chiều như HMAC-SHA256 hoạt động ra sao, có phải là dịch ra số ASCII rồi chạy công thức không? Chính xác là vậy, nhưng phức tạp và tàn bạo hơn nhiều!
 
 **A. SHA-256 (Secure Hash Algorithm 256-bit) là gì?**
@@ -516,3 +529,33 @@ Giả sử bạn gửi một tin nhắn *"Chuyển 5 tỷ cho anh Trank"* và đ
 - Tức là: Output = SHA256(SecretKey + SHA256(SecretKey + Data)) (viết tóm tắt cho dễ hiểu).
 - Hacker chặn giữa đường, tráo Data, muốn tính lại mã HMAC mới nhưng chịu chết vì... **hắn không biết cái Secret Key là gì để đưa vào cối xay!** 
 -> HMAC vừa có khả năng băm một chiều (chống dịch ngược) của SHA-256, vừa chứng minh được "Danh tính người gửi" (Authentication) nhờ cái Secret Key bí mật.
+
+### 11.3. Ứng dụng thực tế: Mối tình giữa JWT (JSON Web Token) và HMAC-SHA256
+Rất nhiều Lập trình viên hay nhầm lẫn giữa JWT và thuật toán HMAC. Thực chất, **JWT là một tấm thẻ thông hành (Ứng dụng)**, và nó thường **sử dụng HMAC-SHA256 (Công cụ)** để làm chức năng "đóng dấu chống làm giả" (Signature).
+
+Một token JWT hoàn chỉnh được ghép lại từ 3 phần, cách nhau bởi dấu chấm: `Header.Payload.Signature`.
+
+**A. Tại sao lại phải băm Header và Payload ra Base64?**
+- Có một sự hiểu lầm lớn: Base64 KHÔNG PHẢI LÀ MÃ HÓA (Encryption), cũng KHÔNG PHẢI LÀ BĂM (Hashing). Chữ "băm ra Base64" là sai bản chất kỹ thuật. Base64 thực chất là **Mã hóa chuỗi (Encoding)**.
+- **Lý do phải Encode:** Dữ liệu Payload gốc là một chuỗi JSON (ví dụ: `{"user": "trank", "role": "admin"}`). Chuỗi JSON này chứa các ký tự đặc biệt như ngoặc nhọn `{ }`, dấu phẩy `,`, dấu nháy kép `"`, khoảng trắng, v.v. Nếu bạn ném trực tiếp cục JSON này lên thanh URL của trình duyệt hoặc nhét vào HTTP Header (như `Authorization: Bearer {...}`), các thiết bị mạng trung gian (như Router, Load Balancer) sẽ đọc không hiểu các ký tự đặc biệt này và lập tức đánh rớt gói tin.
+- **Giải pháp:** Base64Url sẽ lấy cái chuỗi JSON rắc rối kia, nhào nặn biến nó thành một chuỗi văn bản an toàn chỉ bao gồm các ký tự thân thiện với mạng lưới: `A-Z, a-z, 0-9, -, _`. Nhờ vậy, cái Token có thể bay vèo vèo qua mọi ngóc ngách của Internet mà không bị vỡ định dạng. 
+-> *Chốt lại: Việc dịch sang Base64 chỉ nhằm mục đích "Giao hàng an toàn qua mạng HTTP", hoàn toàn không có tác dụng bảo mật (vì bất kỳ ai cũng có thể dịch ngược Base64 về lại JSON bằng công cụ online).*
+
+**B. Cách Server nhào nặn ra cái JWT (Mục đích bảo mật nằm ở Signature)**
+1. **Header:** Server khai báo thuật toán sẽ dùng, ví dụ `{"alg": "HS256"}` (HS256 chính là HMAC-SHA256). Đem Encode Base64 $\rightarrow$ Ra cục số 1.
+2. **Payload:** Server nhét thông tin User vào, ví dụ `{"user": "trank", "role": "admin"}`. Đem Encode Base64 $\rightarrow$ Ra cục số 2.
+3. **Signature (Chữ ký):** Đây là lúc HMAC-SHA256 ra sân. 
+   - Server lấy Cục 1 ghép với Cục 2 (Header + Payload).
+   - Server lấy cái **SECRET KEY** (Khóa bí mật giấu sâu trong file `.env` của Backend).
+   - Đút cả 2 thứ trên vào cối xay: `HMAC-SHA256 ( Secret_Key, (Cục 1 + "." + Cục 2) )`.
+   - Kết quả văng ra chính là Cục 3 (**Signature**).
+
+**C. Tại sao Hacker không thể làm giả JWT?**
+Cái cục `Header.Payload.Signature` được ném cho Client lưu. Lúc này Hacker có thể bắt được cục JWT, lên trang jwt.io dịch ngược phần Payload Base64 ra và sửa chữ `"user"` thành `"admin"`.
+Nhưng khi Hacker gửi cục JWT giả này lên Server:
+- Server tách cái `Signature_Cũ` ra.
+- Server lấy cái `Header` và `Payload_Của_Hacker` đút chung vào cối xay HMAC với cái **Secret Key** (chỉ Server mới biết) để tính ra `Signature_Mới`.
+- Đem so sánh: `Signature_Mới` khác hoàn toàn `Signature_Cũ` đi kèm (do Hiệu ứng cánh bướm của hàm băm).
+- Server chốt hạ: *"Dữ liệu Payload đã bị sửa đổi trên đường bay!"* $\rightarrow$ Đuổi cổ Hacker (Lỗi 401 Unauthorized).
+
+**Kết luận tối thượng:** Hacker có thể nhìn thấy nội dung JWT, có thể sửa nội dung JWT, nhưng **vĩnh viễn không thể làm giả được Signature** vì Hacker không biết cái Secret Key là gì để bỏ vào thuật toán băm HMAC-SHA256!
