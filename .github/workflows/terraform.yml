@@ -1,0 +1,89 @@
+name: 'Terraform CI/CD'
+
+# Chạy tự động mỗi khi có code mới push hoặc pull request ở nhánh main.
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# ---------------------------------------------------------
+# MỐI QUAN HỆ GIỮA TRIGGER (`on:`) VÀ CÁC `jobs:`
+# ---------------------------------------------------------
+# 1. Theo luật của GitHub, khi một sự kiện ở khối `on` được kích hoạt (dù là push hay pull_request),
+#    TẤT CẢ các công việc (jobs) khai báo bên dưới đều sẽ được gọi ra chạy đồng loạt.
+# 2. Ở đây ta chỉ định nghĩa 1 job duy nhất tên là `terraform`. Nghĩa là dù Sếp push thẳng code 
+#    hay Dev tạo Pull Request, thì hệ thống đều cấp phát máy ảo để chạy cái job `terraform` này.
+# 3. Để phân biệt đâu là Push, đâu là PR, ta không chặn ở cấp độ Job, mà ta đặt "trạm gác" (`if:`) 
+#    ở sâu bên trong từng BƯỚC (steps) cụ thể (Hãy xem kỹ Bước 5 ở bên dưới).
+# ---------------------------------------------------------
+jobs:
+  terraform:
+    name: 'Terraform'
+    # LƯU Ý MÔI TRƯỜNG CHẠY (Runner):
+    # `ubuntu-latest` ở đây là hệ điều hành của con Bot (người thợ) do GitHub cấp phát chỉ để gõ lệnh,
+    # hoàn toàn KHÔNG liên quan đến hệ điều hành của máy ảo EC2 thật khai báo trong code Terraform.
+    runs-on: ubuntu-latest
+
+    # Đi vào thư mục chứa code terraform
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+    # Bước 1: Lấy code từ GitHub về máy chủ chạy CI/CD
+    # Giải thích (uses): Máy ảo của GitHub khi mới khởi động là một ổ đĩa trống trơn không có gì cả.
+    # Khai báo `uses: actions/checkout@v3` là mượn một tool có sẵn của GitHub để nó tự động chạy 
+    # lệnh `git clone`, kéo toàn bộ source code của bạn về ổ đĩa trống đó.
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Bước 2: Đăng nhập AWS bằng chìa khóa trong két sắt
+    # Giải thích (uses): `aws-actions/...` là tool do chính Amazon cung cấp để login tự động.
+    # Giải thích (secrets): Cú pháp `${{ secrets.X }}` là lệnh móc chìa khóa
+    # GitHub Secrets mà bạn tạo ở cài đặt để "bơm" vào cho con Bot.
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-southeast-1
+
+    # Bước 3: Khởi tạo Terraform (Đoạn này móc vào S3 state)
+    - name: Terraform Init
+      run: terraform init
+
+    # Bước 4: Chạy thử kế hoạch (Plan)
+    # Lệnh plan sẽ in ra log chi tiết những gì sắp thay đổi (thêm, sửa, xóa tài nguyên nào).
+    #
+    # ---------------------------------------------------------
+    # LUỒNG LÀM VIỆC CHUẨN & CƠ CHẾ STATELESS (Không chờ đợi):
+    # ---------------------------------------------------------
+    # LƯU Ý QUAN TRỌNG: GitHub Actions KHÔNG có chức năng "dừng lại và chờ". Nó chạy xong là hủy máy ảo (Stateless).
+    # Mỗi lần có sự kiện, hệ thống sẽ sinh ra một "Lượt chạy" (Workflow Run) hoàn toàn độc lập:
+    #
+    # [WORKFLOW RUN 1] Khi Dev tạo Pull Request (PR) xin gộp code:
+    # 1. GitHub khởi tạo 1 Workflow Run MỚI. Nó chạy từ Step 1 đến Step 4.
+    # 2. Sang Step 5, môi trường đối chiếu điều kiện (if) thấy sự kiện kích hoạt là `pull_request` (không phải `push`).
+    # 3. Hệ thống BỎ QUA Step 5 và tự hủy máy ảo. Workflow Run 1 kết thúc báo thành công.
+    # 4. Các Tech Lead vào đọc log của Run 1. Nếu an toàn, họ bấm duyệt "Merge PR" trên giao diện Web.
+    #    *(Ghi chú: Nút "Pull Request" của GitHub chính là nút "Merge Request" của GitLab).*
+    # ---------------------------------------------------------
+    - name: Terraform Plan
+      run: terraform plan
+      env:
+        TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    # Bước 5: Apply tự động (Chỉ chạy khi có sự đồng thuận ở Workflow Run 1)
+    # ---------------------------------------------------------
+    # [WORKFLOW RUN 2] Khi Sếp duyệt Merge PR (Tương đương với 1 lệnh Push thẳng lên main):
+    # 5. GitHub khởi tạo 1 Workflow Run thứ 2 KHÁC hoàn toàn. Nó phải chạy lại từ Step 1 đến Step 4.
+    # 6. Sang Step 5, hệ thống đối chiếu điều kiện (if) thấy đang ở nhánh `main` VÀ sự kiện kích hoạt là `push`. Khớp 100%!
+    # 7. Hệ thống THỰC THI Step 5 (Apply) để đẩy cấu hình lên AWS. Sau đó tự hủy. Workflow Run 2 kết thúc.
+    # ---------------------------------------------------------
+    # LƯU Ý: Phải thêm -auto-approve để nó chạy luôn chứ không chờ gõ "yes".
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: terraform apply -auto-approve
+      env:
+        TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}

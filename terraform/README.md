@@ -76,6 +76,11 @@ Tài liệu này định nghĩa kiến trúc hệ thống, quy trình khai báo 
   1. **Refresh (Cập nhật thực tại):** Đọc file state để lấy danh sách ID, sau đó gọi API lên Cloud kiểm tra hiện trạng thực tế của các ID này (đề phòng trường hợp ai đó lén sửa bằng tay trên giao diện Web). Nếu có sai lệch, nó ngầm cập nhật lại file state.
   2. **Plan (Lập kế hoạch):** Lấy source code (`.tf`) so sánh với file state (vừa được refresh) để phát hiện thay đổi, từ đó in ra màn hình Kế hoạch thực thi.
   3. **Apply (Áp dụng):** Chờ người dùng (DevOps) review. Nếu OK, Terraform mới thực sự gọi API lên Cloud để áp dụng các sửa đổi.
+- **Cơ chế Khóa trạng thái (State Locking & `.tflock`):** Khi làm việc nhóm hoặc dùng CI/CD, có nguy cơ hai tiến trình cùng chạy `terraform apply` một lúc dẫn đến ghi đè và làm hỏng (corrupt) file state cốt lõi. Để ngăn chặn thảm họa này:
+  1. **Khóa (Lock):** Khi bắt đầu lệnh, Terraform tự động tạo ra một file tạm thời có đuôi `.tflock` đặt cạnh file state chính để "xí chỗ".
+  2. **Chặn (Block):** Tiến trình thứ 2 chạy lên sẽ thấy file khóa này và bị từ chối truy cập ngay lập tức.
+  3. **Mở khóa (Unlock):** Khi tiến trình 1 chạy xong (thành công hoặc thất bại), nó sẽ tự động xóa file `.tflock` để nhả tài nguyên cho người khác.
+  *(Vì tính chất tạm thời này, IAM Policy cho AWS S3 Backend luôn phải cấp đủ quyền Đọc, Ghi và **Xóa** đối với file `.tflock`, trong khi tuyệt đối cấm quyền Xóa đối với file `.tfstate` chính).*
 ---
 
 ## 2. Nguyên lý Đồ thị Phụ thuộc (Dependency Graph)
@@ -291,3 +296,31 @@ Tạo bản ghi DNS tại biên (Edge) để phân giải Tên miền văn bản
 ## 5. Tham chiếu Tài liệu API Chính thức
 - [AWS Provider Documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
 - [Cloudflare Provider Documentation](https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs)
+
+---
+
+## 6. Phân quyền và Bảo mật (IAM & Security Concepts)
+
+Khi thiết lập các hệ thống tự động hóa (như CI/CD với GitHub Actions) để chạy Terraform, việc cấu hình phân quyền trên AWS (IAM Policy) là bắt buộc. Dưới đây là các khái niệm cốt lõi cần nắm vững:
+
+### 6.1. ARN (Amazon Resource Name) là gì?
+**ARN** là định danh duy nhất (như số Căn cước công dân) cho mọi tài nguyên trên AWS. 
+Cấu trúc chuẩn của ARN gồm 6 thành phần ngăn cách bằng dấu hai chấm (`:`):
+> `arn:partition:service:region:account-id:resource`
+
+**Đặc thù của S3 ARN:**
+Vì S3 là dịch vụ mang tính toàn cầu (Global), tên bucket bắt buộc phải là duy nhất trên toàn thế giới. Do đó, AWS không cần thông tin về `region` và `account-id` để định vị một bucket. 
+Khi ráp vào công thức chuẩn, hai thành phần này bị bỏ trống, tạo ra chuỗi 3 dấu hai chấm `:::` đặc trưng liền kề nhau:
+👉 `arn:aws:s3:::<tên-bucket-của-bạn>`
+
+### 6.2. Thuộc tính "Version" trong IAM Policy JSON
+Khi viết các chính sách phân quyền (Policy) bằng JSON, thuộc tính `"Version"` thường được gán giá trị cố định là `"2012-10-17"`.
+- **Lưu ý quan trọng:** Đây KHÔNG phải là ngày bạn viết/tạo ra file cấu hình.
+- Đây là **Phiên bản ngôn ngữ lập trình quyền (Policy Language Version)** do AWS quy định. AWS phát hành bộ quy tắc cú pháp (syntax) mới nhất vào ngày 17/10/2012 và duy trì nó làm tiêu chuẩn cho đến nay. Việc khai báo chuỗi này là bắt buộc để báo cho hệ thống AWS biết hãy dùng bộ quy tắc hiện đại để biên dịch file JSON của bạn. (Tuyệt đối không đổi sang ngày hiện tại).
+
+### 6.3. Terraform State S3 Backend Policy Template
+Để Terraform (hoặc CI/CD bot) có thể lưu trạng thái (state file) lên S3 một cách an toàn nhất (Least Privilege), cần cấp một tập quyền như sau:
+- Quyền `s3:ListBucket` trên thư mục gốc của bucket (ARN: `arn:aws:s3:::my-bucket`).
+- Quyền `s3:GetObject` và `s3:PutObject` trên đích danh file `terraform.tfstate`.
+- Quyền `s3:GetObject`, `s3:PutObject`, và `s3:DeleteObject` trên đích danh file khóa `terraform.tfstate.tflock` (nếu bật tính năng lock).
+*(Lưu ý: Không bao giờ cấp quyền DeleteObject cho file .tfstate chính để ngăn chặn rủi ro xóa nhầm toàn bộ hạ tầng).*
