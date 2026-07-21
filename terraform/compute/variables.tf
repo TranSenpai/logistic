@@ -9,7 +9,7 @@ variable "cloudflare_zone_id" {
   type        = string
 }
 
-variable "aws_accesskey_id" {
+variable "aws_access_key_id" {
   description = "AWS access key ID"
   type        = string
 }

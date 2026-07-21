@@ -16,7 +16,7 @@ terraform {
 // Khai báo provider compute là AWS
 provider "aws" {
   region     = "ap-southeast-1"
-  access_key = var.aws_accesskey_id
+  access_key = var.aws_access_key_id
   secret_key = var.aws_secret_access_key
 }
 
