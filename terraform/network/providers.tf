@@ -6,21 +6,12 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.54.0"
     }
-    cloudflare = {
-      source  = "cloudflare/cloudflare"
-      version = "~> 4.0"
-    }
   }
 }
 
 // Khai báo provider compute là AWS
 provider "aws" {
-  region     = "ap-southeast-1"
-  access_key = var.aws_accesskey_id
+  region     = var.aws_region
+  access_key = var.aws_access_key_id
   secret_key = var.aws_secret_access_key
-}
-
-// Khai báo provider network là Cloudflare
-provider "cloudflare" {
-  api_token = var.cloudflare_api_token
 }

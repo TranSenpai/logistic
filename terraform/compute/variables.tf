@@ -9,7 +9,7 @@ variable "cloudflare_zone_id" {
   type        = string
 }
 
-variable "aws_accesskey_id" {
+variable "aws_access_key_id" {
   description = "AWS access key ID"
   type        = string
 }
@@ -21,5 +21,15 @@ variable "aws_secret_access_key" {
 
 variable "aws_region" {
   description = "Virtual compute region"
+  type        = string
+}
+
+variable "aws_logistic_key" {
+  description = "Logistic secret key"
+  type        = string
+}
+
+variable "aws_instance_type" {
+  description = "Instance type"
   type        = string
 }
