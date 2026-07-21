@@ -23,3 +23,13 @@ variable "aws_region" {
   description = "Virtual compute region"
   type        = string
 }
+
+variable "aws_logistic_key" {
+  description = "Logistic secret key"
+  type        = string
+}
+
+variable "aws_instance_type" {
+  description = "Instance type"
+  type        = string
+}

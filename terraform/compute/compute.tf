@@ -39,8 +39,8 @@ resource "aws_security_group" "logistic_sg" {
 
 resource "aws_instance" "logistic_server" {
   ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.large"
-  key_name      = "logistic-key"
+  instance_type = var.aws_instance_type
+  key_name      = var.aws_logistic_key
   subnet_id     = aws_subnet.logistic_public_subnet.id
 
   vpc_security_group_ids = [aws_security_group.logistic_sg.id]
