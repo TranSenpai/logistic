@@ -53,4 +53,3 @@ override.tf.json
 *.pem
 rootkey.csv
 chuong_accessKeys.csv
-logistic-key.pem

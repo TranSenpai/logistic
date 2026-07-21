@@ -13,4 +13,5 @@ use (
 	./auth_service
 	./matching_service
 	./media_service // Khai báo media_service là 1 module con
+	./vehicle_service
 )
