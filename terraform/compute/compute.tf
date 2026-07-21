@@ -9,11 +9,20 @@ data "aws_ami" "ubuntu" {
   }
 }
 
+data "terraform_remote_state" "network_logistic" {
+  backend = "s3"
+  config = {
+    bucket = "chuong-logistic-bucket"
+    key    = "logistic/dev/network/terraform.tfstate"
+    region = var.aws_region
+  }
+}
+
 // Tạo 1 security group của aws đặt tên local là logistic_sg
 resource "aws_security_group" "logistic_sg" {
   name        = "logistic-security-group"
   description = "Securiry rules for Logistic application"
-  vpc_id      = aws_vpc.logistic_vpc.id
+  vpc_id      = data.terraform_remote_state.network_logistic.outputs.vpc_id
 
   ingress {
     from_port   = 22
@@ -41,7 +50,7 @@ resource "aws_instance" "logistic_server" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.aws_instance_type
   key_name      = var.aws_logistic_key
-  subnet_id     = aws_subnet.logistic_public_subnet.id
+  subnet_id     = data.terraform_remote_state.network_logistic.outputs.subnet_id
 
   vpc_security_group_ids = [aws_security_group.logistic_sg.id]
 
