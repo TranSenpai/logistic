@@ -1,5 +1,9 @@
 version: '3.8'
 
+networks:
+  logistic_net:
+    driver: bridge
+
 services:
   auth-service:
     build:
@@ -9,6 +13,10 @@ services:
       - "8080:8080"
     env_file:
       - .env
+    volumes:
+      - auth-data:/app/data
+    networks:
+      - logistic_net
   
   media-service:
     build:
@@ -18,3 +26,29 @@ services:
       - "8082:8082"
     env_file:
       - .env
+    volumes:
+      - media-data:/app/data
+    networks:
+      - logistic_net
+
+  nats:
+    image: nats:alpine
+    container_name: nats-server
+    command: 
+      - "-js"           # Kích hoạt chế độ JetStream
+      - "-sd"           # Cờ chỉ định Store Directory
+      - "/data"         # Thư mục lưu trữ JetStream data
+      - "-m"            # Cờ -m <port> (viết tắt của --http_port): Dùng để ra lệnh cho NATS mở một cổng HTTP để bạn có thể xem các thông số Monitor (Giám sát).
+      - "8222"          # Kích hoạt cổng Monitor Web
+    ports:
+      - "4222:4222"     # Port giao tiếp của Client
+      - "8222:8222"     # Port giao tiếp HTTP Monitor
+    volumes:
+      - nats-data:/data # Ánh xạ Volume vào đúng thư mục đã chỉ định
+    networks:
+      - logistic_net
+
+volumes:
+  nats-data:
+  auth-data:
+  media-data:

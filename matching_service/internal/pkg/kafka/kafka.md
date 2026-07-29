@@ -191,8 +191,10 @@ Producer có quyền tự quyết định xem nó cần mức độ xác nhận 
    - Chấm dứt hoàn toàn hiện tượng Stop-the-world.
 
 **C. Cấu hình phân chia (partition.assignment.strategy):**
-*(Ghi chú: Theo cấu hình mặc định hiện tại, Kafka Client sử dụng danh sách `[RangeAssignor, CooperativeStickyAssignor]`. Hệ thống sẽ dùng RangeAssignor làm mặc định, nhưng cho phép nâng cấp mượt mà lên CooperativeStickyAssignor thông qua thao tác rolling bounce đơn giản).*
-*(Lưu ý thêm: Trong Kafka Connect, Cooperative Rebalance đã được bật mặc định. Với Kafka Streams, hệ thống mặc định sử dụng thuật toán StreamsPartitionAssignor).*
+*(Ghi chú: Mặc định (Default Assignor) của Kafka Client là một danh sách `[RangeAssignor, CooperativeStickyAssignor]`. Hệ thống sẽ ưu tiên dùng RangeAssignor, nhưng thiết kế này cho phép nâng cấp mượt mà lên CooperativeStickyAssignor chỉ với một lần **rolling bounce** (khởi động lại xoay vòng) bằng cách xóa RangeAssignor ra khỏi danh sách).*
+*(Lưu ý đối với hệ sinh thái Kafka:)*
+*- **Kafka Connect:** Cooperative Rebalance đã được tích hợp và bật mặc định.*
+*- **Kafka Streams:** Cooperative Rebalance cũng được bật mặc định thông qua thuật toán `StreamsPartitionAssignor`.*
 
 *(Giả sử hệ thống có 2 Topic: Topic-A (3 Partition A0, A1, A2) và Topic-B (3 Partition B0, B1, B2). Group ban đầu có 2 Consumer: C1, C2)*
 
