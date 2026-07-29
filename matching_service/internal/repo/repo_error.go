@@ -15,7 +15,7 @@ func wrapError(err error) error {
 	case *ent.NotFoundError:
 		return fmt.Errorf("%w: %v", cerr.ErrRecordNotFound, err)
 	case *ent.ConstraintError:
-		return fmt.Errorf("%w: %v", cerr.ErrInlavidInput)
+		return fmt.Errorf("%w: %v", cerr.ErrInlavidInput, err)
 	case *ent.ValidationError:
 		return fmt.Errorf("%w: %v", cerr.ErrValidationFailed, err)
 	default:
