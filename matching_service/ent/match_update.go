@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"matching_service/ent/asks"
+	"matching_service/ent/bids"
 	"matching_service/ent/match"
 	"matching_service/ent/predicate"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 )
 
 // MatchUpdate is the builder for updating Match entities.
@@ -25,6 +28,54 @@ type MatchUpdate struct {
 // Where appends a list predicates to the MatchUpdate builder.
 func (_u *MatchUpdate) Where(ps ...predicate.Match) *MatchUpdate {
 	_u.mutation.Where(ps...)
+	return _u
+}
+
+// SetCreatedBy sets the "created_by" field.
+func (_u *MatchUpdate) SetCreatedBy(v uuid.UUID) *MatchUpdate {
+	_u.mutation.SetCreatedBy(v)
+	return _u
+}
+
+// SetNillableCreatedBy sets the "created_by" field if the given value is not nil.
+func (_u *MatchUpdate) SetNillableCreatedBy(v *uuid.UUID) *MatchUpdate {
+	if v != nil {
+		_u.SetCreatedBy(*v)
+	}
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *MatchUpdate) SetUpdatedAt(v time.Time) *MatchUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
+// SetUpdatedBy sets the "updated_by" field.
+func (_u *MatchUpdate) SetUpdatedBy(v uuid.UUID) *MatchUpdate {
+	_u.mutation.SetUpdatedBy(v)
+	return _u
+}
+
+// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
+func (_u *MatchUpdate) SetNillableUpdatedBy(v *uuid.UUID) *MatchUpdate {
+	if v != nil {
+		_u.SetUpdatedBy(*v)
+	}
+	return _u
+}
+
+// SetIsDeleted sets the "is_deleted" field.
+func (_u *MatchUpdate) SetIsDeleted(v bool) *MatchUpdate {
+	_u.mutation.SetIsDeleted(v)
+	return _u
+}
+
+// SetNillableIsDeleted sets the "is_deleted" field if the given value is not nil.
+func (_u *MatchUpdate) SetNillableIsDeleted(v *bool) *MatchUpdate {
+	if v != nil {
+		_u.SetIsDeleted(*v)
+	}
 	return _u
 }
 
@@ -49,44 +100,30 @@ func (_u *MatchUpdate) ClearDeletedAt() *MatchUpdate {
 }
 
 // SetBidID sets the "bid_id" field.
-func (_u *MatchUpdate) SetBidID(v int) *MatchUpdate {
-	_u.mutation.ResetBidID()
+func (_u *MatchUpdate) SetBidID(v uuid.UUID) *MatchUpdate {
 	_u.mutation.SetBidID(v)
 	return _u
 }
 
 // SetNillableBidID sets the "bid_id" field if the given value is not nil.
-func (_u *MatchUpdate) SetNillableBidID(v *int) *MatchUpdate {
+func (_u *MatchUpdate) SetNillableBidID(v *uuid.UUID) *MatchUpdate {
 	if v != nil {
 		_u.SetBidID(*v)
 	}
 	return _u
 }
 
-// AddBidID adds value to the "bid_id" field.
-func (_u *MatchUpdate) AddBidID(v int) *MatchUpdate {
-	_u.mutation.AddBidID(v)
-	return _u
-}
-
 // SetAskID sets the "ask_id" field.
-func (_u *MatchUpdate) SetAskID(v int) *MatchUpdate {
-	_u.mutation.ResetAskID()
+func (_u *MatchUpdate) SetAskID(v uuid.UUID) *MatchUpdate {
 	_u.mutation.SetAskID(v)
 	return _u
 }
 
 // SetNillableAskID sets the "ask_id" field if the given value is not nil.
-func (_u *MatchUpdate) SetNillableAskID(v *int) *MatchUpdate {
+func (_u *MatchUpdate) SetNillableAskID(v *uuid.UUID) *MatchUpdate {
 	if v != nil {
 		_u.SetAskID(*v)
 	}
-	return _u
-}
-
-// AddAskID adds value to the "ask_id" field.
-func (_u *MatchUpdate) AddAskID(v int) *MatchUpdate {
-	_u.mutation.AddAskID(v)
 	return _u
 }
 
@@ -132,15 +169,43 @@ func (_u *MatchUpdate) AddStatus(v int) *MatchUpdate {
 	return _u
 }
 
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *MatchUpdate) SetUpdatedAt(v time.Time) *MatchUpdate {
-	_u.mutation.SetUpdatedAt(v)
+// SetAsksID sets the "asks" edge to the Asks entity by ID.
+func (_u *MatchUpdate) SetAsksID(id uuid.UUID) *MatchUpdate {
+	_u.mutation.SetAsksID(id)
 	return _u
+}
+
+// SetAsks sets the "asks" edge to the Asks entity.
+func (_u *MatchUpdate) SetAsks(v *Asks) *MatchUpdate {
+	return _u.SetAsksID(v.ID)
+}
+
+// SetBidsID sets the "bids" edge to the Bids entity by ID.
+func (_u *MatchUpdate) SetBidsID(id uuid.UUID) *MatchUpdate {
+	_u.mutation.SetBidsID(id)
+	return _u
+}
+
+// SetBids sets the "bids" edge to the Bids entity.
+func (_u *MatchUpdate) SetBids(v *Bids) *MatchUpdate {
+	return _u.SetBidsID(v.ID)
 }
 
 // Mutation returns the MatchMutation object of the builder.
 func (_u *MatchUpdate) Mutation() *MatchMutation {
 	return _u.mutation
+}
+
+// ClearAsks clears the "asks" edge to the Asks entity.
+func (_u *MatchUpdate) ClearAsks() *MatchUpdate {
+	_u.mutation.ClearAsks()
+	return _u
+}
+
+// ClearBids clears the "bids" edge to the Bids entity.
+func (_u *MatchUpdate) ClearBids() *MatchUpdate {
+	_u.mutation.ClearBids()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -185,7 +250,21 @@ func (_u *MatchUpdate) defaults() error {
 	return nil
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *MatchUpdate) check() error {
+	if _u.mutation.AsksCleared() && len(_u.mutation.AsksIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Match.asks"`)
+	}
+	if _u.mutation.BidsCleared() && len(_u.mutation.BidsIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Match.bids"`)
+	}
+	return nil
+}
+
 func (_u *MatchUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(match.Table, match.Columns, sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -194,23 +273,23 @@ func (_u *MatchUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.CreatedBy(); ok {
+		_spec.SetField(match.FieldCreatedBy, field.TypeUUID, value)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(match.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.UpdatedBy(); ok {
+		_spec.SetField(match.FieldUpdatedBy, field.TypeUUID, value)
+	}
+	if value, ok := _u.mutation.IsDeleted(); ok {
+		_spec.SetField(match.FieldIsDeleted, field.TypeBool, value)
+	}
 	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(match.FieldDeletedAt, field.TypeTime, value)
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(match.FieldDeletedAt, field.TypeTime)
-	}
-	if value, ok := _u.mutation.BidID(); ok {
-		_spec.SetField(match.FieldBidID, field.TypeInt, value)
-	}
-	if value, ok := _u.mutation.AddedBidID(); ok {
-		_spec.AddField(match.FieldBidID, field.TypeInt, value)
-	}
-	if value, ok := _u.mutation.AskID(); ok {
-		_spec.SetField(match.FieldAskID, field.TypeInt, value)
-	}
-	if value, ok := _u.mutation.AddedAskID(); ok {
-		_spec.AddField(match.FieldAskID, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.AgreedPrice(); ok {
 		_spec.SetField(match.FieldAgreedPrice, field.TypeFloat64, value)
@@ -224,8 +303,63 @@ func (_u *MatchUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AddedStatus(); ok {
 		_spec.AddField(match.FieldStatus, field.TypeInt, value)
 	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(match.FieldUpdatedAt, field.TypeTime, value)
+	if _u.mutation.AsksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   match.AsksTable,
+			Columns: []string{match.AsksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(asks.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AsksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   match.AsksTable,
+			Columns: []string{match.AsksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(asks.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BidsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   match.BidsTable,
+			Columns: []string{match.BidsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bids.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BidsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   match.BidsTable,
+			Columns: []string{match.BidsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bids.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -245,6 +379,54 @@ type MatchUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *MatchMutation
+}
+
+// SetCreatedBy sets the "created_by" field.
+func (_u *MatchUpdateOne) SetCreatedBy(v uuid.UUID) *MatchUpdateOne {
+	_u.mutation.SetCreatedBy(v)
+	return _u
+}
+
+// SetNillableCreatedBy sets the "created_by" field if the given value is not nil.
+func (_u *MatchUpdateOne) SetNillableCreatedBy(v *uuid.UUID) *MatchUpdateOne {
+	if v != nil {
+		_u.SetCreatedBy(*v)
+	}
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *MatchUpdateOne) SetUpdatedAt(v time.Time) *MatchUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
+// SetUpdatedBy sets the "updated_by" field.
+func (_u *MatchUpdateOne) SetUpdatedBy(v uuid.UUID) *MatchUpdateOne {
+	_u.mutation.SetUpdatedBy(v)
+	return _u
+}
+
+// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
+func (_u *MatchUpdateOne) SetNillableUpdatedBy(v *uuid.UUID) *MatchUpdateOne {
+	if v != nil {
+		_u.SetUpdatedBy(*v)
+	}
+	return _u
+}
+
+// SetIsDeleted sets the "is_deleted" field.
+func (_u *MatchUpdateOne) SetIsDeleted(v bool) *MatchUpdateOne {
+	_u.mutation.SetIsDeleted(v)
+	return _u
+}
+
+// SetNillableIsDeleted sets the "is_deleted" field if the given value is not nil.
+func (_u *MatchUpdateOne) SetNillableIsDeleted(v *bool) *MatchUpdateOne {
+	if v != nil {
+		_u.SetIsDeleted(*v)
+	}
+	return _u
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -268,44 +450,30 @@ func (_u *MatchUpdateOne) ClearDeletedAt() *MatchUpdateOne {
 }
 
 // SetBidID sets the "bid_id" field.
-func (_u *MatchUpdateOne) SetBidID(v int) *MatchUpdateOne {
-	_u.mutation.ResetBidID()
+func (_u *MatchUpdateOne) SetBidID(v uuid.UUID) *MatchUpdateOne {
 	_u.mutation.SetBidID(v)
 	return _u
 }
 
 // SetNillableBidID sets the "bid_id" field if the given value is not nil.
-func (_u *MatchUpdateOne) SetNillableBidID(v *int) *MatchUpdateOne {
+func (_u *MatchUpdateOne) SetNillableBidID(v *uuid.UUID) *MatchUpdateOne {
 	if v != nil {
 		_u.SetBidID(*v)
 	}
 	return _u
 }
 
-// AddBidID adds value to the "bid_id" field.
-func (_u *MatchUpdateOne) AddBidID(v int) *MatchUpdateOne {
-	_u.mutation.AddBidID(v)
-	return _u
-}
-
 // SetAskID sets the "ask_id" field.
-func (_u *MatchUpdateOne) SetAskID(v int) *MatchUpdateOne {
-	_u.mutation.ResetAskID()
+func (_u *MatchUpdateOne) SetAskID(v uuid.UUID) *MatchUpdateOne {
 	_u.mutation.SetAskID(v)
 	return _u
 }
 
 // SetNillableAskID sets the "ask_id" field if the given value is not nil.
-func (_u *MatchUpdateOne) SetNillableAskID(v *int) *MatchUpdateOne {
+func (_u *MatchUpdateOne) SetNillableAskID(v *uuid.UUID) *MatchUpdateOne {
 	if v != nil {
 		_u.SetAskID(*v)
 	}
-	return _u
-}
-
-// AddAskID adds value to the "ask_id" field.
-func (_u *MatchUpdateOne) AddAskID(v int) *MatchUpdateOne {
-	_u.mutation.AddAskID(v)
 	return _u
 }
 
@@ -351,15 +519,43 @@ func (_u *MatchUpdateOne) AddStatus(v int) *MatchUpdateOne {
 	return _u
 }
 
-// SetUpdatedAt sets the "updated_at" field.
-func (_u *MatchUpdateOne) SetUpdatedAt(v time.Time) *MatchUpdateOne {
-	_u.mutation.SetUpdatedAt(v)
+// SetAsksID sets the "asks" edge to the Asks entity by ID.
+func (_u *MatchUpdateOne) SetAsksID(id uuid.UUID) *MatchUpdateOne {
+	_u.mutation.SetAsksID(id)
 	return _u
+}
+
+// SetAsks sets the "asks" edge to the Asks entity.
+func (_u *MatchUpdateOne) SetAsks(v *Asks) *MatchUpdateOne {
+	return _u.SetAsksID(v.ID)
+}
+
+// SetBidsID sets the "bids" edge to the Bids entity by ID.
+func (_u *MatchUpdateOne) SetBidsID(id uuid.UUID) *MatchUpdateOne {
+	_u.mutation.SetBidsID(id)
+	return _u
+}
+
+// SetBids sets the "bids" edge to the Bids entity.
+func (_u *MatchUpdateOne) SetBids(v *Bids) *MatchUpdateOne {
+	return _u.SetBidsID(v.ID)
 }
 
 // Mutation returns the MatchMutation object of the builder.
 func (_u *MatchUpdateOne) Mutation() *MatchMutation {
 	return _u.mutation
+}
+
+// ClearAsks clears the "asks" edge to the Asks entity.
+func (_u *MatchUpdateOne) ClearAsks() *MatchUpdateOne {
+	_u.mutation.ClearAsks()
+	return _u
+}
+
+// ClearBids clears the "bids" edge to the Bids entity.
+func (_u *MatchUpdateOne) ClearBids() *MatchUpdateOne {
+	_u.mutation.ClearBids()
+	return _u
 }
 
 // Where appends a list predicates to the MatchUpdate builder.
@@ -417,7 +613,21 @@ func (_u *MatchUpdateOne) defaults() error {
 	return nil
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *MatchUpdateOne) check() error {
+	if _u.mutation.AsksCleared() && len(_u.mutation.AsksIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Match.asks"`)
+	}
+	if _u.mutation.BidsCleared() && len(_u.mutation.BidsIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Match.bids"`)
+	}
+	return nil
+}
+
 func (_u *MatchUpdateOne) sqlSave(ctx context.Context) (_node *Match, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(match.Table, match.Columns, sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
@@ -443,23 +653,23 @@ func (_u *MatchUpdateOne) sqlSave(ctx context.Context) (_node *Match, err error)
 			}
 		}
 	}
+	if value, ok := _u.mutation.CreatedBy(); ok {
+		_spec.SetField(match.FieldCreatedBy, field.TypeUUID, value)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(match.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.UpdatedBy(); ok {
+		_spec.SetField(match.FieldUpdatedBy, field.TypeUUID, value)
+	}
+	if value, ok := _u.mutation.IsDeleted(); ok {
+		_spec.SetField(match.FieldIsDeleted, field.TypeBool, value)
+	}
 	if value, ok := _u.mutation.DeletedAt(); ok {
 		_spec.SetField(match.FieldDeletedAt, field.TypeTime, value)
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(match.FieldDeletedAt, field.TypeTime)
-	}
-	if value, ok := _u.mutation.BidID(); ok {
-		_spec.SetField(match.FieldBidID, field.TypeInt, value)
-	}
-	if value, ok := _u.mutation.AddedBidID(); ok {
-		_spec.AddField(match.FieldBidID, field.TypeInt, value)
-	}
-	if value, ok := _u.mutation.AskID(); ok {
-		_spec.SetField(match.FieldAskID, field.TypeInt, value)
-	}
-	if value, ok := _u.mutation.AddedAskID(); ok {
-		_spec.AddField(match.FieldAskID, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.AgreedPrice(); ok {
 		_spec.SetField(match.FieldAgreedPrice, field.TypeFloat64, value)
@@ -473,8 +683,63 @@ func (_u *MatchUpdateOne) sqlSave(ctx context.Context) (_node *Match, err error)
 	if value, ok := _u.mutation.AddedStatus(); ok {
 		_spec.AddField(match.FieldStatus, field.TypeInt, value)
 	}
-	if value, ok := _u.mutation.UpdatedAt(); ok {
-		_spec.SetField(match.FieldUpdatedAt, field.TypeTime, value)
+	if _u.mutation.AsksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   match.AsksTable,
+			Columns: []string{match.AsksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(asks.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AsksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   match.AsksTable,
+			Columns: []string{match.AsksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(asks.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.BidsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   match.BidsTable,
+			Columns: []string{match.BidsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bids.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.BidsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   match.BidsTable,
+			Columns: []string{match.BidsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(bids.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Match{config: _u.config}
 	_spec.Assign = _node.assignValues

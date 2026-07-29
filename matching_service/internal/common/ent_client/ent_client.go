@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"matching_service/ent"
 	"matching_service/internal/env"
-	"log"
 
 	_ "matching_service/ent/runtime"
 

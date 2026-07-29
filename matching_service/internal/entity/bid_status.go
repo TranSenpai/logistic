@@ -1,12 +1,12 @@
 package entity
 
 const (
-	BidStatusPending   string = "PENDING"
-	BidStatusMatched   string = "MATCHED"
-	BidStatusCancelled string = "CANCELLED"
+	BidStatusPending int8 = iota
+	BidStatusMatched
+	BidStatusCancelled
 )
 
-func IsValidBidStatus(status string) bool {
+func IsValidBidStatus(status int8) bool {
 	switch status {
 	case BidStatusPending, BidStatusMatched, BidStatusCancelled:
 		return true

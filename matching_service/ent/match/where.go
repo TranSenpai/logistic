@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
@@ -54,18 +56,43 @@ func IDLTE(id int) predicate.Match {
 	return predicate.Match(sql.FieldLTE(FieldID, id))
 }
 
+// CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
+func CreatedAt(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldCreatedAt, v))
+}
+
+// CreatedBy applies equality check predicate on the "created_by" field. It's identical to CreatedByEQ.
+func CreatedBy(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldCreatedBy, v))
+}
+
+// UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
+func UpdatedAt(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedBy applies equality check predicate on the "updated_by" field. It's identical to UpdatedByEQ.
+func UpdatedBy(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldUpdatedBy, v))
+}
+
+// IsDeleted applies equality check predicate on the "is_deleted" field. It's identical to IsDeletedEQ.
+func IsDeleted(v bool) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldIsDeleted, v))
+}
+
 // DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
 func DeletedAt(v time.Time) predicate.Match {
 	return predicate.Match(sql.FieldEQ(FieldDeletedAt, v))
 }
 
 // BidID applies equality check predicate on the "bid_id" field. It's identical to BidIDEQ.
-func BidID(v int) predicate.Match {
+func BidID(v uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldEQ(FieldBidID, v))
 }
 
 // AskID applies equality check predicate on the "ask_id" field. It's identical to AskIDEQ.
-func AskID(v int) predicate.Match {
+func AskID(v uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldEQ(FieldAskID, v))
 }
 
@@ -79,14 +106,174 @@ func Status(v int) predicate.Match {
 	return predicate.Match(sql.FieldEQ(FieldStatus, v))
 }
 
-// CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
-func CreatedAt(v time.Time) predicate.Match {
+// CreatedAtEQ applies the EQ predicate on the "created_at" field.
+func CreatedAtEQ(v time.Time) predicate.Match {
 	return predicate.Match(sql.FieldEQ(FieldCreatedAt, v))
 }
 
-// UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
-func UpdatedAt(v time.Time) predicate.Match {
+// CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
+func CreatedAtNEQ(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldNEQ(FieldCreatedAt, v))
+}
+
+// CreatedAtIn applies the In predicate on the "created_at" field.
+func CreatedAtIn(vs ...time.Time) predicate.Match {
+	return predicate.Match(sql.FieldIn(FieldCreatedAt, vs...))
+}
+
+// CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
+func CreatedAtNotIn(vs ...time.Time) predicate.Match {
+	return predicate.Match(sql.FieldNotIn(FieldCreatedAt, vs...))
+}
+
+// CreatedAtGT applies the GT predicate on the "created_at" field.
+func CreatedAtGT(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldGT(FieldCreatedAt, v))
+}
+
+// CreatedAtGTE applies the GTE predicate on the "created_at" field.
+func CreatedAtGTE(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldGTE(FieldCreatedAt, v))
+}
+
+// CreatedAtLT applies the LT predicate on the "created_at" field.
+func CreatedAtLT(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldLT(FieldCreatedAt, v))
+}
+
+// CreatedAtLTE applies the LTE predicate on the "created_at" field.
+func CreatedAtLTE(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// CreatedByEQ applies the EQ predicate on the "created_by" field.
+func CreatedByEQ(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldCreatedBy, v))
+}
+
+// CreatedByNEQ applies the NEQ predicate on the "created_by" field.
+func CreatedByNEQ(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldNEQ(FieldCreatedBy, v))
+}
+
+// CreatedByIn applies the In predicate on the "created_by" field.
+func CreatedByIn(vs ...uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldIn(FieldCreatedBy, vs...))
+}
+
+// CreatedByNotIn applies the NotIn predicate on the "created_by" field.
+func CreatedByNotIn(vs ...uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldNotIn(FieldCreatedBy, vs...))
+}
+
+// CreatedByGT applies the GT predicate on the "created_by" field.
+func CreatedByGT(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldGT(FieldCreatedBy, v))
+}
+
+// CreatedByGTE applies the GTE predicate on the "created_by" field.
+func CreatedByGTE(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldGTE(FieldCreatedBy, v))
+}
+
+// CreatedByLT applies the LT predicate on the "created_by" field.
+func CreatedByLT(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldLT(FieldCreatedBy, v))
+}
+
+// CreatedByLTE applies the LTE predicate on the "created_by" field.
+func CreatedByLTE(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldLTE(FieldCreatedBy, v))
+}
+
+// UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
+func UpdatedAtEQ(v time.Time) predicate.Match {
 	return predicate.Match(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtNEQ applies the NEQ predicate on the "updated_at" field.
+func UpdatedAtNEQ(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldNEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIn applies the In predicate on the "updated_at" field.
+func UpdatedAtIn(vs ...time.Time) predicate.Match {
+	return predicate.Match(sql.FieldIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtNotIn applies the NotIn predicate on the "updated_at" field.
+func UpdatedAtNotIn(vs ...time.Time) predicate.Match {
+	return predicate.Match(sql.FieldNotIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtGT applies the GT predicate on the "updated_at" field.
+func UpdatedAtGT(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldGT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtGTE applies the GTE predicate on the "updated_at" field.
+func UpdatedAtGTE(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldGTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLT applies the LT predicate on the "updated_at" field.
+func UpdatedAtLT(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldLT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
+func UpdatedAtLTE(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedByEQ applies the EQ predicate on the "updated_by" field.
+func UpdatedByEQ(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldUpdatedBy, v))
+}
+
+// UpdatedByNEQ applies the NEQ predicate on the "updated_by" field.
+func UpdatedByNEQ(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldNEQ(FieldUpdatedBy, v))
+}
+
+// UpdatedByIn applies the In predicate on the "updated_by" field.
+func UpdatedByIn(vs ...uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldIn(FieldUpdatedBy, vs...))
+}
+
+// UpdatedByNotIn applies the NotIn predicate on the "updated_by" field.
+func UpdatedByNotIn(vs ...uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldNotIn(FieldUpdatedBy, vs...))
+}
+
+// UpdatedByGT applies the GT predicate on the "updated_by" field.
+func UpdatedByGT(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldGT(FieldUpdatedBy, v))
+}
+
+// UpdatedByGTE applies the GTE predicate on the "updated_by" field.
+func UpdatedByGTE(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldGTE(FieldUpdatedBy, v))
+}
+
+// UpdatedByLT applies the LT predicate on the "updated_by" field.
+func UpdatedByLT(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldLT(FieldUpdatedBy, v))
+}
+
+// UpdatedByLTE applies the LTE predicate on the "updated_by" field.
+func UpdatedByLTE(v uuid.UUID) predicate.Match {
+	return predicate.Match(sql.FieldLTE(FieldUpdatedBy, v))
+}
+
+// IsDeletedEQ applies the EQ predicate on the "is_deleted" field.
+func IsDeletedEQ(v bool) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldIsDeleted, v))
+}
+
+// IsDeletedNEQ applies the NEQ predicate on the "is_deleted" field.
+func IsDeletedNEQ(v bool) predicate.Match {
+	return predicate.Match(sql.FieldNEQ(FieldIsDeleted, v))
 }
 
 // DeletedAtEQ applies the EQ predicate on the "deleted_at" field.
@@ -140,83 +327,43 @@ func DeletedAtNotNil() predicate.Match {
 }
 
 // BidIDEQ applies the EQ predicate on the "bid_id" field.
-func BidIDEQ(v int) predicate.Match {
+func BidIDEQ(v uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldEQ(FieldBidID, v))
 }
 
 // BidIDNEQ applies the NEQ predicate on the "bid_id" field.
-func BidIDNEQ(v int) predicate.Match {
+func BidIDNEQ(v uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldNEQ(FieldBidID, v))
 }
 
 // BidIDIn applies the In predicate on the "bid_id" field.
-func BidIDIn(vs ...int) predicate.Match {
+func BidIDIn(vs ...uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldIn(FieldBidID, vs...))
 }
 
 // BidIDNotIn applies the NotIn predicate on the "bid_id" field.
-func BidIDNotIn(vs ...int) predicate.Match {
+func BidIDNotIn(vs ...uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldNotIn(FieldBidID, vs...))
 }
 
-// BidIDGT applies the GT predicate on the "bid_id" field.
-func BidIDGT(v int) predicate.Match {
-	return predicate.Match(sql.FieldGT(FieldBidID, v))
-}
-
-// BidIDGTE applies the GTE predicate on the "bid_id" field.
-func BidIDGTE(v int) predicate.Match {
-	return predicate.Match(sql.FieldGTE(FieldBidID, v))
-}
-
-// BidIDLT applies the LT predicate on the "bid_id" field.
-func BidIDLT(v int) predicate.Match {
-	return predicate.Match(sql.FieldLT(FieldBidID, v))
-}
-
-// BidIDLTE applies the LTE predicate on the "bid_id" field.
-func BidIDLTE(v int) predicate.Match {
-	return predicate.Match(sql.FieldLTE(FieldBidID, v))
-}
-
 // AskIDEQ applies the EQ predicate on the "ask_id" field.
-func AskIDEQ(v int) predicate.Match {
+func AskIDEQ(v uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldEQ(FieldAskID, v))
 }
 
 // AskIDNEQ applies the NEQ predicate on the "ask_id" field.
-func AskIDNEQ(v int) predicate.Match {
+func AskIDNEQ(v uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldNEQ(FieldAskID, v))
 }
 
 // AskIDIn applies the In predicate on the "ask_id" field.
-func AskIDIn(vs ...int) predicate.Match {
+func AskIDIn(vs ...uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldIn(FieldAskID, vs...))
 }
 
 // AskIDNotIn applies the NotIn predicate on the "ask_id" field.
-func AskIDNotIn(vs ...int) predicate.Match {
+func AskIDNotIn(vs ...uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldNotIn(FieldAskID, vs...))
-}
-
-// AskIDGT applies the GT predicate on the "ask_id" field.
-func AskIDGT(v int) predicate.Match {
-	return predicate.Match(sql.FieldGT(FieldAskID, v))
-}
-
-// AskIDGTE applies the GTE predicate on the "ask_id" field.
-func AskIDGTE(v int) predicate.Match {
-	return predicate.Match(sql.FieldGTE(FieldAskID, v))
-}
-
-// AskIDLT applies the LT predicate on the "ask_id" field.
-func AskIDLT(v int) predicate.Match {
-	return predicate.Match(sql.FieldLT(FieldAskID, v))
-}
-
-// AskIDLTE applies the LTE predicate on the "ask_id" field.
-func AskIDLTE(v int) predicate.Match {
-	return predicate.Match(sql.FieldLTE(FieldAskID, v))
 }
 
 // AgreedPriceEQ applies the EQ predicate on the "agreed_price" field.
@@ -299,84 +446,50 @@ func StatusLTE(v int) predicate.Match {
 	return predicate.Match(sql.FieldLTE(FieldStatus, v))
 }
 
-// CreatedAtEQ applies the EQ predicate on the "created_at" field.
-func CreatedAtEQ(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldEQ(FieldCreatedAt, v))
+// HasAsks applies the HasEdge predicate on the "asks" edge.
+func HasAsks() predicate.Match {
+	return predicate.Match(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, AsksTable, AsksColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
 }
 
-// CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
-func CreatedAtNEQ(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldNEQ(FieldCreatedAt, v))
+// HasAsksWith applies the HasEdge predicate on the "asks" edge with a given conditions (other predicates).
+func HasAsksWith(preds ...predicate.Asks) predicate.Match {
+	return predicate.Match(func(s *sql.Selector) {
+		step := newAsksStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
-// CreatedAtIn applies the In predicate on the "created_at" field.
-func CreatedAtIn(vs ...time.Time) predicate.Match {
-	return predicate.Match(sql.FieldIn(FieldCreatedAt, vs...))
+// HasBids applies the HasEdge predicate on the "bids" edge.
+func HasBids() predicate.Match {
+	return predicate.Match(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, BidsTable, BidsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
 }
 
-// CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
-func CreatedAtNotIn(vs ...time.Time) predicate.Match {
-	return predicate.Match(sql.FieldNotIn(FieldCreatedAt, vs...))
-}
-
-// CreatedAtGT applies the GT predicate on the "created_at" field.
-func CreatedAtGT(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldGT(FieldCreatedAt, v))
-}
-
-// CreatedAtGTE applies the GTE predicate on the "created_at" field.
-func CreatedAtGTE(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldGTE(FieldCreatedAt, v))
-}
-
-// CreatedAtLT applies the LT predicate on the "created_at" field.
-func CreatedAtLT(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldLT(FieldCreatedAt, v))
-}
-
-// CreatedAtLTE applies the LTE predicate on the "created_at" field.
-func CreatedAtLTE(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldLTE(FieldCreatedAt, v))
-}
-
-// UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
-func UpdatedAtEQ(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldEQ(FieldUpdatedAt, v))
-}
-
-// UpdatedAtNEQ applies the NEQ predicate on the "updated_at" field.
-func UpdatedAtNEQ(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldNEQ(FieldUpdatedAt, v))
-}
-
-// UpdatedAtIn applies the In predicate on the "updated_at" field.
-func UpdatedAtIn(vs ...time.Time) predicate.Match {
-	return predicate.Match(sql.FieldIn(FieldUpdatedAt, vs...))
-}
-
-// UpdatedAtNotIn applies the NotIn predicate on the "updated_at" field.
-func UpdatedAtNotIn(vs ...time.Time) predicate.Match {
-	return predicate.Match(sql.FieldNotIn(FieldUpdatedAt, vs...))
-}
-
-// UpdatedAtGT applies the GT predicate on the "updated_at" field.
-func UpdatedAtGT(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldGT(FieldUpdatedAt, v))
-}
-
-// UpdatedAtGTE applies the GTE predicate on the "updated_at" field.
-func UpdatedAtGTE(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldGTE(FieldUpdatedAt, v))
-}
-
-// UpdatedAtLT applies the LT predicate on the "updated_at" field.
-func UpdatedAtLT(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldLT(FieldUpdatedAt, v))
-}
-
-// UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
-func UpdatedAtLTE(v time.Time) predicate.Match {
-	return predicate.Match(sql.FieldLTE(FieldUpdatedAt, v))
+// HasBidsWith applies the HasEdge predicate on the "bids" edge with a given conditions (other predicates).
+func HasBidsWith(preds ...predicate.Bids) predicate.Match {
+	return predicate.Match(func(s *sql.Selector) {
+		step := newBidsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

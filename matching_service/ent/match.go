@@ -4,12 +4,15 @@ package ent
 
 import (
 	"fmt"
+	"matching_service/ent/asks"
+	"matching_service/ent/bids"
 	"matching_service/ent/match"
 	"strings"
 	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 )
 
 // Match is the model entity for the Match schema.
@@ -17,21 +20,63 @@ type Match struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// CreatedBy holds the value of the "created_by" field.
+	CreatedBy uuid.UUID `json:"created_by,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// UpdatedBy holds the value of the "updated_by" field.
+	UpdatedBy uuid.UUID `json:"updated_by,omitempty"`
+	// IsDeleted holds the value of the "is_deleted" field.
+	IsDeleted bool `json:"is_deleted,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
-	// BidID holds the value of the "bid_id" field.
-	BidID int `json:"bid_id,omitempty"`
-	// AskID holds the value of the "ask_id" field.
-	AskID int `json:"ask_id,omitempty"`
+	// Logical FK point to Bids
+	BidID uuid.UUID `json:"bid_id,omitempty"`
+	// Logical FK point to Asks
+	AskID uuid.UUID `json:"ask_id,omitempty"`
 	// AgreedPrice holds the value of the "agreed_price" field.
 	AgreedPrice float64 `json:"agreed_price,omitempty"`
 	// Status holds the value of the "status" field.
 	Status int `json:"status,omitempty"`
-	// CreatedAt holds the value of the "created_at" field.
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt    time.Time `json:"updated_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the MatchQuery when eager-loading is set.
+	Edges        MatchEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// MatchEdges holds the relations/edges for other nodes in the graph.
+type MatchEdges struct {
+	// Asks holds the value of the asks edge.
+	Asks *Asks `json:"asks,omitempty"`
+	// Bids holds the value of the bids edge.
+	Bids *Bids `json:"bids,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+}
+
+// AsksOrErr returns the Asks value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MatchEdges) AsksOrErr() (*Asks, error) {
+	if e.Asks != nil {
+		return e.Asks, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: asks.Label}
+	}
+	return nil, &NotLoadedError{edge: "asks"}
+}
+
+// BidsOrErr returns the Bids value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MatchEdges) BidsOrErr() (*Bids, error) {
+	if e.Bids != nil {
+		return e.Bids, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: bids.Label}
+	}
+	return nil, &NotLoadedError{edge: "bids"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -39,12 +84,16 @@ func (*Match) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case match.FieldIsDeleted:
+			values[i] = new(sql.NullBool)
 		case match.FieldAgreedPrice:
 			values[i] = new(sql.NullFloat64)
-		case match.FieldID, match.FieldBidID, match.FieldAskID, match.FieldStatus:
+		case match.FieldID, match.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case match.FieldDeletedAt, match.FieldCreatedAt, match.FieldUpdatedAt:
+		case match.FieldCreatedAt, match.FieldUpdatedAt, match.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
+		case match.FieldCreatedBy, match.FieldUpdatedBy, match.FieldBidID, match.FieldAskID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -66,6 +115,36 @@ func (_m *Match) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int(value.Int64)
+		case match.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				_m.CreatedAt = value.Time
+			}
+		case match.FieldCreatedBy:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field created_by", values[i])
+			} else if value != nil {
+				_m.CreatedBy = *value
+			}
+		case match.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				_m.UpdatedAt = value.Time
+			}
+		case match.FieldUpdatedBy:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_by", values[i])
+			} else if value != nil {
+				_m.UpdatedBy = *value
+			}
+		case match.FieldIsDeleted:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_deleted", values[i])
+			} else if value.Valid {
+				_m.IsDeleted = value.Bool
+			}
 		case match.FieldDeletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
@@ -73,16 +152,16 @@ func (_m *Match) assignValues(columns []string, values []any) error {
 				_m.DeletedAt = value.Time
 			}
 		case match.FieldBidID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field bid_id", values[i])
-			} else if value.Valid {
-				_m.BidID = int(value.Int64)
+			} else if value != nil {
+				_m.BidID = *value
 			}
 		case match.FieldAskID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field ask_id", values[i])
-			} else if value.Valid {
-				_m.AskID = int(value.Int64)
+			} else if value != nil {
+				_m.AskID = *value
 			}
 		case match.FieldAgreedPrice:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -96,18 +175,6 @@ func (_m *Match) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Status = int(value.Int64)
 			}
-		case match.FieldCreatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field created_at", values[i])
-			} else if value.Valid {
-				_m.CreatedAt = value.Time
-			}
-		case match.FieldUpdatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
-			} else if value.Valid {
-				_m.UpdatedAt = value.Time
-			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -119,6 +186,16 @@ func (_m *Match) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Match) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryAsks queries the "asks" edge of the Match entity.
+func (_m *Match) QueryAsks() *AsksQuery {
+	return NewMatchClient(_m.config).QueryAsks(_m)
+}
+
+// QueryBids queries the "bids" edge of the Match entity.
+func (_m *Match) QueryBids() *BidsQuery {
+	return NewMatchClient(_m.config).QueryBids(_m)
 }
 
 // Update returns a builder for updating this Match.
@@ -144,6 +221,21 @@ func (_m *Match) String() string {
 	var builder strings.Builder
 	builder.WriteString("Match(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("created_by=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CreatedBy))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_by=")
+	builder.WriteString(fmt.Sprintf("%v", _m.UpdatedBy))
+	builder.WriteString(", ")
+	builder.WriteString("is_deleted=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IsDeleted))
+	builder.WriteString(", ")
 	builder.WriteString("deleted_at=")
 	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
@@ -158,12 +250,6 @@ func (_m *Match) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
-	builder.WriteString(", ")
-	builder.WriteString("created_at=")
-	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("updated_at=")
-	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

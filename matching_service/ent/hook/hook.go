@@ -8,28 +8,40 @@ import (
 	"matching_service/ent"
 )
 
-// The AskFunc type is an adapter to allow the use of ordinary
-// function as Ask mutator.
-type AskFunc func(context.Context, *ent.AskMutation) (ent.Value, error)
+// The AsksFunc type is an adapter to allow the use of ordinary
+// function as Asks mutator.
+type AsksFunc func(context.Context, *ent.AsksMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f AskFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.AskMutation); ok {
+func (f AsksFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AsksMutation); ok {
 		return f(ctx, mv)
 	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AskMutation", m)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AsksMutation", m)
 }
 
-// The BidFunc type is an adapter to allow the use of ordinary
-// function as Bid mutator.
-type BidFunc func(context.Context, *ent.BidMutation) (ent.Value, error)
+// The BidsFunc type is an adapter to allow the use of ordinary
+// function as Bids mutator.
+type BidsFunc func(context.Context, *ent.BidsMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f BidFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.BidMutation); ok {
+func (f BidsFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BidsMutation); ok {
 		return f(ctx, mv)
 	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BidMutation", m)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BidsMutation", m)
+}
+
+// The Bids_RequirementsFunc type is an adapter to allow the use of ordinary
+// function as Bids_Requirements mutator.
+type Bids_RequirementsFunc func(context.Context, *ent.BidsRequirementsMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f Bids_RequirementsFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BidsRequirementsMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BidsRequirementsMutation", m)
 }
 
 // The MatchFunc type is an adapter to allow the use of ordinary
@@ -42,6 +54,18 @@ func (f MatchFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MatchMutation", m)
+}
+
+// The RequirementsFunc type is an adapter to allow the use of ordinary
+// function as Requirements mutator.
+type RequirementsFunc func(context.Context, *ent.RequirementsMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RequirementsFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RequirementsMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RequirementsMutation", m)
 }
 
 // Condition is a hook condition function.

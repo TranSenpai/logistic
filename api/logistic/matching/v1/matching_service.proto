@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package logistic.matching.v1;
+option go_package = "logistic_project/api/logistic/matching/v1";
+
+import "google/api/annotations.proto";
+import "logistic/matching/v1/matching_messages.proto";
+
+// MatchingEngineService handles Real-time Freight Bidding
+// This is the core protocol for matching empty vehicle space with cargo
+service MatchingEngineService {
+  // SubmitBid is called by Shippers who have cargo that needs to be moved
+  rpc SubmitBid(SubmitBidRequest) returns (SubmitBidResponse) {
+    option (google.api.http) = {
+      post: "/v1/logistics/bids"
+      body: "*"
+    };
+  }
+  
+  // SubmitAsk is called by Drivers who have empty space on their vehicles
+  rpc SubmitAsk(SubmitAskRequest) returns (SubmitAskResponse) {
+    option (google.api.http) = {
+      post: "/v1/logistics/asks"
+      body: "*"
+    };
+  }
+}

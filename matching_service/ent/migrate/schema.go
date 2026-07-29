@@ -10,17 +10,28 @@ import (
 var (
 	// AsksColumns holds the columns for the "asks" table.
 	AsksColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "created_by", Type: field.TypeUUID},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "updated_by", Type: field.TypeUUID},
+		{Name: "is_deleted", Type: field.TypeBool, Default: false},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "driver_id", Type: field.TypeInt},
-		{Name: "current_coordinates", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "geometry(Point, 4326)"}},
+		{Name: "driver_id", Type: field.TypeUUID},
+		{Name: "vehicle_id", Type: field.TypeUUID},
+		{Name: "vehicle_type", Type: field.TypeInt8},
+		{Name: "capacity_weight_kg", Type: field.TypeFloat64},
+		{Name: "capacity_volume_cbm", Type: field.TypeFloat64},
 		{Name: "available_volume_m3", Type: field.TypeFloat64},
 		{Name: "available_weight_kg", Type: field.TypeFloat64},
 		{Name: "min_price", Type: field.TypeFloat64, Nullable: true},
 		{Name: "zone_id", Type: field.TypeString},
-		{Name: "status", Type: field.TypeInt, Default: 0},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "origin_lat", Type: field.TypeFloat64},
+		{Name: "origin_lng", Type: field.TypeFloat64},
+		{Name: "destination_lat", Type: field.TypeFloat64},
+		{Name: "destination_lng", Type: field.TypeFloat64},
+		{Name: "route_id", Type: field.TypeBytes},
+		{Name: "status", Type: field.TypeInt8, Default: 0},
 	}
 	// AsksTable holds the schema information for the "asks" table.
 	AsksTable = &schema.Table{
@@ -30,20 +41,24 @@ var (
 	}
 	// BidsColumns holds the columns for the "bids" table.
 	BidsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "created_by", Type: field.TypeUUID},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "updated_by", Type: field.TypeUUID},
+		{Name: "is_deleted", Type: field.TypeBool, Default: false},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "user_id", Type: field.TypeInt},
-		{Name: "pickup_coordinates", Type: field.TypeString, SchemaType: map[string]string{"postgres": "geometry(Point, 4326)"}},
-		{Name: "delivery_coordinates", Type: field.TypeString, SchemaType: map[string]string{"postgres": "geometry(Point, 4326)"}},
+		{Name: "user_id", Type: field.TypeUUID},
 		{Name: "volume_m3", Type: field.TypeFloat64},
 		{Name: "weight_kg", Type: field.TypeFloat64},
-		{Name: "pickup_time", Type: field.TypeTime, Nullable: true},
 		{Name: "max_price", Type: field.TypeFloat64, Nullable: true},
 		{Name: "zone_id", Type: field.TypeString},
-		{Name: "items", Type: field.TypeJSON, Nullable: true},
-		{Name: "status", Type: field.TypeInt, Default: 0},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "origin_lat", Type: field.TypeFloat64},
+		{Name: "origin_lng", Type: field.TypeFloat64},
+		{Name: "destination_lat", Type: field.TypeFloat64},
+		{Name: "destination_lng", Type: field.TypeFloat64},
+		{Name: "route_id", Type: field.TypeBytes},
+		{Name: "status", Type: field.TypeInt8, Default: 0},
 	}
 	// BidsTable holds the schema information for the "bids" table.
 	BidsTable = &schema.Table{
@@ -51,30 +66,103 @@ var (
 		Columns:    BidsColumns,
 		PrimaryKey: []*schema.Column{BidsColumns[0]},
 	}
+	// BidsRequirementsColumns holds the columns for the "bids_requirements" table.
+	BidsRequirementsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "created_by", Type: field.TypeUUID},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "updated_by", Type: field.TypeUUID},
+		{Name: "is_deleted", Type: field.TypeBool, Default: false},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "bids_id", Type: field.TypeUUID},
+		{Name: "requirements_id", Type: field.TypeUUID},
+	}
+	// BidsRequirementsTable holds the schema information for the "bids_requirements" table.
+	BidsRequirementsTable = &schema.Table{
+		Name:       "bids_requirements",
+		Columns:    BidsRequirementsColumns,
+		PrimaryKey: []*schema.Column{BidsRequirementsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "bids_requirements_bids_bids_requirements",
+				Columns:    []*schema.Column{BidsRequirementsColumns[7]},
+				RefColumns: []*schema.Column{BidsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "bids_requirements_requirements_bids_requirements",
+				Columns:    []*schema.Column{BidsRequirementsColumns[8]},
+				RefColumns: []*schema.Column{RequirementsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// MatchesColumns holds the columns for the "matches" table.
 	MatchesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "created_by", Type: field.TypeUUID},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "updated_by", Type: field.TypeUUID},
+		{Name: "is_deleted", Type: field.TypeBool, Default: false},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "bid_id", Type: field.TypeInt},
-		{Name: "ask_id", Type: field.TypeInt},
 		{Name: "agreed_price", Type: field.TypeFloat64},
 		{Name: "status", Type: field.TypeInt, Default: 1},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "ask_id", Type: field.TypeUUID},
+		{Name: "bid_id", Type: field.TypeUUID},
 	}
 	// MatchesTable holds the schema information for the "matches" table.
 	MatchesTable = &schema.Table{
 		Name:       "matches",
 		Columns:    MatchesColumns,
 		PrimaryKey: []*schema.Column{MatchesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "matches_asks_matches",
+				Columns:    []*schema.Column{MatchesColumns[9]},
+				RefColumns: []*schema.Column{AsksColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "matches_bids_matches",
+				Columns:    []*schema.Column{MatchesColumns[10]},
+				RefColumns: []*schema.Column{BidsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// RequirementsColumns holds the columns for the "requirements" table.
+	RequirementsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "created_by", Type: field.TypeUUID},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "updated_by", Type: field.TypeUUID},
+		{Name: "is_deleted", Type: field.TypeBool, Default: false},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "status", Type: field.TypeInt8},
+	}
+	// RequirementsTable holds the schema information for the "requirements" table.
+	RequirementsTable = &schema.Table{
+		Name:       "requirements",
+		Columns:    RequirementsColumns,
+		PrimaryKey: []*schema.Column{RequirementsColumns[0]},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AsksTable,
 		BidsTable,
+		BidsRequirementsTable,
 		MatchesTable,
+		RequirementsTable,
 	}
 )
 
 func init() {
+	BidsRequirementsTable.ForeignKeys[0].RefTable = BidsTable
+	BidsRequirementsTable.ForeignKeys[1].RefTable = RequirementsTable
+	MatchesTable.ForeignKeys[0].RefTable = AsksTable
+	MatchesTable.ForeignKeys[1].RefTable = BidsTable
 }

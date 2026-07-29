@@ -4,6 +4,7 @@
 package generated
 
 import (
+	uuid "github.com/google/uuid"
 	ent "matching_service/ent"
 	entity "matching_service/internal/entity"
 	mapper "matching_service/internal/mapper"
@@ -11,7 +12,7 @@ import (
 
 type ConverterImpl struct{}
 
-func (c *ConverterImpl) EntAskListToEntityAskList(source []*ent.Ask) []entity.Ask {
+func (c *ConverterImpl) EntAskListToEntityAskList(source []*ent.Asks) []entity.Ask {
 	var entityAskList []entity.Ask
 	if source != nil {
 		entityAskList = make([]entity.Ask, len(source))
@@ -21,21 +22,23 @@ func (c *ConverterImpl) EntAskListToEntityAskList(source []*ent.Ask) []entity.As
 	}
 	return entityAskList
 }
-func (c *ConverterImpl) EntAskToEntityAsk(source *ent.Ask) entity.Ask {
+func (c *ConverterImpl) EntAskToEntityAsk(source *ent.Asks) entity.Ask {
 	var entityAsk entity.Ask
 	if source != nil {
-		entityAsk.ID = mapper.IntToString((*source).ID)
-		entityAsk.DriverID = mapper.IntToString((*source).DriverID)
-		entityAsk.CurrentLocation = mapper.ParseLocation((*source).CurrentCoordinates)
+		entityAsk.ID = c.uuidUUIDToUuidUUID((*source).ID)
+		entityAsk.VehicleID = c.uuidUUIDToUuidUUID((*source).VehicleID)
+		entityAsk.DriverID = c.uuidUUIDToUuidUUID((*source).DriverID)
+		entityAsk.CurrentLocation = mapper.MapAskCurrentLocation(source)
+		entityAsk.Destination = mapper.MapAskDestination(source)
 		entityAsk.AvailableVolumeM3 = (*source).AvailableVolumeM3
 		entityAsk.AvailableWeightKg = (*source).AvailableWeightKg
 		entityAsk.MinPrice = mapper.Float64PtrToFloat64((*source).MinPrice)
-		entityAsk.Status = mapper.AskStatusToString((*source).Status)
+		entityAsk.Status = (*source).Status
 		entityAsk.CreatedAt = mapper.IdentityTime((*source).CreatedAt)
 	}
 	return entityAsk
 }
-func (c *ConverterImpl) EntBidListToEntityBidList(source []*ent.Bid) []entity.Bid {
+func (c *ConverterImpl) EntBidListToEntityBidList(source []*ent.Bids) []entity.Bid {
 	var entityBidList []entity.Bid
 	if source != nil {
 		entityBidList = make([]entity.Bid, len(source))
@@ -45,18 +48,25 @@ func (c *ConverterImpl) EntBidListToEntityBidList(source []*ent.Bid) []entity.Bi
 	}
 	return entityBidList
 }
-func (c *ConverterImpl) EntBidToEntityBid(source *ent.Bid) entity.Bid {
+func (c *ConverterImpl) EntBidToEntityBid(source *ent.Bids) entity.Bid {
 	var entityBid entity.Bid
 	if source != nil {
-		entityBid.ID = mapper.IntToString((*source).ID)
-		entityBid.UserID = mapper.IntToString((*source).UserID)
-		entityBid.Origin = mapper.ParseLocation((*source).PickupCoordinates)
-		entityBid.Destination = mapper.ParseLocation((*source).DeliveryCoordinates)
+		entityBid.ID = c.uuidUUIDToUuidUUID((*source).ID)
+		entityBid.UserID = c.uuidUUIDToUuidUUID((*source).UserID)
+		entityBid.Origin = mapper.MapBidOrigin(source)
+		entityBid.Destination = mapper.MapBidDestination(source)
 		entityBid.VolumeM3 = (*source).VolumeM3
 		entityBid.WeightKg = (*source).WeightKg
 		entityBid.MaxPrice = mapper.Float64PtrToFloat64((*source).MaxPrice)
-		entityBid.Status = mapper.BidStatusToString((*source).Status)
+		entityBid.Status = (*source).Status
 		entityBid.CreatedAt = mapper.IdentityTime((*source).CreatedAt)
 	}
 	return entityBid
+}
+func (c *ConverterImpl) uuidUUIDToUuidUUID(source uuid.UUID) uuid.UUID {
+	var uuidUUID uuid.UUID
+	for i := 0; i < len(source); i++ {
+		uuidUUID[i] = source[i]
+	}
+	return uuidUUID
 }
