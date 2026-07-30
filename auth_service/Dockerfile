@@ -7,9 +7,8 @@ WORKDIR /workspace
 COPY go.work go.work.sum ./
 COPY go.mod go.sum ./
 
-# MẸO: Xóa các service không copy khỏi file go.work để Go không báo lỗi "no such file"
-RUN go work edit -dropuse=./matching_service && \
-    go work edit -dropuse=./media_service
+# MẸO: Bỏ qua go.work cũ (có chứa vehicle_service) và tạo mới cho riêng auth_service
+RUN rm go.work go.work.sum && go work init . ./auth_service
 
 # CHỈ copy những thư mục thật sự cần thiết cho auth_service
 COPY api/ ./api/

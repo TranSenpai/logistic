@@ -2,8 +2,7 @@ FROM docker.io/library/golang:1.26.4-alpine3.24 AS build
 WORKDIR /workspace
 COPY go.work go.work.sum ./
 COPY ./go.mod ./go.sum ./
-RUN go work edit -dropuse=./auth_service && \
-    go work edit -dropuse=./matching_service
+RUN rm go.work go.work.sum && go work init . ./media_service
 COPY api/ ./api/
 COPY pkg/ ./pkg/
 COPY media_service/ ./media_service/

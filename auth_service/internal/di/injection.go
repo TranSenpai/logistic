@@ -4,16 +4,20 @@ import (
 	"os"
 
 	"auth_service/internal/biz"
-	entclient "auth_service/internal/common/ent_client"
-	"auth_service/internal/delivery"
+	"auth_service/internal/controller"
+	"auth_service/internal/mapper/generated"
 	"auth_service/internal/repo"
 
-	"github.com/gin-gonic/gin"
+	entclient "auth_service/internal/common/ent_client"
+
+	pb "github.com/logistic/api/logistic/auth_service/v1"
+
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/grpc"
 )
 
-func Injection(ginEngine *gin.Engine) error {
+func Injection(grpcServer *grpc.Server) error {
 	clientDb, err := entclient.NewConnection()
 	if err != nil {
 		return err
@@ -28,15 +32,15 @@ func Injection(ginEngine *gin.Engine) error {
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
-		Scopes:       []string{"openid", "email", "profile"}, // Lấy google ID, email và profile của user từ google
+		Scopes:       []string{"openid", "email", "profile"},
 		Endpoint:     google.Endpoint,
 	}
 
-	authRepo := repo.NewAuthRepo(clientDb)
+	authMapper := &generated.AuthMapperImpl{}
+	authRepo := repo.NewAuthRepo(clientDb, authMapper)
 	authService := biz.NewAuthService(authRepo, jwtSecret, oauthConfig)
-
-	httpHandler := delivery.NewHttpHandler(authService)
-	httpHandler.RegisterRouter(ginEngine)
+	controller := controller.NewGrpcHandler(authService, authMapper)
+	pb.RegisterAuthServiceServer(grpcServer, controller)
 
 	return nil
 }

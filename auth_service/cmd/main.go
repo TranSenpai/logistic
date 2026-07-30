@@ -2,15 +2,13 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/joho/godotenv"
 )
 
-// @title 				Auth Service API
-// @version 			1.0
-// @description 		Microservice quản lý xác thực và người dùng cho Logistics OS.
-// @host 				localhost:8080
-// @BasePath 			/api/v1/auth
 func main() {
 	if err := godotenv.Load("configs/.env"); err != nil {
 		log.Println("No .env file found or failed to load, falling back to system environment variables")
@@ -21,8 +19,14 @@ func main() {
 		log.Fatalf("Failed to initialize Auth App: %v", err)
 	}
 
-	log.Println("Starting Auth Service on :8080...")
 	if err := app.Start(); err != nil {
-		log.Fatalf("Auth Service crashed: %v", err)
+		log.Fatalf("Failed to start Auth Service: %v", err)
 	}
+
+	// Đợi signal để shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	app.Stop()
 }

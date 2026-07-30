@@ -4,14 +4,26 @@
 package generated
 
 import (
+	ent "auth_service/ent"
 	entity "auth_service/internal/entity"
 	mapper "auth_service/internal/mapper"
-	gen "goBackend/api/logistics/v1/gen"
-	ent "auth_service/ent"
+
+	v1 "github.com/logistic/api/logistic/auth_service/v1"
 )
 
 type AuthMapperImpl struct{}
 
+func (c *AuthMapperImpl) ToAuthTokenPairProto(source *entity.AuthTokenPair) *v1.AuthTokenPair {
+	var pAuth_servicev1AuthTokenPair *v1.AuthTokenPair
+	if source != nil {
+		var auth_servicev1AuthTokenPair v1.AuthTokenPair
+		auth_servicev1AuthTokenPair.AccessToken = (*source).AccessToken
+		auth_servicev1AuthTokenPair.RefreshToken = (*source).RefreshToken
+		auth_servicev1AuthTokenPair.ExpiresIn = (*source).ExpiresIn
+		pAuth_servicev1AuthTokenPair = &auth_servicev1AuthTokenPair
+	}
+	return pAuth_servicev1AuthTokenPair
+}
 func (c *AuthMapperImpl) ToUserProfile(source *ent.Users) *entity.UserProfile {
 	var pEntityUserProfile *entity.UserProfile
 	if source != nil {
@@ -32,20 +44,23 @@ func (c *AuthMapperImpl) ToUserProfile(source *ent.Users) *entity.UserProfile {
 	}
 	return pEntityUserProfile
 }
-func (c *AuthMapperImpl) ToUserProfileResponse(source *entity.UserProfile) gen.UserProfileResponse {
-	var dtoUserProfileResponse gen.UserProfileResponse
+func (c *AuthMapperImpl) ToUserProfileProto(source *entity.UserProfile) *v1.UserProfile {
+	var pAuth_servicev1UserProfile *v1.UserProfile
 	if source != nil {
-		dtoUserProfileResponse.Id = (*source).Id
-		dtoUserProfileResponse.Email = (*source).Email
+		var auth_servicev1UserProfile v1.UserProfile
+		auth_servicev1UserProfile.Id = (*source).Id
+		auth_servicev1UserProfile.Email = (*source).Email
 		if (*source).FullName != nil {
 			xstring := *(*source).FullName
-			dtoUserProfileResponse.FullName = &xstring
+			auth_servicev1UserProfile.FullName = &xstring
 		}
 		if (*source).Avatar != nil {
 			xstring2 := *(*source).Avatar
-			dtoUserProfileResponse.Avatar = &xstring2
+			auth_servicev1UserProfile.Avatar = &xstring2
 		}
-		dtoUserProfileResponse.CreatedAt = mapper.TimeToUnixPtr((*source).CreatedAt)
+		auth_servicev1UserProfile.CreatedAt = mapper.TimeToTimestamp((*source).CreatedAt)
+		auth_servicev1UserProfile.UpdatedAt = mapper.TimeToTimestamp((*source).UpdatedAt)
+		pAuth_servicev1UserProfile = &auth_servicev1UserProfile
 	}
-	return dtoUserProfileResponse
+	return pAuth_servicev1UserProfile
 }
