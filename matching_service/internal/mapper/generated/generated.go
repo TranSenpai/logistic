@@ -5,14 +5,15 @@ package generated
 
 import (
 	uuid "github.com/google/uuid"
+	v1 "github.com/logistic/api/logistic/matching_service/v1"
 	ent "matching_service/ent"
 	entity "matching_service/internal/entity"
 	mapper "matching_service/internal/mapper"
 )
 
-type ConverterImpl struct{}
+type AppMapperImpl struct{}
 
-func (c *ConverterImpl) EntAskListToEntityAskList(source []*ent.Asks) []entity.Ask {
+func (c *AppMapperImpl) EntAskListToEntityAskList(source []*ent.Asks) []entity.Ask {
 	var entityAskList []entity.Ask
 	if source != nil {
 		entityAskList = make([]entity.Ask, len(source))
@@ -22,7 +23,7 @@ func (c *ConverterImpl) EntAskListToEntityAskList(source []*ent.Asks) []entity.A
 	}
 	return entityAskList
 }
-func (c *ConverterImpl) EntAskToEntityAsk(source *ent.Asks) entity.Ask {
+func (c *AppMapperImpl) EntAskToEntityAsk(source *ent.Asks) entity.Ask {
 	var entityAsk entity.Ask
 	if source != nil {
 		entityAsk.ID = c.uuidUUIDToUuidUUID((*source).ID)
@@ -38,7 +39,7 @@ func (c *ConverterImpl) EntAskToEntityAsk(source *ent.Asks) entity.Ask {
 	}
 	return entityAsk
 }
-func (c *ConverterImpl) EntBidListToEntityBidList(source []*ent.Bids) []entity.Bid {
+func (c *AppMapperImpl) EntBidListToEntityBidList(source []*ent.Bids) []entity.Bid {
 	var entityBidList []entity.Bid
 	if source != nil {
 		entityBidList = make([]entity.Bid, len(source))
@@ -48,7 +49,7 @@ func (c *ConverterImpl) EntBidListToEntityBidList(source []*ent.Bids) []entity.B
 	}
 	return entityBidList
 }
-func (c *ConverterImpl) EntBidToEntityBid(source *ent.Bids) entity.Bid {
+func (c *AppMapperImpl) EntBidToEntityBid(source *ent.Bids) entity.Bid {
 	var entityBid entity.Bid
 	if source != nil {
 		entityBid.ID = c.uuidUUIDToUuidUUID((*source).ID)
@@ -63,7 +64,55 @@ func (c *ConverterImpl) EntBidToEntityBid(source *ent.Bids) entity.Bid {
 	}
 	return entityBid
 }
-func (c *ConverterImpl) uuidUUIDToUuidUUID(source uuid.UUID) uuid.UUID {
+func (c *AppMapperImpl) MapLocation(source *v1.Location) entity.Location {
+	var entityLocation entity.Location
+	if source != nil {
+		entityLocation.Latitude = (*source).Latitude
+		entityLocation.Longitude = (*source).Longitude
+		entityLocation.ZoneID = (*source).ZoneId
+	}
+	return entityLocation
+}
+func (c *AppMapperImpl) SubmitAskReqToEntity(source *v1.SubmitAskRequest) (entity.Ask, error) {
+	var entityAsk entity.Ask
+	if source != nil {
+		uuidUUID, err := mapper.BytesToUUID((*source).VehicleId)
+		if err != nil {
+			return entityAsk, err
+		}
+		entityAsk.VehicleID = uuidUUID
+		uuidUUID2, err := mapper.BytesToUUID((*source).DriverId)
+		if err != nil {
+			return entityAsk, err
+		}
+		entityAsk.DriverID = uuidUUID2
+		entityAsk.CurrentLocation = c.MapLocation((*source).CurrentLocation)
+		entityAsk.Destination = c.MapLocation((*source).Destination)
+		entityAsk.AvailableVolumeM3 = (*source).AvailableVolumeM3
+		entityAsk.AvailableWeightKg = (*source).AvailableWeightKg
+		entityAsk.MinPrice = (*source).MinPrice
+		entityAsk.ExpiresAt = mapper.TimestampToTime((*source).ExpiresAt)
+	}
+	return entityAsk, nil
+}
+func (c *AppMapperImpl) SubmitBidReqToEntity(source *v1.SubmitBidRequest) (entity.Bid, error) {
+	var entityBid entity.Bid
+	if source != nil {
+		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
+		if err != nil {
+			return entityBid, err
+		}
+		entityBid.UserID = uuidUUID
+		entityBid.Origin = c.MapLocation((*source).Origin)
+		entityBid.Destination = c.MapLocation((*source).Destination)
+		entityBid.VolumeM3 = (*source).VolumeM3
+		entityBid.WeightKg = (*source).WeightKg
+		entityBid.MaxPrice = (*source).MaxPrice
+		entityBid.ExpiresAt = mapper.TimestampToTime((*source).ExpiresAt)
+	}
+	return entityBid, nil
+}
+func (c *AppMapperImpl) uuidUUIDToUuidUUID(source uuid.UUID) uuid.UUID {
 	var uuidUUID uuid.UUID
 	for i := 0; i < len(source); i++ {
 		uuidUUID[i] = source[i]

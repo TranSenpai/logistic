@@ -107,6 +107,75 @@ Rất nhiều người mới học lầm tưởng "Partition 1 là bản copy c�
 - Nếu một Follower bị chậm (do đứt cáp, ổ cứng bad sector...), nó sẽ bị Leader đá văng khỏi danh sách ISR.
 - Nếu Leader chết đột ngột, Kafka **CHỈ ĐỀ CỬ** những Follower đang nằm trong danh sách ISR lên làm Leader mới để đảm bảo dữ liệu không bị thất thoát.
 
+### 1.6 Kỷ nguyên KRaft (Kafka Raft) & Vai trò cốt lõi của Controller
+Nếu bạn học Kafka qua các tài liệu cũ (trước 2022), bạn sẽ quen với việc Kafka luôn phải đi kèm với một hệ thống quản lý phân tán tên là **Zookeeper**. Zookeeper đóng vai trò là "bộ não", chịu trách nhiệm quản lý toàn bộ Metadata, bầu chọn Leader và theo dõi vòng đời của các Broker. Tuy nhiên, việc phải duy trì hai hệ thống độc lập (Kafka và Zookeeper) tạo ra nút thắt cổ chai về hiệu suất và gia tăng độ phức tạp trong khâu vận hành.
+
+Từ phiên bản Kafka 3.3 trở đi, kiến trúc **KRaft (Kafka Raft)** chính thức ra đời để **khai tử Zookeeper**. Bộ脑 quản lý giờ đây được nhúng trực tiếp vào bên trong nội tại của các Node Kafka.
+
+**A. Vai trò thực sự của Controller**
+- **Khái niệm:** Trong cụm Kafka, Controller là một Node đặc biệt được giao trọng trách quản lý trạng thái toàn cục (Global Metadata) của cả hệ thống.
+- **Nhiệm vụ cụ thể:**
+  - Quản lý vòng đời Broker: Nhận diện ngay lập tức khi một Broker gia nhập (Join) hoặc rời khỏi (Crash/Leave) cụm.
+  - Quản trị Topology: Ghi nhận sự tạo mới, thay đổi cấu hình, hoặc xóa Topic/Partition. Quyết định Broker nào sẽ đảm nhận vai trò Leader cho một Partition cụ thể.
+  - Phân phối Metadata: Đồng bộ (Broadcast) trạng thái mới nhất của hệ thống đến tất cả các Broker còn lại, đảm bảo toàn cụm có chung một nhận thức về không gian dữ liệu.
+
+**B. Cơ chế hoạt động kép (Dual-Role: Broker & Controller)**
+Khi một Node được cấu hình `KAFKA_PROCESS_ROLES=broker,controller`, nó sẽ thực thi đồng thời hai vai trò hoàn toàn độc lập trên cùng một tiến trình bộ nhớ (JVM Process):
+- **Luồng Broker (Data Plane):** Chịu trách nhiệm xử lý trực tiếp lưu lượng đọc/ghi (Produce/Consume) các tin nhắn thực tế từ Client. Dữ liệu này được tuần tự hóa và ghi xuống đĩa thông qua các thư mục log tiêu chuẩn.
+- **Luồng Controller (Control Plane):** Vận hành một cỗ máy trạng thái (State Machine) độc lập để quản lý Metadata. Toàn bộ các sự kiện thay đổi cấu trúc (ví dụ: "Broker 2 vừa mất kết nối") đều được Controller tuần tự hóa và ghi vào một Topic nội bộ cực kỳ đặc biệt mang tên `@metadata`.
+
+**C. Thuật toán Đồng thuận Raft & Bài toán Bầu cử (Leader Election)**
+- **Khái niệm:** Raft là một thuật toán đồng thuận (Consensus Algorithm) được thiết kế để giải quyết bài toán cốt lõi của hệ thống phân tán: Làm thế nào để một nhóm các máy chủ độc lập có thể đạt được sự nhất trí tuyệt đối về một trạng thái duy nhất, ngay cả khi hệ thống mạng có thể bị lỗi.
+- **Epoch (Kỷ nguyên):** Raft quản lý thời gian bằng khái niệm Epoch (Kỷ nguyên). Mỗi khi một cuộc bầu cử mới diễn ra, mã số Epoch sẽ tự động tăng lên (Ví dụ: Chuyển từ Epoch 1 sang Epoch 2). Mọi quyết định hoặc mệnh lệnh mang nhãn Epoch cũ sẽ lập tức bị hệ thống từ chối. Đây là chốt chặn hoàn hảo để triệt tiêu hiện tượng "Split-Brain" (Phân liệt não - Trạng thái nguy hiểm khi hai Node cùng huyễn hoặc bản thân mình là Controller).
+
+**D. Phân tích thực tế: Vòng đời Bầu cử trong Cụm 3 Nodes**
+
+**Bước 1: Trạng thái Vận hành Ổn định (Normal State)**
+- Hệ thống gồm 3 Node: `kafka-1`, `kafka-2`, `kafka-3`. Kích thước Quorum là 3. Để thông qua bất kỳ quyết định nào, hệ thống cần đạt được đa số tối thiểu là 2 phiếu (Q = N/2 + 1).
+- Giả định qua quá trình khởi tạo, `kafka-1` đắc cử làm **Active Controller (Kỷ nguyên - Epoch 1)**.
+- **Phân vai:** `kafka-1` trực tiếp ghi nhận các thay đổi vào Topic `@metadata`. Trong khi đó, `kafka-2` và `kafka-3` đóng vai trò là Standby Controllers. Chức năng duy nhất của chúng lúc này là liên tục "kéo" (fetch) dữ liệu từ Topic `@metadata` của `kafka-1` để sao chép y hệt trạng thái hệ thống, đồng thời định kỳ gửi tín hiệu nhịp tim (Heartbeat) báo cáo sự tồn tại.
+
+**Bước 2: Sự cố Controller (Active Controller Crash)**
+- Biến cố xảy ra: `kafka-1` đột ngột mất điện hoặc bị lỗi tiến trình (Kernel Panic), dẫn đến mất kết nối hoàn toàn.
+- Lúc này, `kafka-2` và `kafka-3` không còn nhận được Heartbeat từ `kafka-1`. Thời gian đếm ngược (Election Timeout) bắt đầu tích lũy.
+
+**Bước 3: Hội thoại Đồng thuận & Chuyển giao Quyền lực (Consensus & Election)**
+- `kafka-2` có bộ đếm Timeout kết thúc trước. Nó lập tức chuyển trạng thái sang **Candidate (Ứng cử viên)**.
+- `kafka-2` tự động tăng mã kỷ nguyên lên thành **Epoch 2**. Nó gửi bản tin "Yêu cầu Bầu phiếu" (RequestVote) sang `kafka-3` với thông điệp: "Tôi đang giữ bản ghi Metadata hoàn chỉnh nhất của Epoch 1, hãy bầu cho tôi".
+- `kafka-3` nhận được yêu cầu, tiến hành đối chiếu. Nhận thấy thông điệp hợp lệ, số Epoch mới (2) lớn hơn Epoch hiện tại (1), và bản ghi Metadata của `kafka-2` không hề cũ hơn của mình, `kafka-3` phản hồi "Tán thành" (Vote Granted).
+- Cộng thêm lá phiếu tự bầu của chính mình, `kafka-2` thu thập đủ 2/3 phiếu (Đạt chuẩn Quorum). Nó chính thức thăng cấp thành **Active Controller của Epoch 2**.
+- Ngay lập tức, `kafka-2` phát đi tín hiệu (Broadcast) toàn mạng lưới để xác lập quyền lực. Hệ thống tiếp tục vận hành liền mạch dưới sự điều phối của Controller mới.
+
+**Bước 4: Bóng ma Trở về (Zombie Node & Ngăn chặn Split-Brain)**
+- Chuyện gì sẽ xảy ra nếu `kafka-1` được cấp điện lại và kết nối thành công vào mạng lưới?
+- Do bộ nhớ tạm (Volatile Memory) đã mất, trí nhớ của `kafka-1` dựa vào dữ liệu trên đĩa, vẫn dừng lại ở quá khứ. Nó hoàn toàn không biết sự tồn tại của Epoch 2. Nó "ngây thơ" cho rằng mình vẫn là Controller của **Epoch 1**, và cố gắng phát ra các mệnh lệnh quản trị đến các Node khác.
+- Tuy nhiên, khi mệnh lệnh mang nhãn "Epoch 1" của `kafka-1` chạm đến `kafka-2` hoặc `kafka-3`, chúng lập tức kiểm tra và từ chối thẳng thừng, kèm theo phản hồi: "Kỷ nguyên hiện tại đã là **Epoch 2**, mệnh lệnh của bạn đã lỗi thời và không còn giá trị!".
+- Khi `kafka-1` nhận được phản hồi chứa nhãn Epoch 2 (lớn hơn Epoch 1 của nó), nó ngay lập tức "bừng tỉnh" và nhận ra bản thân đã bị phế truất.
+- Cơ chế tự sửa sai kích hoạt: `kafka-1` lập tức tự phế truất, giáng cấp xuống làm Standby Controller, xóa bỏ các trạng thái tạm thời đang xử lý dở dang của Epoch 1, và ngoan ngoãn gửi Request xin sao chép dữ liệu (Fetch Metadata) từ `kafka-2` để cập nhật nhận thức theo thời đại mới.
+- **Kết luận:** Nhờ cơ chế quản lý **Epoch** cực kỳ khắt khe này, kiến trúc KRaft miễn nhiễm hoàn toàn với các lỗi Split-Brain, đảm bảo tính nhất quán tuyệt đối (Strict Consistency) của dữ liệu quản trị trên toàn cụm.
+
+**Giải thích các thông số cấu hình KRaft (Trên Docker Compose):**
+Để thiết lập một cụm KRaft chuẩn chỉ, bạn cần nắm vững các biến môi trường sau:
+
+1. **`KAFKA_PROCESS_ROLES: broker,controller`**
+   - *Ý nghĩa:* Cho phép Node này "chơi 2 vai". Vừa làm Broker (chứa data thực tế của Topic), vừa làm Controller (Nằm trong hội đồng bầu cử quản lý Cluster). Nếu cụm rất lớn, người ta có thể tách riêng Node chỉ làm `broker`, Node chỉ làm `controller`.
+2. **`KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093`**
+   - *Ý nghĩa:* Khai báo danh sách "Thành viên Hội đồng Bầu cử". Các Node dùng Port 9093 để giao tiếp, bỏ phiếu Raft và sao chép Metadata.
+   - *Tại sao chỉ có 1 Active mà phải cấu hình cả 3?* Trong cơ chế Raft, một cuộc bầu cử chỉ hợp lệ khi đạt đủ số phiếu quá bán (Quorum = N/2 + 1). Bắt buộc mọi Node phải biết **ngay từ lúc khởi động** danh sách chính xác của toàn bộ thành viên hội đồng. Nếu không khai báo trước cả 3, khi một Node mất tín hiệu Leader, nó sẽ không biết phải gửi yêu cầu xin phiếu (RequestVote) cho ai, và cũng không biết làm thế nào để đo lường mức độ quá bán. Đây chính là "Bản hiến pháp" quy định cấu trúc quyền lực của cụm.
+3. **Mạng lưới Listeners & Bảo mật (Cực kỳ quan trọng):**
+   - `KAFKA_LISTENERS`: Xác định các Port mà Kafka sẽ MỞ ra để lắng nghe. (Ví dụ: Mở port 9093 cho Hội đồng Controller nói chuyện, mở port 29092 cho các Broker chép data nội bộ, mở port 9092 cho App bên ngoài gọi vào).
+   - `KAFKA_ADVERTISED_LISTENERS`: Là địa chỉ (Hostname/IP) mà Kafka sẽ "hét lên" cho Client biết để kết nối. (Ví dụ: "Ê App ơi, muốn kết nối tao thì gọi địa chỉ `localhost:9092` nhé").
+   - `KAFKA_LISTENER_SECURITY_PROTOCOL_MAP`: Định nghĩa giao thức bảo mật cho từng luồng mạng.
+     - **PLAINTEXT:** Dữ liệu không mã hóa. CHỈ DÙNG trong Local Dev hoặc mạng nội bộ (VPC) cách ly hoàn toàn với Internet.
+     - **SSL / SASL_SSL:** Mã hóa đường truyền (TLS) và yêu cầu xác thực (SASL). **BẮT BUỘC PHẢI DÙNG** trên Production, đặc biệt khi Client kết nối qua mạng Internet/Public. Tuy nhiên, việc setup SSL trong Kafka khá vất vả vì phải tạo và quản lý Truststore/Keystore cho từng Node, nên khi học hoặc test cục bộ ta thường dùng PLAINTEXT để bỏ qua rào cản này.
+4. **Hệ số nhân bản hệ thống (System Replication Factors):**
+   - `KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR`: Hệ số nhân bản cho Topic ẩn `__consumer_offsets` (Nơi lưu điểm nhớ của Consumer). Nếu cấu hình cụm 3 Node, phải set bằng 3 để chống sập.
+   - `KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR` & `KAFKA_TRANSACTION_STATE_LOG_MIN_ISR`: Dùng cho tính năng Exactly-Once (Giao dịch). Tương tự, cấu hình cụm 3 Node thì set RF=3, MIN_ISR=2.
+5. **`KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS` (Độ trễ Rebalance ban đầu):**
+   - *Vấn đề:* Khi bạn khởi động một Group mới (ví dụ App của bạn scale ra 3 Pods Consumer), các Pod sẽ không khởi động xong cùng một mili-giây mà sẽ kết nối vào Kafka rải rác từng thằng một. Nếu Kafka không đợi, ngay khi Pod 1 kết nối, nó chia toàn bộ Partition cho Pod 1. Vài mili-giây sau Pod 2 kết nối, nó lại ngắt Pod 1 kích hoạt Rebalance thu hồi lại để chia đôi. Pod 3 kết nối, lại Rebalance lần 3. Quá trình khởi động sẽ tạo ra một cơn bão Rebalance (Rebalance Storm) vô nghĩa, cực kỳ tốn CPU và gián đoạn hệ thống.
+   - *Giải pháp:* Tham số này (trong Production thường cấu hình 3000ms = 3 giây) chỉ thị cho Coordinator: "Khoan đã, hãy đợi 3 giây kể từ khi thằng Consumer đầu tiên xuất hiện để xem còn thằng nào vào Group nữa không, gom đủ mặt rồi chia Partition một lần duy nhất cho tối ưu".
+   - *Lưu ý:* Việc cấu hình giá trị này về `0` (như trong snippet mẫu của Apache) mang ý nghĩa "Đừng đợi, có thằng nào chia luôn thằng đó". Cấu hình này **CHỈ NÊN DÙNG** trong môi trường Local Dev để giảm độ trễ khi test App trên máy tính cá nhân. Lên Production mà để bằng `0` là tự hủy!
+
 ---
 
 ## 2. Đi Sâu Vào Producer (Nhà Sản Xuất)

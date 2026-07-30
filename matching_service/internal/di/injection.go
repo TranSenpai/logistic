@@ -2,12 +2,14 @@ package di
 
 import (
 	"matching_service/internal/biz"
-	entclient "matching_service/internal/common/ent_client"
-	"matching_service/internal/delivery"
-	"matching_service/internal/handler/grpchandler"
+	"matching_service/internal/controller"
 	"matching_service/internal/repo"
 
 	"google.golang.org/grpc"
+
+	entclient "matching_service/internal/common/ent_client"
+
+	pb "github.com/logistic/api/logistic/matching_service/v1"
 )
 
 func Injection(grpcServer *grpc.Server) error {
@@ -20,11 +22,8 @@ func Injection(grpcServer *grpc.Server) error {
 	engine := biz.NewGeoHashEngine()
 	biz := biz.NewMatchingEngine(repo, engine)
 
-	// Create the handler (controller)
-	handler := grpchandler.NewMatchingHandler(biz)
-
-	// Let delivery layer register the handler to the gRPC Server
-	delivery.RegisterGrpcRouter(grpcServer, handler)
+	controller := controller.NewMatchingController(biz)
+	pb.RegisterMatchingEngineServiceServer(grpcServer, controller)
 
 	return nil
 }

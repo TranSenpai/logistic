@@ -17,13 +17,13 @@ import (
 
 type matchingRepoImpl struct {
 	client *ent.Client
-	mapper mapper.Converter
+	mapper mapper.AppMapper
 }
 
 func NewMatchingRepo(client *ent.Client) biz.MatchingRepo {
 	return &matchingRepoImpl{
 		client: client,
-		mapper: &generated.ConverterImpl{},
+		mapper: &generated.AppMapperImpl{},
 	}
 }
 
