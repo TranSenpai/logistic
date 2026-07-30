@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"matching_service/internal/conf"
 	"matching_service/internal/di"
 	"net"
