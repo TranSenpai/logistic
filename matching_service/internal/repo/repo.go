@@ -20,6 +20,8 @@ type matchingRepoImpl struct {
 	mapper mapper.AppMapper
 }
 
+var _ biz.MatchingRepo = (*matchingRepoImpl)(nil)
+
 func NewMatchingRepo(client *ent.Client) biz.MatchingRepo {
 	return &matchingRepoImpl{
 		client: client,

@@ -11,7 +11,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/logistic/api v0.0.0-00010101000000-000000000000
 	github.com/mmcloughlin/geohash v0.10.0
-	github.com/swaggo/http-swagger v1.3.4
+	github.com/nats-io/nats.go v1.52.0
 	github.com/swaggo/swag v1.16.6
 	google.golang.org/grpc v1.83.0
 	google.golang.org/protobuf v1.36.11
@@ -38,14 +38,16 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.26.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/hashicorp/hcl/v2 v2.18.1 // indirect
+	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
+	github.com/nats-io/nkeys v0.4.15 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/rogpeppe/go-internal v1.15.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
-	github.com/swaggo/files v1.0.1 // indirect
 	github.com/zclconf/go-cty v1.14.4 // indirect
 	github.com/zclconf/go-cty-yaml v1.1.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/mod v0.37.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
@@ -57,7 +59,6 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
-	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
 replace github.com/logistic/api => ../api
