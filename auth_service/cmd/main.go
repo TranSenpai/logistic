@@ -6,15 +6,22 @@ import (
 	"os/signal"
 	"syscall"
 
+	"auth_service/internal/conf"
+
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load("configs/.env"); err != nil {
+	if err := godotenv.Load("../.env"); err != nil {
 		log.Println("No .env file found or failed to load, falling back to system environment variables")
 	}
 
-	app, err := NewApp()
+	cfg, err := conf.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	app, err := NewApp(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize Auth App: %v", err)
 	}

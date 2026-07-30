@@ -2,6 +2,7 @@ package di
 
 import (
 	"matching_service/internal/biz"
+	"matching_service/internal/conf"
 	"matching_service/internal/controller"
 	"matching_service/internal/repo"
 
@@ -12,8 +13,8 @@ import (
 	pb "github.com/logistic/api/logistic/matching_service/v1"
 )
 
-func Injection(grpcServer *grpc.Server) error {
-	client, err := entclient.NewConnection()
+func Injection(grpcServer *grpc.Server, cfg *conf.Config) error {
+	client, err := entclient.NewConnection(cfg.Database)
 	if err != nil {
 		return err
 	}

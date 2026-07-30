@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"matching_service/ent"
-	"matching_service/internal/env"
+	"matching_service/internal/conf"
 
 	_ "matching_service/ent/runtime"
 
@@ -18,14 +18,8 @@ var (
 	ErrDBPing    = errors.New("database is unreachable (ping failed)")
 )
 
-func NewConnection() (*ent.Client, error) {
-	var e *env.Env = env.NewEnv()
-	err := e.LoadEnv()
-	if err != nil || e == nil {
-		return nil, err
-	}
-
-	client, err := ent.Open(e.GetDriverName(), e.GetDataSource())
+func NewConnection(dbCfg conf.DatabaseConfig) (*ent.Client, error) {
+	client, err := ent.Open(dbCfg.Driver, dbCfg.GetDataSource())
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDBConnect, err)
 	}

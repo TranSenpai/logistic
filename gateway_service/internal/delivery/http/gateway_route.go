@@ -3,17 +3,23 @@ package http
 import (
 	"gateway_service/internal/handler"
 
-	pb "github.com/logistic/api/logistic/auth_service/v1"
+	pbauth "github.com/logistic/api/logistic/auth_service/v1"
+	pbmatching "github.com/logistic/api/logistic/matching_service/v1"
+
+	_ "gateway_service/docs" // Import swagger docs
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// RegisterGatewayRoutes đăng ký tất cả các route của Gateway Service
-func RegisterGatewayRoutes(ginEngine *gin.Engine, authClient pb.AuthServiceClient) {
-	// Khởi tạo các handler
+func RegisterGatewayRoutes(ginEngine *gin.Engine, authClient pbauth.AuthServiceClient, matchingClient pbmatching.MatchingEngineServiceClient) {
 	authHandler := handler.NewAuthHandler(authClient)
+	// matchingHandler := handler.NewMatchingHandler(matchingClient) // TODO: Implement matching handler
 
-	// API Group cha
+	// Swagger UI route
+	ginEngine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	apiGroup := ginEngine.Group("/api/v1")
 	{
 		// Group Auth

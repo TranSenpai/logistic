@@ -1,42 +1,38 @@
 package main
 
 import (
+	"auth_service/internal/conf"
 	"auth_service/internal/di"
 	"log"
 	"net"
-	"os"
 
 	"google.golang.org/grpc"
 )
 
 type App struct {
 	grpcServer *grpc.Server
+	cfg        *conf.Config
 }
 
-func NewApp() (*App, error) {
+func NewApp(cfg *conf.Config) (*App, error) {
 	grpcServer := grpc.NewServer()
 
-	err := di.Injection(grpcServer)
+	err := di.Injection(grpcServer, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &App{grpcServer: grpcServer}, nil
+	return &App{grpcServer: grpcServer, cfg: cfg}, nil
 }
 
 func (a *App) Start() error {
-	grpcPort := os.Getenv("GRPC_PORT")
-	if grpcPort == "" {
-		log.Fatal("GRPC_PORT environment variable is missing")
-	}
-
-	listener, err := net.Listen("tcp", ":"+grpcPort)
+	listener, err := net.Listen("tcp", ":"+a.cfg.Server.GrpcPort)
 	if err != nil {
 		return err
 	}
-	
-	log.Printf("Starting Auth Service (gRPC) on :%s...", grpcPort)
-	
+
+	log.Printf("Starting Auth Service (gRPC) on :%s...", a.cfg.Server.GrpcPort)
+
 	// Start gRPC server in a separate goroutine
 	go func() {
 		if err := a.grpcServer.Serve(listener); err != nil {
