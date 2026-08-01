@@ -38,7 +38,7 @@ func NewApp() (*App, error) {
 }
 
 func (a *App) Start() error {
-	port := os.Getenv("PORT")
+	port := os.Getenv("GATEWAY_PORT")
 	if port == "" {
 		log.Fatal("PORT environment variable is missing for Gateway Service")
 	}

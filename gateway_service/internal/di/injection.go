@@ -15,9 +15,9 @@ import (
 )
 
 func Injection(ginEngine *gin.Engine) error {
-	authGrpcAddr := os.Getenv("AUTH_GRPC_ADDR")
+	authGrpcAddr := os.Getenv("GATEWAY_AUTH_GRPC_ADDR")
 	if authGrpcAddr == "" {
-		authGrpcAddr = "auth_service:9001" // fallback mặc định
+		authGrpcAddr = "localhost:9001" // Fallback cho local dev
 	}
 
 	conn, err := grpc.NewClient(authGrpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -30,7 +30,7 @@ func Injection(ginEngine *gin.Engine) error {
 
 	authClient := pbauth.NewAuthServiceClient(conn)
 
-	matchingGrpcAddr := os.Getenv("MATCHING_GRPC_ADDR")
+	matchingGrpcAddr := os.Getenv("GATEWAY_MATCHING_GRPC_ADDR")
 	if matchingGrpcAddr == "" {
 		matchingGrpcAddr = "matching_service:9002"
 	}

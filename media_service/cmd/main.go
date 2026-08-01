@@ -21,7 +21,7 @@ func main() {
 
 	i18n.InitI18n("../pkg/i18n/locales")
 
-	port := os.Getenv("PORT")
+	port := os.Getenv("MEDIA_SERVICE_PORT")
 	if port == "" {
 		port = "8082"
 	}
