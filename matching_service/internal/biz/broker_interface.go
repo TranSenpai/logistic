@@ -4,9 +4,15 @@ import (
 	"context"
 )
 
+type Header struct {
+	Key   []byte
+	Value []byte
+}
+
 type EventMessage struct {
-	Header  string
+	Header  *Header
 	Topic   string
+	Key     string
 	Payload []byte
 }
 
@@ -15,5 +21,5 @@ type EventPublisher interface {
 }
 
 type EventConsumer interface {
-	Consume(ctx context.Context, topic string, handler func(bucket []byte) error) error
+	Consume(ctx context.Context, topic string, handler func(ctx context.Context, bucket []byte) error) error
 }

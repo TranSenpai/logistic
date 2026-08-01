@@ -22,9 +22,9 @@ func InitSubcriber(natJetStreamContext nats.JetStreamContext) biz.EventConsumer 
 
 var _ biz.EventConsumer = (*natsSubcriber)(nil)
 
-func (n *natsSubcriber) Consume(ctx context.Context, topic string, handler func(bucket []byte) error) error {
+func (n *natsSubcriber) Consume(ctx context.Context, topic string, handler func(ctx context.Context, bucket []byte) error) error {
 	_, err := n.natJetStreamContext.Subscribe(topic, func(msg *nats.Msg) {
-		err := handler(msg.Data)
+		err := handler(ctx, msg.Data)
 		if err != nil {
 			if errors.Is(err, biz.ErrNonRetryable) {
 				log.Printf("Discarding poison pill message: %v", err)
