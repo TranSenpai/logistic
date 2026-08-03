@@ -7,13 +7,12 @@ WORKDIR /workspace
 COPY go.work go.work.sum ./
 COPY go.mod go.sum ./
 
-# MẸO: Bỏ qua go.work cũ (có chứa vehicle_service) và tạo mới cho riêng auth_service
-RUN rm go.work go.work.sum && go work init . ./auth_service
-
-# CHỈ copy những thư mục thật sự cần thiết cho auth_service
+# MẸO: Phải COPY source code vào trước thì lệnh 'go work init' mới không bị lỗi "not found"
 COPY api/ ./api/
 COPY pkg/ ./pkg/
 COPY auth_service/ ./auth_service/
+
+RUN rm -f go.work go.work.sum && go work init . ./auth_service
 
 # Di chuyển vào thư mục của auth_service để build
 WORKDIR /workspace/auth_service

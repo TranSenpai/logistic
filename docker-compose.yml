@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   logistic_net:
     driver: bridge
@@ -23,7 +21,7 @@ services:
       context: .
       dockerfile: ./media_service/Dockerfile
     ports:
-      - "8082:8082"
+      - "9002:9002"
     env_file:
       - .env
     volumes:
@@ -31,8 +29,67 @@ services:
     networks:
       - logistic_net
 
+  matching-service:
+    build:
+      context: .
+      dockerfile: ./matching_service/Dockerfile
+    ports:
+      - "9003:9003"
+    env_file:
+      - .env
+    volumes:
+      - matching-data:/app/data
+    networks:
+      - logistic_net
+
+  matching-db-master:
+    image: postgres:16-alpine
+    container_name: matching-db-master
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRESQL_USERNAME: ${GLOBAL_POSTGRES_USER}
+      POSTGRESQL_PASSWORD: ${GLOBAL_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${GLOBAL_POSTGRES_DB}
+      REPLICATION_USER: ${GLOBAL_POSTGRES_REPLICATION_USER}
+      REPLICATION_PASSWORD: ${GLOBAL_POSTGRES_REPLICATION_PASSWORD}
+    command: 
+      - "postgres"
+      - "-c" # Config file
+      - "config_file=/etc/postgresql/postgresql.conf"
+    volumes:
+      - matching-db-master-data:/var/lib/postgresql/data
+      - ./config/matching_conf/postgresql.conf:/etc/postgresql/postgresql.conf
+      # Thư mục /docker-entrypoint-initdb.d/ là điểm neo (hook) khởi tạo của Image PostgreSQL.
+      # Bất kỳ script (.sh, .sql) nào được mount vào đây sẽ tự động được thực thi 1 lần 
+      # duy nhất trong giai đoạn bootstrap (khi thư mục data còn trống).
+      # Script register-replica.sh được dùng để cấp phát User Replication và cập nhật pg_hba.conf trước khi DB mở port kết nối.
+      - ./scripts/matching_service/db/register-replica.sh:/docker-entrypoint-initdb.d/register-replica.sh
+    networks:
+      - logistic_net
+
+  matching-db-slave:
+    image: postgres:16-alpine
+    container_name: matching-db-slave
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: ${GLOBAL_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${GLOBAL_POSTGRES_PASSWORD}
+      PGPASSWORD: ${GLOBAL_POSTGRES_REPLICATION_PASSWORD}
+    depends_on:
+      - matching-db-master
+    volumes:
+      - postgres-replica-data:/var/lib/postgresql/data
+      - ./scripts/matching_service/db/start-replica.sh:/scripts/matching_service/db/start-replica.sh
+    command:
+      - "bash"
+      - "/scripts/matching_service/db/start-replica.sh"
+    networks:
+      - logistic_net
+
   nats:
-    image: nats:alpine
+    image: nats:2.10-alpine
     container_name: nats-server
     command: 
       - "-js"           # Kích hoạt chế độ JetStream
@@ -49,7 +106,7 @@ services:
       - logistic_net
 
   controller-1:
-    image: apache/kafka:latest
+    image: apache/kafka:4.3.1
     container_name: controller-1
     environment:
       KAFKA_NODE_ID: 1
@@ -62,7 +119,7 @@ services:
       KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_KRAFT_CLUSTER_ID}
 
   controller-2:
-    image: apache/kafka:latest
+    image: apache/kafka:4.3.1
     container_name: controller-2
     environment:
       KAFKA_NODE_ID: 2
@@ -75,7 +132,7 @@ services:
       KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_KRAFT_CLUSTER_ID}
 
   controller-3:
-    image: apache/kafka:latest
+    image: apache/kafka:4.3.1
     container_name: controller-3
     environment:
       KAFKA_NODE_ID: 3
@@ -88,7 +145,7 @@ services:
       KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_KRAFT_CLUSTER_ID}
 
   broker-1:
-    image: apache/kafka:latest
+    image: apache/kafka:4.3.1
     container_name: broker-1
     ports:
       - 29092:9092
@@ -109,7 +166,7 @@ services:
       - controller-3
 
   broker-2:
-    image: apache/kafka:latest
+    image: apache/kafka:4.3.1
     container_name: broker-2
     ports:
       - 39092:9092
@@ -130,7 +187,7 @@ services:
       - controller-3
 
   broker-3:
-    image: apache/kafka:latest
+    image: apache/kafka:4.3.1
     container_name: broker-3
     ports:
       - 49092:9092
@@ -150,8 +207,10 @@ services:
       - controller-2
       - controller-3
 
-
 volumes:
   nats-data:
   auth-data:
   media-data:
+  matching-data:
+  matching-db-master-data:
+  postgres-replica-data:

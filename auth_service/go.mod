@@ -5,16 +5,19 @@ go 1.26.4
 require (
 	entgo.io/ent v0.14.6
 	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.12.3
 	golang.org/x/crypto v0.52.0
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/grpc v1.83.0
 	google.golang.org/protobuf v1.36.11
-	sigs.k8s.io/yaml v1.6.0
 )
 
-require go.yaml.in/yaml/v2 v2.4.2 // indirect
+require (
+	github.com/BurntSushi/toml v1.2.1 // indirect
+	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
+)
 
 require (
 	ariga.io/atlas v0.36.2-0.20250730182955-2c6300d0a3e1 // indirect
