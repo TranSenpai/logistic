@@ -46,3 +46,39 @@ message SubmitAskResponse {
   bytes ask_id = 1;
   string status = 2; // e.g., "PENDING", "MATCHED", "EXPIRED"
 }
+
+// Domain Models for Event Publishing
+message Bid {
+  bytes id = 1;
+  bytes user_id = 2;
+  Location origin = 3;
+  Location destination = 4;
+  double volume_m3 = 5;
+  double weight_kg = 6;
+  double max_price = 7;
+  int32 status = 8;
+  google.protobuf.Timestamp expires_at = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message Bids {
+  repeated Bid bids = 1;
+}
+
+message Ask {
+  bytes id = 1;
+  bytes vehicle_id = 2;
+  bytes driver_id = 3;
+  Location current_location = 4;
+  Location destination = 5;
+  double available_volume_m3 = 6;
+  double available_weight_kg = 7;
+  double min_price = 8;
+  int32 status = 9;
+  google.protobuf.Timestamp expires_at = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message Asks {
+  repeated Ask asks = 1;
+}

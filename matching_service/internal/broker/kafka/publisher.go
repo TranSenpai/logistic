@@ -7,17 +7,23 @@ import (
 	"log"
 	"matching_service/internal/biz"
 	"matching_service/internal/broker"
+	"matching_service/internal/entity"
+	"matching_service/internal/mapper"
+
+	pb "github.com/logistic/api/logistic/matching_service/v1"
 
 	"github.com/IBM/sarama"
+	"google.golang.org/protobuf/proto"
 )
 
 type kafkaPublisher struct {
 	producer sarama.SyncProducer
+	mapper   mapper.AppMapper
 }
 
 var _ biz.EventPublisher = (*kafkaPublisher)(nil)
 
-func NewKafkaPublisher(brokers []string) (biz.EventPublisher, error) {
+func NewKafkaPublisher(brokers []string, appMapper mapper.AppMapper) (biz.EventPublisher, error) {
 	config := sarama.NewConfig()
 
 	config.Producer.Return.Successes = true
@@ -28,7 +34,30 @@ func NewKafkaPublisher(brokers []string) (biz.EventPublisher, error) {
 		return nil, err
 	}
 
-	return &kafkaPublisher{producer: producer}, err
+	return &kafkaPublisher{producer: producer, mapper: appMapper}, err
+}
+
+func (p *kafkaPublisher) payloadToBytes(payload any) ([]byte, error) {
+	switch v := payload.(type) {
+	case []byte:
+		return v, nil
+	case *entity.Bid:
+		if v == nil {
+			return nil, broker.ErrNilMessage
+		}
+		pbBid := p.mapper.EntityBidToPbBid(*v)
+
+		return proto.Marshal(pbBid)
+	case []entity.Ask:
+		if v == nil {
+			return nil, broker.ErrNilMessage
+		}
+		payload := &pb.Asks{Asks: p.mapper.EntityAskListToPbAskList(v)}
+
+		return proto.Marshal(payload)
+	default:
+		return nil, fmt.Errorf("unsupported payload type for protobuf serialization")
+	}
 }
 
 func (p *kafkaPublisher) Publish(ctx context.Context, msg *biz.EventMessage) error {
@@ -36,9 +65,14 @@ func (p *kafkaPublisher) Publish(ctx context.Context, msg *biz.EventMessage) err
 		return broker.ErrNilMessage
 	}
 
+	payloadBytes, err := p.payloadToBytes(msg.Payload)
+	if err != nil {
+		return err
+	}
+
 	kafkaMgs := sarama.ProducerMessage{
 		Topic: msg.Topic,
-		Value: sarama.ByteEncoder(msg.Payload),
+		Value: sarama.ByteEncoder(payloadBytes),
 	}
 	if msg.Key != "" {
 		kafkaMgs.Key = sarama.StringEncoder(msg.Key)

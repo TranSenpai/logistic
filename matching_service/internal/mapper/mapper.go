@@ -53,6 +53,28 @@ type AppMapper interface {
 
 	// goverter:map ZoneId ZoneID
 	MapLocation(loc *pb.Location) entity.Location
+
+	// goverter:map ZoneID ZoneId
+	MapEntityLocationToPb(loc entity.Location) *pb.Location
+
+	// ==================== BROKER MAPPER ====================
+
+	// goverter:map ID Id | UUIDToBytes
+	// goverter:map UserID UserId | UUIDToBytes
+	// goverter:map Status Status | Int8ToInt32
+	// goverter:map ExpiresAt ExpiresAt | TimeToTimestamp
+	// goverter:map CreatedAt CreatedAt | TimeToTimestamp
+	EntityBidToPbBid(source entity.Bid) *pb.Bid
+	EntityBidListToPbBidList(source []entity.Bid) []*pb.Bid
+
+	// goverter:map ID Id | UUIDToBytes
+	// goverter:map VehicleID VehicleId | UUIDToBytes
+	// goverter:map DriverID DriverId | UUIDToBytes
+	// goverter:map Status Status | Int8ToInt32
+	// goverter:map ExpiresAt ExpiresAt | TimeToTimestamp
+	// goverter:map CreatedAt CreatedAt | TimeToTimestamp
+	EntityAskToPbAsk(source entity.Ask) *pb.Ask
+	EntityAskListToPbAskList(source []entity.Ask) []*pb.Ask
 }
 
 // ==================== HELPERS ====================
@@ -117,9 +139,24 @@ func BytesToUUID(b []byte) (uuid.UUID, error) {
 	return uuid.FromBytes(b)
 }
 
+func UUIDToBytes(u uuid.UUID) []byte {
+	return u[:]
+}
+
+func Int8ToInt32(i int8) int32 {
+	return int32(i)
+}
+
 func TimestampToTime(ts *timestamppb.Timestamp) time.Time {
 	if ts != nil && ts.IsValid() {
 		return ts.AsTime()
 	}
 	return time.Time{}
+}
+
+func TimeToTimestamp(t time.Time) *timestamppb.Timestamp {
+	if t.IsZero() {
+		return nil
+	}
+	return timestamppb.New(t)
 }

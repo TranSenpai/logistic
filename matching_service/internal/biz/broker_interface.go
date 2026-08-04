@@ -13,7 +13,7 @@ type EventMessage struct {
 	Header  *Header
 	Topic   string
 	Key     string
-	Payload []byte
+	Payload any
 }
 
 type EventPublisher interface {

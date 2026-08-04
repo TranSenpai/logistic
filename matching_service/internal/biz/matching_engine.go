@@ -25,12 +25,16 @@ type matchingEngineImpl struct {
 	spatial SpatialEngine
 	// matchChan dùng để bắn kết quả ra ngoài sau khi ghép thành công
 	matchChan chan *entity.MatchResult
+	kafkaPub  EventPublisher
+	natsPub   EventPublisher
 }
 
-func NewMatchingEngine(repo MatchingRepo, spatial SpatialEngine) MatchingEngine {
+func NewMatchingEngine(repo MatchingRepo, spatial SpatialEngine, kafkaPub EventPublisher, natsPub EventPublisher) MatchingEngine {
 	return &matchingEngineImpl{
 		repo:      repo,
 		spatial:   spatial,
+		kafkaPub:  kafkaPub,
+		natsPub:   natsPub,
 		matchChan: make(chan *entity.MatchResult, 1000),
 	}
 }
@@ -132,8 +136,12 @@ func (e *matchingEngineImpl) matchForBid(ctx context.Context, bid *entity.Bid) {
 
 		scoredAsks = append(scoredAsks, ScoredAsk{Ask: ask, Score: score})
 	}
+	e.natsPub.Publish(ctx, &EventMessage{
+		Topic:   "matching.drivers.notified",
+		Key:     bid.ID.String(),
+		Payload: scoredAsks,
+	})
 
-	//TODO: Sắp xếp và ném 5 kết quả tốt nhất vào NATS JetStream
 	log.Printf("Found %d potential drivers for Bid %s. Top score: %.2f", len(scoredAsks), bid.ID, scoredAsks[0].Score)
 }
 

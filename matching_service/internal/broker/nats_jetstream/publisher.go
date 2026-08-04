@@ -7,6 +7,7 @@ import (
 	"log"
 	"matching_service/internal/biz"
 	"matching_service/internal/broker"
+	"matching_service/internal/mapper"
 
 	"github.com/nats-io/nats.go"
 )
@@ -15,11 +16,26 @@ var _ biz.EventPublisher = (*natsPublisher)(nil)
 
 type natsPublisher struct {
 	natJetStreamContext nats.JetStreamContext
+	mapper              mapper.AppMapper
 }
 
-func InitPublisher(natJetStreamContext nats.JetStreamContext) biz.EventPublisher {
+func InitPublisher(natJetStreamContext nats.JetStreamContext, appMapper mapper.AppMapper) biz.EventPublisher {
 	return &natsPublisher{
 		natJetStreamContext: natJetStreamContext,
+		mapper:              appMapper,
+	}
+}
+
+func (n *natsPublisher) payloadToBytes(payload any) ([]byte, error) {
+	switch v := payload.(type) {
+	case []byte:
+		return v, nil
+	// TƯƠNG LAI BỔ SUNG TYPE ASSERTION Ở ĐÂY:
+	// case *entity.Bid:
+	//     pbBid := n.mapper.EntityBidToPbBid(v) 
+	//     return proto.Marshal(pbBid)
+	default:
+		return nil, fmt.Errorf("unsupported payload type for protobuf serialization")
 	}
 }
 
@@ -28,7 +44,12 @@ func (n *natsPublisher) Publish(ctx context.Context, msg *biz.EventMessage) erro
 		return broker.ErrNilMessage
 	}
 
-	ack, err := n.natJetStreamContext.Publish(msg.Topic, msg.Payload)
+	payloadBytes, err := n.payloadToBytes(msg.Payload)
+	if err != nil {
+		return err
+	}
+
+	ack, err := n.natJetStreamContext.Publish(msg.Topic, payloadBytes)
 	if err != nil {
 		return parseNatsError(err)
 	}

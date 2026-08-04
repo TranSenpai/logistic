@@ -96,7 +96,7 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
     # -vP: In tiến trình %
     # -w: Không hỏi mật khẩu (Tự lấy từ $PGPASSWORD)
     # -R: ĐỂ LẠI FILE STANDBY.SIGNAL (Biến node này thành Read-only và tự động cấu hình Auto-resume WAL)
-    pg_basebackup -h matching-db-master -D "$PGDATA" -U "$GLOBAL_POSTGRES_REPLICATION_USER" -vP -w -R
+    pg_basebackup -h matching-db-master -D "$PGDATA" -U "$MATCHING_DB_REPLICATION_USER" -vP -w -R
 else
     echo "The data already exists, skip the data scraping step."
 fi
@@ -118,11 +118,11 @@ Cuối cùng, dán khối cấu hình này vào file `docker-compose.yml` của 
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: ${GLOBAL_POSTGRES_USER}
-      POSTGRES_PASSWORD: ${GLOBAL_POSTGRES_PASSWORD}
-      POSTGRES_DB: ${GLOBAL_POSTGRES_DB}
-      REPLICATION_USER: ${GLOBAL_POSTGRES_REPLICATION_USER}
-      REPLICATION_PASSWORD: ${GLOBAL_POSTGRES_REPLICATION_PASSWORD}
+      POSTGRES_USER: ${MATCHING_DB_MASTER_USER}
+      POSTGRES_PASSWORD: ${MATCHING_DB_MASTER_PASSWORD}
+      POSTGRES_DB: ${MATCHING_DB_MASTER_DB}
+      REPLICATION_USER: ${MATCHING_DB_REPLICATION_USER}
+      REPLICATION_PASSWORD: ${MATCHING_DB_REPLICATION_PASSWORD}
     command: 
       - "postgres"
       - "-c"
@@ -141,9 +141,9 @@ Cuối cùng, dán khối cấu hình này vào file `docker-compose.yml` của 
     ports:
       - "5433:5432"
     environment:
-      POSTGRES_USER: ${GLOBAL_POSTGRES_USER}
-      POSTGRES_PASSWORD: ${GLOBAL_POSTGRES_PASSWORD}
-      PGPASSWORD: ${GLOBAL_POSTGRES_REPLICATION_PASSWORD}
+      POSTGRES_USER: ${MATCHING_DB_MASTER_USER}
+      POSTGRES_PASSWORD: ${MATCHING_DB_MASTER_PASSWORD}
+      PGPASSWORD: ${MATCHING_DB_REPLICATION_PASSWORD}
     depends_on:
       - matching-db-master
     volumes:

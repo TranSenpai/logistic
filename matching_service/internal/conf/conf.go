@@ -7,8 +7,11 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
+	Server         ServerConfig
+	MasterDatabase MasterDatabaseConfig
+	SlaveDatabase  SlaveDatabaseConfig
+	NatConfig      NatConfig
+	KafkaConfig    KafkaConfig
 }
 
 type ServerConfig struct {
@@ -16,16 +19,43 @@ type ServerConfig struct {
 	IsProduction bool   `env:"GLOBAL_IS_PRODUCTION" env-default:"false"`
 }
 
-type DatabaseConfig struct {
+type MasterDatabaseConfig struct {
 	Driver   string `env:"MATCHING_SERVICE_DB_DRIVER" env-required:"true"`
-	User     string `env:"MATCHING_SERVICE_DB_USER" env-required:"true"`
-	Password string `env:"MATCHING_SERVICE_DB_PASSWORD" env-required:"true"`
-	Host     string `env:"MATCHING_SERVICE_DB_HOST" env-required:"true"`
-	Port     string `env:"MATCHING_SERVICE_DB_PORT" env-required:"true"`
-	DBName   string `env:"MATCHING_SERVICE_DB_NAME" env-required:"true"`
+	User     string `env:"MATCHING_DB_MASTER_USER" env-required:"true"`
+	Password string `env:"MATCHING_DB_MASTER_PASSWORD" env-required:"true"`
+	Host     string `env:"MATCHING_DB_MASTER_HOST" env-required:"true"`
+	Port     string `env:"MATCHING_DB_MASTER_PORT" env-required:"true"`
+	DBName   string `env:"MATCHING_DB_MASTER_DB" env-required:"true"`
 }
 
-func (db *DatabaseConfig) GetDataSource() string {
+type SlaveDatabaseConfig struct {
+	Driver   string `env:"MATCHING_SERVICE_DB_DRIVER" env-required:"true"`
+	User     string `env:"MATCHING_DB_SLAVE_USER" env-required:"true"`
+	Password string `env:"MATCHING_DB_SLAVE_PASSWORD" env-required:"true"`
+	Host     string `env:"MATCHING_DB_SLAVE_HOST" env-required:"true"`
+	Port     string `env:"MATCHING_DB_SLAVE_PORT" env-required:"true"`
+	DBName   string `env:"MATCHING_DB_SLAVE_DB" env-required:"true"`
+}
+
+type NatConfig struct {
+	Host string `env:"NATS_HOST" env-required:"true"`
+	Port string `env:"NATS_PORT" env-required:"true"`
+}
+
+type KafkaConfig struct {
+	ClusterId string `env:"KAFKA_KRAFT_CLUSTER_ID" env-required:"true"`
+	Host      string `env:"KAFKA_HOST" env-required:"true"`
+	Port1     string `env:"KAFKA_BROKER_1_PORT" env-required:"true"`
+	Port2     string `env:"KAFKA_BROKER_2_PORT" env-required:"true"`
+	Port3     string `env:"KAFKA_BROKER_3_PORT" env-required:"true"`
+}
+
+func (db *MasterDatabaseConfig) GetDataSource() string {
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		db.Host, db.Port, db.User, db.Password, db.DBName)
+}
+
+func (db *SlaveDatabaseConfig) GetDataSource() string {
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		db.Host, db.Port, db.User, db.Password, db.DBName)
 }

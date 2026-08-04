@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"log"
 
 	"matching_service/ent"
 	"matching_service/ent/asks"
@@ -16,21 +17,27 @@ import (
 )
 
 type matchingRepoImpl struct {
-	client *ent.Client
-	mapper mapper.AppMapper
+	masterClient *ent.Client
+	slaveClient  *ent.Client
+	mapper       mapper.AppMapper
 }
 
 var _ biz.MatchingRepo = (*matchingRepoImpl)(nil)
 
-func NewMatchingRepo(client *ent.Client) biz.MatchingRepo {
+func NewMatchingRepo(masterClient *ent.Client, slaveClient *ent.Client, mapper *generated.AppMapperImpl) biz.MatchingRepo {
+	if masterClient == nil || slaveClient == nil {
+		log.Fatalf("[SYSTEM] failed to create master and slave client")
+	}
+
 	return &matchingRepoImpl{
-		client: client,
-		mapper: &generated.AppMapperImpl{},
+		masterClient: masterClient,
+		slaveClient:  slaveClient,
+		mapper:       mapper,
 	}
 }
 
 func (r *matchingRepoImpl) CreateBid(ctx context.Context, bid *entity.Bid) error {
-	dao, err := r.client.Bids.Create().
+	dao, err := r.masterClient.Bids.Create().
 		SetUserID(bid.UserID).
 		SetOriginLat(bid.Origin.Latitude).
 		SetOriginLng(bid.Origin.Longitude).
@@ -52,7 +59,7 @@ func (r *matchingRepoImpl) CreateBid(ctx context.Context, bid *entity.Bid) error
 }
 
 func (r *matchingRepoImpl) CreateAsk(ctx context.Context, ask *entity.Ask) error {
-	dao, err := r.client.Asks.Create().
+	dao, err := r.masterClient.Asks.Create().
 		SetID(ask.ID).
 		SetDriverID(ask.DriverID).
 		SetVehicleID(ask.VehicleID).
@@ -77,7 +84,7 @@ func (r *matchingRepoImpl) CreateAsk(ctx context.Context, ask *entity.Ask) error
 }
 
 func (r *matchingRepoImpl) GetPendingBids(ctx context.Context, zone string) ([]entity.Bid, error) {
-	daoList, err := r.client.Bids.Query().
+	daoList, err := r.slaveClient.Bids.Query().
 		Where(bids.ZoneID(zone)).
 		Where(bids.Status(entity.BidStatusPending)).
 		All(ctx)
@@ -89,7 +96,7 @@ func (r *matchingRepoImpl) GetPendingBids(ctx context.Context, zone string) ([]e
 }
 
 func (r *matchingRepoImpl) GetPendingAsks(ctx context.Context, zone string) ([]entity.Ask, error) {
-	daoList, err := r.client.Asks.Query().
+	daoList, err := r.slaveClient.Asks.Query().
 		Where(asks.ZoneID(zone)).
 		Where(asks.Status(entity.AskStatusPending)).
 		All(ctx)
@@ -101,7 +108,7 @@ func (r *matchingRepoImpl) GetPendingAsks(ctx context.Context, zone string) ([]e
 }
 
 func (r *matchingRepoImpl) FindAskForBid(ctx context.Context, bid *entity.Bid) ([]entity.Ask, error) {
-	daoList, err := r.client.Asks.Query().
+	daoList, err := r.slaveClient.Asks.Query().
 		Where(asks.ZoneID(bid.Origin.ZoneID)).
 		Where(asks.Status(entity.AskStatusPending)).
 		Where(asks.AvailableVolumeM3GT(bid.VolumeM3)).
@@ -126,7 +133,7 @@ func (r *matchingRepoImpl) FindAskForBid(ctx context.Context, bid *entity.Bid) (
 }
 
 func (r *matchingRepoImpl) FindBidForAsk(ctx context.Context, ask *entity.Ask) ([]entity.Bid, error) {
-	daoList, err := r.client.Bids.Query().
+	daoList, err := r.slaveClient.Bids.Query().
 		Where(bids.ZoneID(ask.CurrentLocation.ZoneID)).
 		Where(bids.Status(entity.BidStatusPending)).
 		Where(func(s *sql.Selector) {
@@ -153,7 +160,7 @@ func (r *matchingRepoImpl) FindBidForAsk(ctx context.Context, ask *entity.Ask) (
 }
 
 func (r *matchingRepoImpl) UpdateAsk(ctx context.Context, ask *entity.Ask) error {
-	dao, err := r.client.Asks.
+	dao, err := r.masterClient.Asks.
 		UpdateOneID(ask.ID).
 		SetOriginLat(ask.CurrentLocation.Latitude).
 		SetOriginLng(ask.CurrentLocation.Longitude).
@@ -173,7 +180,7 @@ func (r *matchingRepoImpl) UpdateAsk(ctx context.Context, ask *entity.Ask) error
 }
 
 func (r *matchingRepoImpl) UpdateBid(ctx context.Context, bid *entity.Bid) error {
-	dao, err := r.client.Bids.
+	dao, err := r.masterClient.Bids.
 		UpdateOneID(bid.ID).
 		SetOriginLat(bid.Origin.Latitude).
 		SetOriginLng(bid.Origin.Longitude).
@@ -195,9 +202,9 @@ func (r *matchingRepoImpl) UpdateBid(ctx context.Context, bid *entity.Bid) error
 }
 
 func (r *matchingRepoImpl) DeleteBid(ctx context.Context, id uuid.UUID) error {
-	return r.client.Bids.DeleteOneID(id).Exec(ctx)
+	return r.masterClient.Bids.DeleteOneID(id).Exec(ctx)
 }
 
 func (r *matchingRepoImpl) DeleteAsk(ctx context.Context, id uuid.UUID) error {
-	return r.client.Asks.DeleteOneID(id).Exec(ctx)
+	return r.masterClient.Asks.DeleteOneID(id).Exec(ctx)
 }

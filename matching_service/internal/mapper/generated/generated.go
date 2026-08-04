@@ -64,6 +64,62 @@ func (c *AppMapperImpl) EntBidToEntityBid(source *ent.Bids) entity.Bid {
 	}
 	return entityBid
 }
+func (c *AppMapperImpl) EntityAskListToPbAskList(source []entity.Ask) []*v1.Ask {
+	var pV1AskList []*v1.Ask
+	if source != nil {
+		pV1AskList = make([]*v1.Ask, len(source))
+		for i := 0; i < len(source); i++ {
+			pV1AskList[i] = c.EntityAskToPbAsk(source[i])
+		}
+	}
+	return pV1AskList
+}
+func (c *AppMapperImpl) EntityAskToPbAsk(source entity.Ask) *v1.Ask {
+	var v1Ask v1.Ask
+	v1Ask.Id = mapper.UUIDToBytes(source.ID)
+	v1Ask.VehicleId = mapper.UUIDToBytes(source.VehicleID)
+	v1Ask.DriverId = mapper.UUIDToBytes(source.DriverID)
+	v1Ask.CurrentLocation = c.MapEntityLocationToPb(source.CurrentLocation)
+	v1Ask.Destination = c.MapEntityLocationToPb(source.Destination)
+	v1Ask.AvailableVolumeM3 = source.AvailableVolumeM3
+	v1Ask.AvailableWeightKg = source.AvailableWeightKg
+	v1Ask.MinPrice = source.MinPrice
+	v1Ask.Status = mapper.Int8ToInt32(source.Status)
+	v1Ask.ExpiresAt = mapper.TimeToTimestamp(source.ExpiresAt)
+	v1Ask.CreatedAt = mapper.TimeToTimestamp(source.CreatedAt)
+	return &v1Ask
+}
+func (c *AppMapperImpl) EntityBidListToPbBidList(source []entity.Bid) []*v1.Bid {
+	var pV1BidList []*v1.Bid
+	if source != nil {
+		pV1BidList = make([]*v1.Bid, len(source))
+		for i := 0; i < len(source); i++ {
+			pV1BidList[i] = c.EntityBidToPbBid(source[i])
+		}
+	}
+	return pV1BidList
+}
+func (c *AppMapperImpl) EntityBidToPbBid(source entity.Bid) *v1.Bid {
+	var v1Bid v1.Bid
+	v1Bid.Id = mapper.UUIDToBytes(source.ID)
+	v1Bid.UserId = mapper.UUIDToBytes(source.UserID)
+	v1Bid.Origin = c.MapEntityLocationToPb(source.Origin)
+	v1Bid.Destination = c.MapEntityLocationToPb(source.Destination)
+	v1Bid.VolumeM3 = source.VolumeM3
+	v1Bid.WeightKg = source.WeightKg
+	v1Bid.MaxPrice = source.MaxPrice
+	v1Bid.Status = mapper.Int8ToInt32(source.Status)
+	v1Bid.ExpiresAt = mapper.TimeToTimestamp(source.ExpiresAt)
+	v1Bid.CreatedAt = mapper.TimeToTimestamp(source.CreatedAt)
+	return &v1Bid
+}
+func (c *AppMapperImpl) MapEntityLocationToPb(source entity.Location) *v1.Location {
+	var v1Location v1.Location
+	v1Location.Latitude = source.Latitude
+	v1Location.Longitude = source.Longitude
+	v1Location.ZoneId = source.ZoneID
+	return &v1Location
+}
 func (c *AppMapperImpl) MapLocation(source *v1.Location) entity.Location {
 	var entityLocation entity.Location
 	if source != nil {

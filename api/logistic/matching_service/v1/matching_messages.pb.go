@@ -382,6 +382,335 @@ func (x *SubmitAskResponse) GetStatus() string {
 	return ""
 }
 
+// Domain Models for Event Publishing
+type Bid struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Origin        *Location              `protobuf:"bytes,3,opt,name=origin,proto3" json:"origin,omitempty"`
+	Destination   *Location              `protobuf:"bytes,4,opt,name=destination,proto3" json:"destination,omitempty"`
+	VolumeM3      float64                `protobuf:"fixed64,5,opt,name=volume_m3,json=volumeM3,proto3" json:"volume_m3,omitempty"`
+	WeightKg      float64                `protobuf:"fixed64,6,opt,name=weight_kg,json=weightKg,proto3" json:"weight_kg,omitempty"`
+	MaxPrice      float64                `protobuf:"fixed64,7,opt,name=max_price,json=maxPrice,proto3" json:"max_price,omitempty"`
+	Status        int32                  `protobuf:"varint,8,opt,name=status,proto3" json:"status,omitempty"`
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Bid) Reset() {
+	*x = Bid{}
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Bid) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Bid) ProtoMessage() {}
+
+func (x *Bid) ProtoReflect() protoreflect.Message {
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Bid.ProtoReflect.Descriptor instead.
+func (*Bid) Descriptor() ([]byte, []int) {
+	return file_logistic_matching_service_v1_matching_messages_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *Bid) GetId() []byte {
+	if x != nil {
+		return x.Id
+	}
+	return nil
+}
+
+func (x *Bid) GetUserId() []byte {
+	if x != nil {
+		return x.UserId
+	}
+	return nil
+}
+
+func (x *Bid) GetOrigin() *Location {
+	if x != nil {
+		return x.Origin
+	}
+	return nil
+}
+
+func (x *Bid) GetDestination() *Location {
+	if x != nil {
+		return x.Destination
+	}
+	return nil
+}
+
+func (x *Bid) GetVolumeM3() float64 {
+	if x != nil {
+		return x.VolumeM3
+	}
+	return 0
+}
+
+func (x *Bid) GetWeightKg() float64 {
+	if x != nil {
+		return x.WeightKg
+	}
+	return 0
+}
+
+func (x *Bid) GetMaxPrice() float64 {
+	if x != nil {
+		return x.MaxPrice
+	}
+	return 0
+}
+
+func (x *Bid) GetStatus() int32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *Bid) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+func (x *Bid) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type Bids struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Bids          []*Bid                 `protobuf:"bytes,1,rep,name=bids,proto3" json:"bids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Bids) Reset() {
+	*x = Bids{}
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Bids) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Bids) ProtoMessage() {}
+
+func (x *Bids) ProtoReflect() protoreflect.Message {
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Bids.ProtoReflect.Descriptor instead.
+func (*Bids) Descriptor() ([]byte, []int) {
+	return file_logistic_matching_service_v1_matching_messages_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *Bids) GetBids() []*Bid {
+	if x != nil {
+		return x.Bids
+	}
+	return nil
+}
+
+type Ask struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	VehicleId         []byte                 `protobuf:"bytes,2,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
+	DriverId          []byte                 `protobuf:"bytes,3,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	CurrentLocation   *Location              `protobuf:"bytes,4,opt,name=current_location,json=currentLocation,proto3" json:"current_location,omitempty"`
+	Destination       *Location              `protobuf:"bytes,5,opt,name=destination,proto3" json:"destination,omitempty"`
+	AvailableVolumeM3 float64                `protobuf:"fixed64,6,opt,name=available_volume_m3,json=availableVolumeM3,proto3" json:"available_volume_m3,omitempty"`
+	AvailableWeightKg float64                `protobuf:"fixed64,7,opt,name=available_weight_kg,json=availableWeightKg,proto3" json:"available_weight_kg,omitempty"`
+	MinPrice          float64                `protobuf:"fixed64,8,opt,name=min_price,json=minPrice,proto3" json:"min_price,omitempty"`
+	Status            int32                  `protobuf:"varint,9,opt,name=status,proto3" json:"status,omitempty"`
+	ExpiresAt         *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	CreatedAt         *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *Ask) Reset() {
+	*x = Ask{}
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Ask) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Ask) ProtoMessage() {}
+
+func (x *Ask) ProtoReflect() protoreflect.Message {
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Ask.ProtoReflect.Descriptor instead.
+func (*Ask) Descriptor() ([]byte, []int) {
+	return file_logistic_matching_service_v1_matching_messages_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Ask) GetId() []byte {
+	if x != nil {
+		return x.Id
+	}
+	return nil
+}
+
+func (x *Ask) GetVehicleId() []byte {
+	if x != nil {
+		return x.VehicleId
+	}
+	return nil
+}
+
+func (x *Ask) GetDriverId() []byte {
+	if x != nil {
+		return x.DriverId
+	}
+	return nil
+}
+
+func (x *Ask) GetCurrentLocation() *Location {
+	if x != nil {
+		return x.CurrentLocation
+	}
+	return nil
+}
+
+func (x *Ask) GetDestination() *Location {
+	if x != nil {
+		return x.Destination
+	}
+	return nil
+}
+
+func (x *Ask) GetAvailableVolumeM3() float64 {
+	if x != nil {
+		return x.AvailableVolumeM3
+	}
+	return 0
+}
+
+func (x *Ask) GetAvailableWeightKg() float64 {
+	if x != nil {
+		return x.AvailableWeightKg
+	}
+	return 0
+}
+
+func (x *Ask) GetMinPrice() float64 {
+	if x != nil {
+		return x.MinPrice
+	}
+	return 0
+}
+
+func (x *Ask) GetStatus() int32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *Ask) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+func (x *Ask) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type Asks struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Asks          []*Ask                 `protobuf:"bytes,1,rep,name=asks,proto3" json:"asks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Asks) Reset() {
+	*x = Asks{}
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Asks) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Asks) ProtoMessage() {}
+
+func (x *Asks) ProtoReflect() protoreflect.Message {
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Asks.ProtoReflect.Descriptor instead.
+func (*Asks) Descriptor() ([]byte, []int) {
+	return file_logistic_matching_service_v1_matching_messages_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *Asks) GetAsks() []*Ask {
+	if x != nil {
+		return x.Asks
+	}
+	return nil
+}
+
 var File_logistic_matching_service_v1_matching_messages_proto protoreflect.FileDescriptor
 
 const file_logistic_matching_service_v1_matching_messages_proto_rawDesc = "" +
@@ -416,7 +745,41 @@ const file_logistic_matching_service_v1_matching_messages_proto_rawDesc = "" +
 	"expires_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"B\n" +
 	"\x11SubmitAskResponse\x12\x15\n" +
 	"\x06ask_id\x18\x01 \x01(\fR\x05askId\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06statusB+Z)logistic_project/api/logistic/matching/v1b\x06proto3"
+	"\x06status\x18\x02 \x01(\tR\x06status\"\x9d\x03\n" +
+	"\x03Bid\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\x12>\n" +
+	"\x06origin\x18\x03 \x01(\v2&.logistic.matching_service.v1.LocationR\x06origin\x12H\n" +
+	"\vdestination\x18\x04 \x01(\v2&.logistic.matching_service.v1.LocationR\vdestination\x12\x1b\n" +
+	"\tvolume_m3\x18\x05 \x01(\x01R\bvolumeM3\x12\x1b\n" +
+	"\tweight_kg\x18\x06 \x01(\x01R\bweightKg\x12\x1b\n" +
+	"\tmax_price\x18\a \x01(\x01R\bmaxPrice\x12\x16\n" +
+	"\x06status\x18\b \x01(\x05R\x06status\x129\n" +
+	"\n" +
+	"expires_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x129\n" +
+	"\n" +
+	"created_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"=\n" +
+	"\x04Bids\x125\n" +
+	"\x04bids\x18\x01 \x03(\v2!.logistic.matching_service.v1.BidR\x04bids\"\xf9\x03\n" +
+	"\x03Ask\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1d\n" +
+	"\n" +
+	"vehicle_id\x18\x02 \x01(\fR\tvehicleId\x12\x1b\n" +
+	"\tdriver_id\x18\x03 \x01(\fR\bdriverId\x12Q\n" +
+	"\x10current_location\x18\x04 \x01(\v2&.logistic.matching_service.v1.LocationR\x0fcurrentLocation\x12H\n" +
+	"\vdestination\x18\x05 \x01(\v2&.logistic.matching_service.v1.LocationR\vdestination\x12.\n" +
+	"\x13available_volume_m3\x18\x06 \x01(\x01R\x11availableVolumeM3\x12.\n" +
+	"\x13available_weight_kg\x18\a \x01(\x01R\x11availableWeightKg\x12\x1b\n" +
+	"\tmin_price\x18\b \x01(\x01R\bminPrice\x12\x16\n" +
+	"\x06status\x18\t \x01(\x05R\x06status\x129\n" +
+	"\n" +
+	"expires_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x129\n" +
+	"\n" +
+	"created_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"=\n" +
+	"\x04Asks\x125\n" +
+	"\x04asks\x18\x01 \x03(\v2!.logistic.matching_service.v1.AskR\x04asksB+Z)logistic_project/api/logistic/matching/v1b\x06proto3"
 
 var (
 	file_logistic_matching_service_v1_matching_messages_proto_rawDescOnce sync.Once
@@ -430,27 +793,41 @@ func file_logistic_matching_service_v1_matching_messages_proto_rawDescGZIP() []b
 	return file_logistic_matching_service_v1_matching_messages_proto_rawDescData
 }
 
-var file_logistic_matching_service_v1_matching_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_logistic_matching_service_v1_matching_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_logistic_matching_service_v1_matching_messages_proto_goTypes = []any{
 	(*Location)(nil),              // 0: logistic.matching_service.v1.Location
 	(*SubmitBidRequest)(nil),      // 1: logistic.matching_service.v1.SubmitBidRequest
 	(*SubmitBidResponse)(nil),     // 2: logistic.matching_service.v1.SubmitBidResponse
 	(*SubmitAskRequest)(nil),      // 3: logistic.matching_service.v1.SubmitAskRequest
 	(*SubmitAskResponse)(nil),     // 4: logistic.matching_service.v1.SubmitAskResponse
-	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(*Bid)(nil),                   // 5: logistic.matching_service.v1.Bid
+	(*Bids)(nil),                  // 6: logistic.matching_service.v1.Bids
+	(*Ask)(nil),                   // 7: logistic.matching_service.v1.Ask
+	(*Asks)(nil),                  // 8: logistic.matching_service.v1.Asks
+	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
 var file_logistic_matching_service_v1_matching_messages_proto_depIdxs = []int32{
-	0, // 0: logistic.matching_service.v1.SubmitBidRequest.origin:type_name -> logistic.matching_service.v1.Location
-	0, // 1: logistic.matching_service.v1.SubmitBidRequest.destination:type_name -> logistic.matching_service.v1.Location
-	5, // 2: logistic.matching_service.v1.SubmitBidRequest.expires_at:type_name -> google.protobuf.Timestamp
-	0, // 3: logistic.matching_service.v1.SubmitAskRequest.current_location:type_name -> logistic.matching_service.v1.Location
-	0, // 4: logistic.matching_service.v1.SubmitAskRequest.destination:type_name -> logistic.matching_service.v1.Location
-	5, // 5: logistic.matching_service.v1.SubmitAskRequest.expires_at:type_name -> google.protobuf.Timestamp
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	0,  // 0: logistic.matching_service.v1.SubmitBidRequest.origin:type_name -> logistic.matching_service.v1.Location
+	0,  // 1: logistic.matching_service.v1.SubmitBidRequest.destination:type_name -> logistic.matching_service.v1.Location
+	9,  // 2: logistic.matching_service.v1.SubmitBidRequest.expires_at:type_name -> google.protobuf.Timestamp
+	0,  // 3: logistic.matching_service.v1.SubmitAskRequest.current_location:type_name -> logistic.matching_service.v1.Location
+	0,  // 4: logistic.matching_service.v1.SubmitAskRequest.destination:type_name -> logistic.matching_service.v1.Location
+	9,  // 5: logistic.matching_service.v1.SubmitAskRequest.expires_at:type_name -> google.protobuf.Timestamp
+	0,  // 6: logistic.matching_service.v1.Bid.origin:type_name -> logistic.matching_service.v1.Location
+	0,  // 7: logistic.matching_service.v1.Bid.destination:type_name -> logistic.matching_service.v1.Location
+	9,  // 8: logistic.matching_service.v1.Bid.expires_at:type_name -> google.protobuf.Timestamp
+	9,  // 9: logistic.matching_service.v1.Bid.created_at:type_name -> google.protobuf.Timestamp
+	5,  // 10: logistic.matching_service.v1.Bids.bids:type_name -> logistic.matching_service.v1.Bid
+	0,  // 11: logistic.matching_service.v1.Ask.current_location:type_name -> logistic.matching_service.v1.Location
+	0,  // 12: logistic.matching_service.v1.Ask.destination:type_name -> logistic.matching_service.v1.Location
+	9,  // 13: logistic.matching_service.v1.Ask.expires_at:type_name -> google.protobuf.Timestamp
+	9,  // 14: logistic.matching_service.v1.Ask.created_at:type_name -> google.protobuf.Timestamp
+	7,  // 15: logistic.matching_service.v1.Asks.asks:type_name -> logistic.matching_service.v1.Ask
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_logistic_matching_service_v1_matching_messages_proto_init() }
@@ -464,7 +841,7 @@ func file_logistic_matching_service_v1_matching_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_logistic_matching_service_v1_matching_messages_proto_rawDesc), len(file_logistic_matching_service_v1_matching_messages_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
