@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MatchingEngineService_SubmitBid_FullMethodName = "/logistic.matching_service.v1.MatchingEngineService/SubmitBid"
-	MatchingEngineService_SubmitAsk_FullMethodName = "/logistic.matching_service.v1.MatchingEngineService/SubmitAsk"
+	MatchingEngineService_SubmitBid_FullMethodName   = "/logistic.matching_service.v1.MatchingEngineService/SubmitBid"
+	MatchingEngineService_SubmitAsk_FullMethodName   = "/logistic.matching_service.v1.MatchingEngineService/SubmitAsk"
+	MatchingEngineService_AcceptMatch_FullMethodName = "/logistic.matching_service.v1.MatchingEngineService/AcceptMatch"
 )
 
 // MatchingEngineServiceClient is the client API for MatchingEngineService service.
@@ -30,10 +31,12 @@ const (
 // MatchingEngineService handles Real-time Freight Bidding
 // This is the core protocol for matching empty vehicle space with cargo
 type MatchingEngineServiceClient interface {
-	// SubmitBid is called by Shippers who have cargo that needs to be moved
+	// SubmitBid is called by Customers who have cargo that needs to be moved
 	SubmitBid(ctx context.Context, in *SubmitBidRequest, opts ...grpc.CallOption) (*SubmitBidResponse, error)
 	// SubmitAsk is called by Drivers who have empty space on their vehicles
 	SubmitAsk(ctx context.Context, in *SubmitAskRequest, opts ...grpc.CallOption) (*SubmitAskResponse, error)
+	// AcceptMatch is called by Customers who agree the trip
+	AcceptMatch(ctx context.Context, in *AcceptMatchRequest, opts ...grpc.CallOption) (*AcceptMatchResponse, error)
 }
 
 type matchingEngineServiceClient struct {
@@ -64,6 +67,16 @@ func (c *matchingEngineServiceClient) SubmitAsk(ctx context.Context, in *SubmitA
 	return out, nil
 }
 
+func (c *matchingEngineServiceClient) AcceptMatch(ctx context.Context, in *AcceptMatchRequest, opts ...grpc.CallOption) (*AcceptMatchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptMatchResponse)
+	err := c.cc.Invoke(ctx, MatchingEngineService_AcceptMatch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MatchingEngineServiceServer is the server API for MatchingEngineService service.
 // All implementations must embed UnimplementedMatchingEngineServiceServer
 // for forward compatibility.
@@ -71,10 +84,12 @@ func (c *matchingEngineServiceClient) SubmitAsk(ctx context.Context, in *SubmitA
 // MatchingEngineService handles Real-time Freight Bidding
 // This is the core protocol for matching empty vehicle space with cargo
 type MatchingEngineServiceServer interface {
-	// SubmitBid is called by Shippers who have cargo that needs to be moved
+	// SubmitBid is called by Customers who have cargo that needs to be moved
 	SubmitBid(context.Context, *SubmitBidRequest) (*SubmitBidResponse, error)
 	// SubmitAsk is called by Drivers who have empty space on their vehicles
 	SubmitAsk(context.Context, *SubmitAskRequest) (*SubmitAskResponse, error)
+	// AcceptMatch is called by Customers who agree the trip
+	AcceptMatch(context.Context, *AcceptMatchRequest) (*AcceptMatchResponse, error)
 	mustEmbedUnimplementedMatchingEngineServiceServer()
 }
 
@@ -90,6 +105,9 @@ func (UnimplementedMatchingEngineServiceServer) SubmitBid(context.Context, *Subm
 }
 func (UnimplementedMatchingEngineServiceServer) SubmitAsk(context.Context, *SubmitAskRequest) (*SubmitAskResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SubmitAsk not implemented")
+}
+func (UnimplementedMatchingEngineServiceServer) AcceptMatch(context.Context, *AcceptMatchRequest) (*AcceptMatchResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AcceptMatch not implemented")
 }
 func (UnimplementedMatchingEngineServiceServer) mustEmbedUnimplementedMatchingEngineServiceServer() {}
 func (UnimplementedMatchingEngineServiceServer) testEmbeddedByValue()                               {}
@@ -148,6 +166,24 @@ func _MatchingEngineService_SubmitAsk_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MatchingEngineService_AcceptMatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptMatchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MatchingEngineServiceServer).AcceptMatch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MatchingEngineService_AcceptMatch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MatchingEngineServiceServer).AcceptMatch(ctx, req.(*AcceptMatchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MatchingEngineService_ServiceDesc is the grpc.ServiceDesc for MatchingEngineService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -162,6 +198,10 @@ var MatchingEngineService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SubmitAsk",
 			Handler:    _MatchingEngineService_SubmitAsk_Handler,
+		},
+		{
+			MethodName: "AcceptMatch",
+			Handler:    _MatchingEngineService_AcceptMatch_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

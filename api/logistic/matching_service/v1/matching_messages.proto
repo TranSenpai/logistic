@@ -16,13 +16,11 @@ message Location {
 
 // SubmitBidRequest represents the demand side (Cargo)
 message SubmitBidRequest {
-  bytes user_id = 1; // The shipper ID (UUID optimized)
-  Location origin = 2; // Pickup location
-  Location destination = 3; // Dropoff location
-  double volume_m3 = 4; // Volume of the cargo
-  double weight_kg = 5; // Weight of the cargo
-  double max_price = 6; // Maximum price the shipper is willing to pay
-  google.protobuf.Timestamp expires_at = 7; // When this bid is no longer valid
+  string trace_id = 1;
+  string session_id = 2;
+  bytes requested_by = 3;
+  google.protobuf.Timestamp requested_at = 4;
+  Bid payload = 5;
 }
 
 message SubmitBidResponse {
@@ -32,14 +30,11 @@ message SubmitBidResponse {
 
 // SubmitAskRequest represents the supply side (Empty Vehicle)
 message SubmitAskRequest {
-  bytes vehicle_id = 1; // The vehicle ID (UUID optimized)
-  bytes driver_id = 2; // The driver ID (UUID optimized)
-  Location current_location = 3; // Where the empty vehicle is now
-  Location destination = 4; // Where the vehicle is heading
-  double available_volume_m3 = 5; // Remaining space
-  double available_weight_kg = 6; // Remaining weight capacity
-  double min_price = 7; // Minimum acceptable price for the trip
-  google.protobuf.Timestamp expires_at = 8; // When the driver stops waiting
+  string trace_id = 1;
+  string session_id = 2;
+  bytes requested_by = 3;
+  google.protobuf.Timestamp requested_at = 4;
+  Ask payload = 5;
 }
 
 message SubmitAskResponse {
@@ -50,15 +45,31 @@ message SubmitAskResponse {
 // Domain Models for Event Publishing
 message Bid {
   bytes id = 1;
-  bytes user_id = 2;
-  Location origin = 3;
-  Location destination = 4;
-  double volume_m3 = 5;
-  double weight_kg = 6;
-  double max_price = 7;
-  int32 status = 8;
-  google.protobuf.Timestamp expires_at = 9;
-  google.protobuf.Timestamp created_at = 10;
+
+  bytes shipper_id = 2;
+  string shipper_phone = 3;
+  string shipper_mail = 4;
+
+  bytes consignee_id = 5;
+  string consignee_phone = 6;
+  string consignee_mail = 7;
+
+  Location origin = 8;
+  Location destination = 9;
+
+  double volume_m3 = 10;
+  double weight_kg = 11;
+
+  double max_price = 12;
+
+  int32 status = 13;
+
+  double cargo_value = 14;
+  double required_deposit = 15;
+  double desired_deposit = 16;
+
+  google.protobuf.Timestamp expires_at = 18;
+  google.protobuf.Timestamp created_at = 19;
 }
 
 message Bids {
@@ -67,18 +78,60 @@ message Bids {
 
 message Ask {
   bytes id = 1;
-  bytes vehicle_id = 2;
-  bytes driver_id = 3;
-  Location current_location = 4;
-  Location destination = 5;
-  double available_volume_m3 = 6;
-  double available_weight_kg = 7;
-  double min_price = 8;
-  int32 status = 9;
-  google.protobuf.Timestamp expires_at = 10;
-  google.protobuf.Timestamp created_at = 11;
+
+  bytes driver_id = 2;
+  string driver_phone = 3;
+  string driver_mail = 4;
+
+  bytes vehicle_id = 5;
+
+  Location current_location = 6;
+  Location destination = 7;
+
+  double available_volume_m3 = 8;
+  double available_weight_kg = 9;
+
+  double min_price = 10;
+
+  int32 status = 11;
+
+  double desired_deposit = 12;
+
+  google.protobuf.Timestamp expires_at = 13;
+  google.protobuf.Timestamp created_at = 14;
 }
 
 message Asks {
   repeated Ask asks = 1;
+}
+
+message AcceptMatchRequest {
+  bytes id = 1;
+
+  bytes bid_id = 2;
+  bytes ask_id = 3;
+  bytes shipper_id = 4;
+  bytes driver_id = 5;
+
+  double consensus_price = 6;
+  double consensus_deposit = 7;
+
+  string shipper_signature = 8;
+  google.protobuf.Timestamp agreed_at = 9;
+}
+
+message AcceptMatchResponse {
+  bytes contract_id = 1;
+  bytes bid_id = 2;
+  bytes ask_id = 3;
+
+  double consensus_price = 4;
+  double consensus_deposit = 5;
+
+  string shipper_signature = 6;
+  string driver_signature = 7;
+  string system_signature = 8;
+
+  google.protobuf.Timestamp agreed_at = 9;
+  google.protobuf.Timestamp created_at = 10;
 }

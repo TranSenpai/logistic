@@ -7,7 +7,6 @@
 package v1
 
 import (
-	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -25,24 +24,29 @@ var File_logistic_matching_service_v1_matching_service_proto protoreflect.FileDe
 
 const file_logistic_matching_service_v1_matching_service_proto_rawDesc = "" +
 	"\n" +
-	"3logistic/matching_service/v1/matching_service.proto\x12\x1clogistic.matching_service.v1\x1a\x1cgoogle/api/annotations.proto\x1a4logistic/matching_service/v1/matching_messages.proto2\xb3\x02\n" +
-	"\x15MatchingEngineService\x12\x8b\x01\n" +
-	"\tSubmitBid\x12..logistic.matching_service.v1.SubmitBidRequest\x1a/.logistic.matching_service.v1.SubmitBidResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/logistics/bids\x12\x8b\x01\n" +
-	"\tSubmitAsk\x12..logistic.matching_service.v1.SubmitAskRequest\x1a/.logistic.matching_service.v1.SubmitAskResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/logistics/asksB+Z)logistic_project/api/logistic/matching/v1b\x06proto3"
+	"3logistic/matching_service/v1/matching_service.proto\x12\x1clogistic.matching_service.v1\x1a4logistic/matching_service/v1/matching_messages.proto2\xe7\x02\n" +
+	"\x15MatchingEngineService\x12l\n" +
+	"\tSubmitBid\x12..logistic.matching_service.v1.SubmitBidRequest\x1a/.logistic.matching_service.v1.SubmitBidResponse\x12l\n" +
+	"\tSubmitAsk\x12..logistic.matching_service.v1.SubmitAskRequest\x1a/.logistic.matching_service.v1.SubmitAskResponse\x12r\n" +
+	"\vAcceptMatch\x120.logistic.matching_service.v1.AcceptMatchRequest\x1a1.logistic.matching_service.v1.AcceptMatchResponseB+Z)logistic_project/api/logistic/matching/v1b\x06proto3"
 
 var file_logistic_matching_service_v1_matching_service_proto_goTypes = []any{
-	(*SubmitBidRequest)(nil),  // 0: logistic.matching_service.v1.SubmitBidRequest
-	(*SubmitAskRequest)(nil),  // 1: logistic.matching_service.v1.SubmitAskRequest
-	(*SubmitBidResponse)(nil), // 2: logistic.matching_service.v1.SubmitBidResponse
-	(*SubmitAskResponse)(nil), // 3: logistic.matching_service.v1.SubmitAskResponse
+	(*SubmitBidRequest)(nil),    // 0: logistic.matching_service.v1.SubmitBidRequest
+	(*SubmitAskRequest)(nil),    // 1: logistic.matching_service.v1.SubmitAskRequest
+	(*AcceptMatchRequest)(nil),  // 2: logistic.matching_service.v1.AcceptMatchRequest
+	(*SubmitBidResponse)(nil),   // 3: logistic.matching_service.v1.SubmitBidResponse
+	(*SubmitAskResponse)(nil),   // 4: logistic.matching_service.v1.SubmitAskResponse
+	(*AcceptMatchResponse)(nil), // 5: logistic.matching_service.v1.AcceptMatchResponse
 }
 var file_logistic_matching_service_v1_matching_service_proto_depIdxs = []int32{
 	0, // 0: logistic.matching_service.v1.MatchingEngineService.SubmitBid:input_type -> logistic.matching_service.v1.SubmitBidRequest
 	1, // 1: logistic.matching_service.v1.MatchingEngineService.SubmitAsk:input_type -> logistic.matching_service.v1.SubmitAskRequest
-	2, // 2: logistic.matching_service.v1.MatchingEngineService.SubmitBid:output_type -> logistic.matching_service.v1.SubmitBidResponse
-	3, // 3: logistic.matching_service.v1.MatchingEngineService.SubmitAsk:output_type -> logistic.matching_service.v1.SubmitAskResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	2, // 2: logistic.matching_service.v1.MatchingEngineService.AcceptMatch:input_type -> logistic.matching_service.v1.AcceptMatchRequest
+	3, // 3: logistic.matching_service.v1.MatchingEngineService.SubmitBid:output_type -> logistic.matching_service.v1.SubmitBidResponse
+	4, // 4: logistic.matching_service.v1.MatchingEngineService.SubmitAsk:output_type -> logistic.matching_service.v1.SubmitAskResponse
+	5, // 5: logistic.matching_service.v1.MatchingEngineService.AcceptMatch:output_type -> logistic.matching_service.v1.AcceptMatchResponse
+	3, // [3:6] is the sub-list for method output_type
+	0, // [0:3] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name

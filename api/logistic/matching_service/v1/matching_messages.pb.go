@@ -87,13 +87,11 @@ func (x *Location) GetZoneId() string {
 // SubmitBidRequest represents the demand side (Cargo)
 type SubmitBidRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`          // The shipper ID (UUID optimized)
-	Origin        *Location              `protobuf:"bytes,2,opt,name=origin,proto3" json:"origin,omitempty"`                        // Pickup location
-	Destination   *Location              `protobuf:"bytes,3,opt,name=destination,proto3" json:"destination,omitempty"`              // Dropoff location
-	VolumeM3      float64                `protobuf:"fixed64,4,opt,name=volume_m3,json=volumeM3,proto3" json:"volume_m3,omitempty"`  // Volume of the cargo
-	WeightKg      float64                `protobuf:"fixed64,5,opt,name=weight_kg,json=weightKg,proto3" json:"weight_kg,omitempty"`  // Weight of the cargo
-	MaxPrice      float64                `protobuf:"fixed64,6,opt,name=max_price,json=maxPrice,proto3" json:"max_price,omitempty"`  // Maximum price the shipper is willing to pay
-	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // When this bid is no longer valid
+	TraceId       string                 `protobuf:"bytes,1,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	RequestedBy   []byte                 `protobuf:"bytes,3,opt,name=requested_by,json=requestedBy,proto3" json:"requested_by,omitempty"`
+	RequestedAt   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=requested_at,json=requestedAt,proto3" json:"requested_at,omitempty"`
+	Payload       *Bid                   `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -128,51 +126,37 @@ func (*SubmitBidRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_matching_service_v1_matching_messages_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SubmitBidRequest) GetUserId() []byte {
+func (x *SubmitBidRequest) GetTraceId() string {
 	if x != nil {
-		return x.UserId
+		return x.TraceId
+	}
+	return ""
+}
+
+func (x *SubmitBidRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *SubmitBidRequest) GetRequestedBy() []byte {
+	if x != nil {
+		return x.RequestedBy
 	}
 	return nil
 }
 
-func (x *SubmitBidRequest) GetOrigin() *Location {
+func (x *SubmitBidRequest) GetRequestedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.Origin
+		return x.RequestedAt
 	}
 	return nil
 }
 
-func (x *SubmitBidRequest) GetDestination() *Location {
+func (x *SubmitBidRequest) GetPayload() *Bid {
 	if x != nil {
-		return x.Destination
-	}
-	return nil
-}
-
-func (x *SubmitBidRequest) GetVolumeM3() float64 {
-	if x != nil {
-		return x.VolumeM3
-	}
-	return 0
-}
-
-func (x *SubmitBidRequest) GetWeightKg() float64 {
-	if x != nil {
-		return x.WeightKg
-	}
-	return 0
-}
-
-func (x *SubmitBidRequest) GetMaxPrice() float64 {
-	if x != nil {
-		return x.MaxPrice
-	}
-	return 0
-}
-
-func (x *SubmitBidRequest) GetExpiresAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.ExpiresAt
+		return x.Payload
 	}
 	return nil
 }
@@ -231,17 +215,14 @@ func (x *SubmitBidResponse) GetStatus() string {
 
 // SubmitAskRequest represents the supply side (Empty Vehicle)
 type SubmitAskRequest struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	VehicleId         []byte                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`                             // The vehicle ID (UUID optimized)
-	DriverId          []byte                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`                                // The driver ID (UUID optimized)
-	CurrentLocation   *Location              `protobuf:"bytes,3,opt,name=current_location,json=currentLocation,proto3" json:"current_location,omitempty"`           // Where the empty vehicle is now
-	Destination       *Location              `protobuf:"bytes,4,opt,name=destination,proto3" json:"destination,omitempty"`                                          // Where the vehicle is heading
-	AvailableVolumeM3 float64                `protobuf:"fixed64,5,opt,name=available_volume_m3,json=availableVolumeM3,proto3" json:"available_volume_m3,omitempty"` // Remaining space
-	AvailableWeightKg float64                `protobuf:"fixed64,6,opt,name=available_weight_kg,json=availableWeightKg,proto3" json:"available_weight_kg,omitempty"` // Remaining weight capacity
-	MinPrice          float64                `protobuf:"fixed64,7,opt,name=min_price,json=minPrice,proto3" json:"min_price,omitempty"`                              // Minimum acceptable price for the trip
-	ExpiresAt         *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`                             // When the driver stops waiting
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TraceId       string                 `protobuf:"bytes,1,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	SessionId     string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	RequestedBy   []byte                 `protobuf:"bytes,3,opt,name=requested_by,json=requestedBy,proto3" json:"requested_by,omitempty"`
+	RequestedAt   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=requested_at,json=requestedAt,proto3" json:"requested_at,omitempty"`
+	Payload       *Ask                   `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SubmitAskRequest) Reset() {
@@ -274,58 +255,37 @@ func (*SubmitAskRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_matching_service_v1_matching_messages_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *SubmitAskRequest) GetVehicleId() []byte {
+func (x *SubmitAskRequest) GetTraceId() string {
 	if x != nil {
-		return x.VehicleId
+		return x.TraceId
+	}
+	return ""
+}
+
+func (x *SubmitAskRequest) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *SubmitAskRequest) GetRequestedBy() []byte {
+	if x != nil {
+		return x.RequestedBy
 	}
 	return nil
 }
 
-func (x *SubmitAskRequest) GetDriverId() []byte {
+func (x *SubmitAskRequest) GetRequestedAt() *timestamppb.Timestamp {
 	if x != nil {
-		return x.DriverId
+		return x.RequestedAt
 	}
 	return nil
 }
 
-func (x *SubmitAskRequest) GetCurrentLocation() *Location {
+func (x *SubmitAskRequest) GetPayload() *Ask {
 	if x != nil {
-		return x.CurrentLocation
-	}
-	return nil
-}
-
-func (x *SubmitAskRequest) GetDestination() *Location {
-	if x != nil {
-		return x.Destination
-	}
-	return nil
-}
-
-func (x *SubmitAskRequest) GetAvailableVolumeM3() float64 {
-	if x != nil {
-		return x.AvailableVolumeM3
-	}
-	return 0
-}
-
-func (x *SubmitAskRequest) GetAvailableWeightKg() float64 {
-	if x != nil {
-		return x.AvailableWeightKg
-	}
-	return 0
-}
-
-func (x *SubmitAskRequest) GetMinPrice() float64 {
-	if x != nil {
-		return x.MinPrice
-	}
-	return 0
-}
-
-func (x *SubmitAskRequest) GetExpiresAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.ExpiresAt
+		return x.Payload
 	}
 	return nil
 }
@@ -384,19 +344,27 @@ func (x *SubmitAskResponse) GetStatus() string {
 
 // Domain Models for Event Publishing
 type Bid struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Origin        *Location              `protobuf:"bytes,3,opt,name=origin,proto3" json:"origin,omitempty"`
-	Destination   *Location              `protobuf:"bytes,4,opt,name=destination,proto3" json:"destination,omitempty"`
-	VolumeM3      float64                `protobuf:"fixed64,5,opt,name=volume_m3,json=volumeM3,proto3" json:"volume_m3,omitempty"`
-	WeightKg      float64                `protobuf:"fixed64,6,opt,name=weight_kg,json=weightKg,proto3" json:"weight_kg,omitempty"`
-	MaxPrice      float64                `protobuf:"fixed64,7,opt,name=max_price,json=maxPrice,proto3" json:"max_price,omitempty"`
-	Status        int32                  `protobuf:"varint,8,opt,name=status,proto3" json:"status,omitempty"`
-	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ShipperId       []byte                 `protobuf:"bytes,2,opt,name=shipper_id,json=shipperId,proto3" json:"shipper_id,omitempty"`
+	ShipperPhone    string                 `protobuf:"bytes,3,opt,name=shipper_phone,json=shipperPhone,proto3" json:"shipper_phone,omitempty"`
+	ShipperMail     string                 `protobuf:"bytes,4,opt,name=shipper_mail,json=shipperMail,proto3" json:"shipper_mail,omitempty"`
+	ConsigneeId     []byte                 `protobuf:"bytes,5,opt,name=consignee_id,json=consigneeId,proto3" json:"consignee_id,omitempty"`
+	ConsigneePhone  string                 `protobuf:"bytes,6,opt,name=consignee_phone,json=consigneePhone,proto3" json:"consignee_phone,omitempty"`
+	ConsigneeMail   string                 `protobuf:"bytes,7,opt,name=consignee_mail,json=consigneeMail,proto3" json:"consignee_mail,omitempty"`
+	Origin          *Location              `protobuf:"bytes,8,opt,name=origin,proto3" json:"origin,omitempty"`
+	Destination     *Location              `protobuf:"bytes,9,opt,name=destination,proto3" json:"destination,omitempty"`
+	VolumeM3        float64                `protobuf:"fixed64,10,opt,name=volume_m3,json=volumeM3,proto3" json:"volume_m3,omitempty"`
+	WeightKg        float64                `protobuf:"fixed64,11,opt,name=weight_kg,json=weightKg,proto3" json:"weight_kg,omitempty"`
+	MaxPrice        float64                `protobuf:"fixed64,12,opt,name=max_price,json=maxPrice,proto3" json:"max_price,omitempty"`
+	Status          int32                  `protobuf:"varint,13,opt,name=status,proto3" json:"status,omitempty"`
+	CargoValue      float64                `protobuf:"fixed64,14,opt,name=cargo_value,json=cargoValue,proto3" json:"cargo_value,omitempty"`
+	RequiredDeposit float64                `protobuf:"fixed64,15,opt,name=required_deposit,json=requiredDeposit,proto3" json:"required_deposit,omitempty"`
+	DesiredDeposit  float64                `protobuf:"fixed64,16,opt,name=desired_deposit,json=desiredDeposit,proto3" json:"desired_deposit,omitempty"`
+	ExpiresAt       *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,19,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Bid) Reset() {
@@ -436,11 +404,46 @@ func (x *Bid) GetId() []byte {
 	return nil
 }
 
-func (x *Bid) GetUserId() []byte {
+func (x *Bid) GetShipperId() []byte {
 	if x != nil {
-		return x.UserId
+		return x.ShipperId
 	}
 	return nil
+}
+
+func (x *Bid) GetShipperPhone() string {
+	if x != nil {
+		return x.ShipperPhone
+	}
+	return ""
+}
+
+func (x *Bid) GetShipperMail() string {
+	if x != nil {
+		return x.ShipperMail
+	}
+	return ""
+}
+
+func (x *Bid) GetConsigneeId() []byte {
+	if x != nil {
+		return x.ConsigneeId
+	}
+	return nil
+}
+
+func (x *Bid) GetConsigneePhone() string {
+	if x != nil {
+		return x.ConsigneePhone
+	}
+	return ""
+}
+
+func (x *Bid) GetConsigneeMail() string {
+	if x != nil {
+		return x.ConsigneeMail
+	}
+	return ""
 }
 
 func (x *Bid) GetOrigin() *Location {
@@ -481,6 +484,27 @@ func (x *Bid) GetMaxPrice() float64 {
 func (x *Bid) GetStatus() int32 {
 	if x != nil {
 		return x.Status
+	}
+	return 0
+}
+
+func (x *Bid) GetCargoValue() float64 {
+	if x != nil {
+		return x.CargoValue
+	}
+	return 0
+}
+
+func (x *Bid) GetRequiredDeposit() float64 {
+	if x != nil {
+		return x.RequiredDeposit
+	}
+	return 0
+}
+
+func (x *Bid) GetDesiredDeposit() float64 {
+	if x != nil {
+		return x.DesiredDeposit
 	}
 	return 0
 }
@@ -546,16 +570,19 @@ func (x *Bids) GetBids() []*Bid {
 type Ask struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Id                []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	VehicleId         []byte                 `protobuf:"bytes,2,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
-	DriverId          []byte                 `protobuf:"bytes,3,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
-	CurrentLocation   *Location              `protobuf:"bytes,4,opt,name=current_location,json=currentLocation,proto3" json:"current_location,omitempty"`
-	Destination       *Location              `protobuf:"bytes,5,opt,name=destination,proto3" json:"destination,omitempty"`
-	AvailableVolumeM3 float64                `protobuf:"fixed64,6,opt,name=available_volume_m3,json=availableVolumeM3,proto3" json:"available_volume_m3,omitempty"`
-	AvailableWeightKg float64                `protobuf:"fixed64,7,opt,name=available_weight_kg,json=availableWeightKg,proto3" json:"available_weight_kg,omitempty"`
-	MinPrice          float64                `protobuf:"fixed64,8,opt,name=min_price,json=minPrice,proto3" json:"min_price,omitempty"`
-	Status            int32                  `protobuf:"varint,9,opt,name=status,proto3" json:"status,omitempty"`
-	ExpiresAt         *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	CreatedAt         *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	DriverId          []byte                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	DriverPhone       string                 `protobuf:"bytes,3,opt,name=driver_phone,json=driverPhone,proto3" json:"driver_phone,omitempty"`
+	DriverMail        string                 `protobuf:"bytes,4,opt,name=driver_mail,json=driverMail,proto3" json:"driver_mail,omitempty"`
+	VehicleId         []byte                 `protobuf:"bytes,5,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
+	CurrentLocation   *Location              `protobuf:"bytes,6,opt,name=current_location,json=currentLocation,proto3" json:"current_location,omitempty"`
+	Destination       *Location              `protobuf:"bytes,7,opt,name=destination,proto3" json:"destination,omitempty"`
+	AvailableVolumeM3 float64                `protobuf:"fixed64,8,opt,name=available_volume_m3,json=availableVolumeM3,proto3" json:"available_volume_m3,omitempty"`
+	AvailableWeightKg float64                `protobuf:"fixed64,9,opt,name=available_weight_kg,json=availableWeightKg,proto3" json:"available_weight_kg,omitempty"`
+	MinPrice          float64                `protobuf:"fixed64,10,opt,name=min_price,json=minPrice,proto3" json:"min_price,omitempty"`
+	Status            int32                  `protobuf:"varint,11,opt,name=status,proto3" json:"status,omitempty"`
+	DesiredDeposit    float64                `protobuf:"fixed64,12,opt,name=desired_deposit,json=desiredDeposit,proto3" json:"desired_deposit,omitempty"`
+	ExpiresAt         *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	CreatedAt         *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -597,16 +624,30 @@ func (x *Ask) GetId() []byte {
 	return nil
 }
 
-func (x *Ask) GetVehicleId() []byte {
+func (x *Ask) GetDriverId() []byte {
 	if x != nil {
-		return x.VehicleId
+		return x.DriverId
 	}
 	return nil
 }
 
-func (x *Ask) GetDriverId() []byte {
+func (x *Ask) GetDriverPhone() string {
 	if x != nil {
-		return x.DriverId
+		return x.DriverPhone
+	}
+	return ""
+}
+
+func (x *Ask) GetDriverMail() string {
+	if x != nil {
+		return x.DriverMail
+	}
+	return ""
+}
+
+func (x *Ask) GetVehicleId() []byte {
+	if x != nil {
+		return x.VehicleId
 	}
 	return nil
 }
@@ -649,6 +690,13 @@ func (x *Ask) GetMinPrice() float64 {
 func (x *Ask) GetStatus() int32 {
 	if x != nil {
 		return x.Status
+	}
+	return 0
+}
+
+func (x *Ask) GetDesiredDeposit() float64 {
+	if x != nil {
+		return x.DesiredDeposit
 	}
 	return 0
 }
@@ -711,6 +759,230 @@ func (x *Asks) GetAsks() []*Ask {
 	return nil
 }
 
+type AcceptMatchRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	BidId            []byte                 `protobuf:"bytes,2,opt,name=bid_id,json=bidId,proto3" json:"bid_id,omitempty"`
+	AskId            []byte                 `protobuf:"bytes,3,opt,name=ask_id,json=askId,proto3" json:"ask_id,omitempty"`
+	ShipperId        []byte                 `protobuf:"bytes,4,opt,name=shipper_id,json=shipperId,proto3" json:"shipper_id,omitempty"`
+	DriverId         []byte                 `protobuf:"bytes,5,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	ConsensusPrice   float64                `protobuf:"fixed64,6,opt,name=consensus_price,json=consensusPrice,proto3" json:"consensus_price,omitempty"`
+	ConsensusDeposit float64                `protobuf:"fixed64,7,opt,name=consensus_deposit,json=consensusDeposit,proto3" json:"consensus_deposit,omitempty"`
+	ShipperSignature string                 `protobuf:"bytes,8,opt,name=shipper_signature,json=shipperSignature,proto3" json:"shipper_signature,omitempty"`
+	AgreedAt         *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=agreed_at,json=agreedAt,proto3" json:"agreed_at,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *AcceptMatchRequest) Reset() {
+	*x = AcceptMatchRequest{}
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcceptMatchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcceptMatchRequest) ProtoMessage() {}
+
+func (x *AcceptMatchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcceptMatchRequest.ProtoReflect.Descriptor instead.
+func (*AcceptMatchRequest) Descriptor() ([]byte, []int) {
+	return file_logistic_matching_service_v1_matching_messages_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *AcceptMatchRequest) GetId() []byte {
+	if x != nil {
+		return x.Id
+	}
+	return nil
+}
+
+func (x *AcceptMatchRequest) GetBidId() []byte {
+	if x != nil {
+		return x.BidId
+	}
+	return nil
+}
+
+func (x *AcceptMatchRequest) GetAskId() []byte {
+	if x != nil {
+		return x.AskId
+	}
+	return nil
+}
+
+func (x *AcceptMatchRequest) GetShipperId() []byte {
+	if x != nil {
+		return x.ShipperId
+	}
+	return nil
+}
+
+func (x *AcceptMatchRequest) GetDriverId() []byte {
+	if x != nil {
+		return x.DriverId
+	}
+	return nil
+}
+
+func (x *AcceptMatchRequest) GetConsensusPrice() float64 {
+	if x != nil {
+		return x.ConsensusPrice
+	}
+	return 0
+}
+
+func (x *AcceptMatchRequest) GetConsensusDeposit() float64 {
+	if x != nil {
+		return x.ConsensusDeposit
+	}
+	return 0
+}
+
+func (x *AcceptMatchRequest) GetShipperSignature() string {
+	if x != nil {
+		return x.ShipperSignature
+	}
+	return ""
+}
+
+func (x *AcceptMatchRequest) GetAgreedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.AgreedAt
+	}
+	return nil
+}
+
+type AcceptMatchResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	ContractId       []byte                 `protobuf:"bytes,1,opt,name=contract_id,json=contractId,proto3" json:"contract_id,omitempty"`
+	BidId            []byte                 `protobuf:"bytes,2,opt,name=bid_id,json=bidId,proto3" json:"bid_id,omitempty"`
+	AskId            []byte                 `protobuf:"bytes,3,opt,name=ask_id,json=askId,proto3" json:"ask_id,omitempty"`
+	ConsensusPrice   float64                `protobuf:"fixed64,4,opt,name=consensus_price,json=consensusPrice,proto3" json:"consensus_price,omitempty"`
+	ConsensusDeposit float64                `protobuf:"fixed64,5,opt,name=consensus_deposit,json=consensusDeposit,proto3" json:"consensus_deposit,omitempty"`
+	ShipperSignature string                 `protobuf:"bytes,6,opt,name=shipper_signature,json=shipperSignature,proto3" json:"shipper_signature,omitempty"`
+	DriverSignature  string                 `protobuf:"bytes,7,opt,name=driver_signature,json=driverSignature,proto3" json:"driver_signature,omitempty"`
+	SystemSignature  string                 `protobuf:"bytes,8,opt,name=system_signature,json=systemSignature,proto3" json:"system_signature,omitempty"`
+	AgreedAt         *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=agreed_at,json=agreedAt,proto3" json:"agreed_at,omitempty"`
+	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *AcceptMatchResponse) Reset() {
+	*x = AcceptMatchResponse{}
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcceptMatchResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcceptMatchResponse) ProtoMessage() {}
+
+func (x *AcceptMatchResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_logistic_matching_service_v1_matching_messages_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcceptMatchResponse.ProtoReflect.Descriptor instead.
+func (*AcceptMatchResponse) Descriptor() ([]byte, []int) {
+	return file_logistic_matching_service_v1_matching_messages_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *AcceptMatchResponse) GetContractId() []byte {
+	if x != nil {
+		return x.ContractId
+	}
+	return nil
+}
+
+func (x *AcceptMatchResponse) GetBidId() []byte {
+	if x != nil {
+		return x.BidId
+	}
+	return nil
+}
+
+func (x *AcceptMatchResponse) GetAskId() []byte {
+	if x != nil {
+		return x.AskId
+	}
+	return nil
+}
+
+func (x *AcceptMatchResponse) GetConsensusPrice() float64 {
+	if x != nil {
+		return x.ConsensusPrice
+	}
+	return 0
+}
+
+func (x *AcceptMatchResponse) GetConsensusDeposit() float64 {
+	if x != nil {
+		return x.ConsensusDeposit
+	}
+	return 0
+}
+
+func (x *AcceptMatchResponse) GetShipperSignature() string {
+	if x != nil {
+		return x.ShipperSignature
+	}
+	return ""
+}
+
+func (x *AcceptMatchResponse) GetDriverSignature() string {
+	if x != nil {
+		return x.DriverSignature
+	}
+	return ""
+}
+
+func (x *AcceptMatchResponse) GetSystemSignature() string {
+	if x != nil {
+		return x.SystemSignature
+	}
+	return ""
+}
+
+func (x *AcceptMatchResponse) GetAgreedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.AgreedAt
+	}
+	return nil
+}
+
+func (x *AcceptMatchResponse) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
 var File_logistic_matching_service_v1_matching_messages_proto protoreflect.FileDescriptor
 
 const file_logistic_matching_service_v1_matching_messages_proto_rawDesc = "" +
@@ -719,67 +991,100 @@ const file_logistic_matching_service_v1_matching_messages_proto_rawDesc = "" +
 	"\bLocation\x12\x1a\n" +
 	"\blatitude\x18\x01 \x01(\x01R\blatitude\x12\x1c\n" +
 	"\tlongitude\x18\x02 \x01(\x01R\tlongitude\x12\x17\n" +
-	"\azone_id\x18\x03 \x01(\tR\x06zoneId\"\xc7\x02\n" +
-	"\x10SubmitBidRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\fR\x06userId\x12>\n" +
-	"\x06origin\x18\x02 \x01(\v2&.logistic.matching_service.v1.LocationR\x06origin\x12H\n" +
-	"\vdestination\x18\x03 \x01(\v2&.logistic.matching_service.v1.LocationR\vdestination\x12\x1b\n" +
-	"\tvolume_m3\x18\x04 \x01(\x01R\bvolumeM3\x12\x1b\n" +
-	"\tweight_kg\x18\x05 \x01(\x01R\bweightKg\x12\x1b\n" +
-	"\tmax_price\x18\x06 \x01(\x01R\bmaxPrice\x129\n" +
+	"\azone_id\x18\x03 \x01(\tR\x06zoneId\"\xeb\x01\n" +
+	"\x10SubmitBidRequest\x12\x19\n" +
+	"\btrace_id\x18\x01 \x01(\tR\atraceId\x12\x1d\n" +
 	"\n" +
-	"expires_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"B\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12!\n" +
+	"\frequested_by\x18\x03 \x01(\fR\vrequestedBy\x12=\n" +
+	"\frequested_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vrequestedAt\x12;\n" +
+	"\apayload\x18\x05 \x01(\v2!.logistic.matching_service.v1.BidR\apayload\"B\n" +
 	"\x11SubmitBidResponse\x12\x15\n" +
 	"\x06bid_id\x18\x01 \x01(\fR\x05bidId\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\"\xa3\x03\n" +
-	"\x10SubmitAskRequest\x12\x1d\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\"\xeb\x01\n" +
+	"\x10SubmitAskRequest\x12\x19\n" +
+	"\btrace_id\x18\x01 \x01(\tR\atraceId\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x01 \x01(\fR\tvehicleId\x12\x1b\n" +
-	"\tdriver_id\x18\x02 \x01(\fR\bdriverId\x12Q\n" +
-	"\x10current_location\x18\x03 \x01(\v2&.logistic.matching_service.v1.LocationR\x0fcurrentLocation\x12H\n" +
-	"\vdestination\x18\x04 \x01(\v2&.logistic.matching_service.v1.LocationR\vdestination\x12.\n" +
-	"\x13available_volume_m3\x18\x05 \x01(\x01R\x11availableVolumeM3\x12.\n" +
-	"\x13available_weight_kg\x18\x06 \x01(\x01R\x11availableWeightKg\x12\x1b\n" +
-	"\tmin_price\x18\a \x01(\x01R\bminPrice\x129\n" +
-	"\n" +
-	"expires_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"B\n" +
+	"session_id\x18\x02 \x01(\tR\tsessionId\x12!\n" +
+	"\frequested_by\x18\x03 \x01(\fR\vrequestedBy\x12=\n" +
+	"\frequested_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vrequestedAt\x12;\n" +
+	"\apayload\x18\x05 \x01(\v2!.logistic.matching_service.v1.AskR\apayload\"B\n" +
 	"\x11SubmitAskResponse\x12\x15\n" +
 	"\x06ask_id\x18\x01 \x01(\fR\x05askId\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\"\x9d\x03\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\"\xd3\x05\n" +
 	"\x03Bid\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\fR\x06userId\x12>\n" +
-	"\x06origin\x18\x03 \x01(\v2&.logistic.matching_service.v1.LocationR\x06origin\x12H\n" +
-	"\vdestination\x18\x04 \x01(\v2&.logistic.matching_service.v1.LocationR\vdestination\x12\x1b\n" +
-	"\tvolume_m3\x18\x05 \x01(\x01R\bvolumeM3\x12\x1b\n" +
-	"\tweight_kg\x18\x06 \x01(\x01R\bweightKg\x12\x1b\n" +
-	"\tmax_price\x18\a \x01(\x01R\bmaxPrice\x12\x16\n" +
-	"\x06status\x18\b \x01(\x05R\x06status\x129\n" +
-	"\n" +
-	"expires_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x129\n" +
-	"\n" +
-	"created_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"=\n" +
-	"\x04Bids\x125\n" +
-	"\x04bids\x18\x01 \x03(\v2!.logistic.matching_service.v1.BidR\x04bids\"\xf9\x03\n" +
-	"\x03Ask\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x02 \x01(\fR\tvehicleId\x12\x1b\n" +
-	"\tdriver_id\x18\x03 \x01(\fR\bdriverId\x12Q\n" +
-	"\x10current_location\x18\x04 \x01(\v2&.logistic.matching_service.v1.LocationR\x0fcurrentLocation\x12H\n" +
-	"\vdestination\x18\x05 \x01(\v2&.logistic.matching_service.v1.LocationR\vdestination\x12.\n" +
-	"\x13available_volume_m3\x18\x06 \x01(\x01R\x11availableVolumeM3\x12.\n" +
-	"\x13available_weight_kg\x18\a \x01(\x01R\x11availableWeightKg\x12\x1b\n" +
-	"\tmin_price\x18\b \x01(\x01R\bminPrice\x12\x16\n" +
-	"\x06status\x18\t \x01(\x05R\x06status\x129\n" +
+	"shipper_id\x18\x02 \x01(\fR\tshipperId\x12#\n" +
+	"\rshipper_phone\x18\x03 \x01(\tR\fshipperPhone\x12!\n" +
+	"\fshipper_mail\x18\x04 \x01(\tR\vshipperMail\x12!\n" +
+	"\fconsignee_id\x18\x05 \x01(\fR\vconsigneeId\x12'\n" +
+	"\x0fconsignee_phone\x18\x06 \x01(\tR\x0econsigneePhone\x12%\n" +
+	"\x0econsignee_mail\x18\a \x01(\tR\rconsigneeMail\x12>\n" +
+	"\x06origin\x18\b \x01(\v2&.logistic.matching_service.v1.LocationR\x06origin\x12H\n" +
+	"\vdestination\x18\t \x01(\v2&.logistic.matching_service.v1.LocationR\vdestination\x12\x1b\n" +
+	"\tvolume_m3\x18\n" +
+	" \x01(\x01R\bvolumeM3\x12\x1b\n" +
+	"\tweight_kg\x18\v \x01(\x01R\bweightKg\x12\x1b\n" +
+	"\tmax_price\x18\f \x01(\x01R\bmaxPrice\x12\x16\n" +
+	"\x06status\x18\r \x01(\x05R\x06status\x12\x1f\n" +
+	"\vcargo_value\x18\x0e \x01(\x01R\n" +
+	"cargoValue\x12)\n" +
+	"\x10required_deposit\x18\x0f \x01(\x01R\x0frequiredDeposit\x12'\n" +
+	"\x0fdesired_deposit\x18\x10 \x01(\x01R\x0edesiredDeposit\x129\n" +
 	"\n" +
-	"expires_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x129\n" +
+	"expires_at\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x129\n" +
 	"\n" +
-	"created_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"=\n" +
+	"created_at\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"=\n" +
+	"\x04Bids\x125\n" +
+	"\x04bids\x18\x01 \x03(\v2!.logistic.matching_service.v1.BidR\x04bids\"\xe6\x04\n" +
+	"\x03Ask\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\tdriver_id\x18\x02 \x01(\fR\bdriverId\x12!\n" +
+	"\fdriver_phone\x18\x03 \x01(\tR\vdriverPhone\x12\x1f\n" +
+	"\vdriver_mail\x18\x04 \x01(\tR\n" +
+	"driverMail\x12\x1d\n" +
+	"\n" +
+	"vehicle_id\x18\x05 \x01(\fR\tvehicleId\x12Q\n" +
+	"\x10current_location\x18\x06 \x01(\v2&.logistic.matching_service.v1.LocationR\x0fcurrentLocation\x12H\n" +
+	"\vdestination\x18\a \x01(\v2&.logistic.matching_service.v1.LocationR\vdestination\x12.\n" +
+	"\x13available_volume_m3\x18\b \x01(\x01R\x11availableVolumeM3\x12.\n" +
+	"\x13available_weight_kg\x18\t \x01(\x01R\x11availableWeightKg\x12\x1b\n" +
+	"\tmin_price\x18\n" +
+	" \x01(\x01R\bminPrice\x12\x16\n" +
+	"\x06status\x18\v \x01(\x05R\x06status\x12'\n" +
+	"\x0fdesired_deposit\x18\f \x01(\x01R\x0edesiredDeposit\x129\n" +
+	"\n" +
+	"expires_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x129\n" +
+	"\n" +
+	"created_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"=\n" +
 	"\x04Asks\x125\n" +
-	"\x04asks\x18\x01 \x03(\v2!.logistic.matching_service.v1.AskR\x04asksB+Z)logistic_project/api/logistic/matching/v1b\x06proto3"
+	"\x04asks\x18\x01 \x03(\v2!.logistic.matching_service.v1.AskR\x04asks\"\xca\x02\n" +
+	"\x12AcceptMatchRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x15\n" +
+	"\x06bid_id\x18\x02 \x01(\fR\x05bidId\x12\x15\n" +
+	"\x06ask_id\x18\x03 \x01(\fR\x05askId\x12\x1d\n" +
+	"\n" +
+	"shipper_id\x18\x04 \x01(\fR\tshipperId\x12\x1b\n" +
+	"\tdriver_id\x18\x05 \x01(\fR\bdriverId\x12'\n" +
+	"\x0fconsensus_price\x18\x06 \x01(\x01R\x0econsensusPrice\x12+\n" +
+	"\x11consensus_deposit\x18\a \x01(\x01R\x10consensusDeposit\x12+\n" +
+	"\x11shipper_signature\x18\b \x01(\tR\x10shipperSignature\x127\n" +
+	"\tagreed_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\bagreedAt\"\xb1\x03\n" +
+	"\x13AcceptMatchResponse\x12\x1f\n" +
+	"\vcontract_id\x18\x01 \x01(\fR\n" +
+	"contractId\x12\x15\n" +
+	"\x06bid_id\x18\x02 \x01(\fR\x05bidId\x12\x15\n" +
+	"\x06ask_id\x18\x03 \x01(\fR\x05askId\x12'\n" +
+	"\x0fconsensus_price\x18\x04 \x01(\x01R\x0econsensusPrice\x12+\n" +
+	"\x11consensus_deposit\x18\x05 \x01(\x01R\x10consensusDeposit\x12+\n" +
+	"\x11shipper_signature\x18\x06 \x01(\tR\x10shipperSignature\x12)\n" +
+	"\x10driver_signature\x18\a \x01(\tR\x0fdriverSignature\x12)\n" +
+	"\x10system_signature\x18\b \x01(\tR\x0fsystemSignature\x127\n" +
+	"\tagreed_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\bagreedAt\x129\n" +
+	"\n" +
+	"created_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB+Z)logistic_project/api/logistic/matching/v1b\x06proto3"
 
 var (
 	file_logistic_matching_service_v1_matching_messages_proto_rawDescOnce sync.Once
@@ -793,7 +1098,7 @@ func file_logistic_matching_service_v1_matching_messages_proto_rawDescGZIP() []b
 	return file_logistic_matching_service_v1_matching_messages_proto_rawDescData
 }
 
-var file_logistic_matching_service_v1_matching_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_logistic_matching_service_v1_matching_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_logistic_matching_service_v1_matching_messages_proto_goTypes = []any{
 	(*Location)(nil),              // 0: logistic.matching_service.v1.Location
 	(*SubmitBidRequest)(nil),      // 1: logistic.matching_service.v1.SubmitBidRequest
@@ -804,30 +1109,33 @@ var file_logistic_matching_service_v1_matching_messages_proto_goTypes = []any{
 	(*Bids)(nil),                  // 6: logistic.matching_service.v1.Bids
 	(*Ask)(nil),                   // 7: logistic.matching_service.v1.Ask
 	(*Asks)(nil),                  // 8: logistic.matching_service.v1.Asks
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
+	(*AcceptMatchRequest)(nil),    // 9: logistic.matching_service.v1.AcceptMatchRequest
+	(*AcceptMatchResponse)(nil),   // 10: logistic.matching_service.v1.AcceptMatchResponse
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
 }
 var file_logistic_matching_service_v1_matching_messages_proto_depIdxs = []int32{
-	0,  // 0: logistic.matching_service.v1.SubmitBidRequest.origin:type_name -> logistic.matching_service.v1.Location
-	0,  // 1: logistic.matching_service.v1.SubmitBidRequest.destination:type_name -> logistic.matching_service.v1.Location
-	9,  // 2: logistic.matching_service.v1.SubmitBidRequest.expires_at:type_name -> google.protobuf.Timestamp
-	0,  // 3: logistic.matching_service.v1.SubmitAskRequest.current_location:type_name -> logistic.matching_service.v1.Location
-	0,  // 4: logistic.matching_service.v1.SubmitAskRequest.destination:type_name -> logistic.matching_service.v1.Location
-	9,  // 5: logistic.matching_service.v1.SubmitAskRequest.expires_at:type_name -> google.protobuf.Timestamp
-	0,  // 6: logistic.matching_service.v1.Bid.origin:type_name -> logistic.matching_service.v1.Location
-	0,  // 7: logistic.matching_service.v1.Bid.destination:type_name -> logistic.matching_service.v1.Location
-	9,  // 8: logistic.matching_service.v1.Bid.expires_at:type_name -> google.protobuf.Timestamp
-	9,  // 9: logistic.matching_service.v1.Bid.created_at:type_name -> google.protobuf.Timestamp
-	5,  // 10: logistic.matching_service.v1.Bids.bids:type_name -> logistic.matching_service.v1.Bid
-	0,  // 11: logistic.matching_service.v1.Ask.current_location:type_name -> logistic.matching_service.v1.Location
-	0,  // 12: logistic.matching_service.v1.Ask.destination:type_name -> logistic.matching_service.v1.Location
-	9,  // 13: logistic.matching_service.v1.Ask.expires_at:type_name -> google.protobuf.Timestamp
-	9,  // 14: logistic.matching_service.v1.Ask.created_at:type_name -> google.protobuf.Timestamp
-	7,  // 15: logistic.matching_service.v1.Asks.asks:type_name -> logistic.matching_service.v1.Ask
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	11, // 0: logistic.matching_service.v1.SubmitBidRequest.requested_at:type_name -> google.protobuf.Timestamp
+	5,  // 1: logistic.matching_service.v1.SubmitBidRequest.payload:type_name -> logistic.matching_service.v1.Bid
+	11, // 2: logistic.matching_service.v1.SubmitAskRequest.requested_at:type_name -> google.protobuf.Timestamp
+	7,  // 3: logistic.matching_service.v1.SubmitAskRequest.payload:type_name -> logistic.matching_service.v1.Ask
+	0,  // 4: logistic.matching_service.v1.Bid.origin:type_name -> logistic.matching_service.v1.Location
+	0,  // 5: logistic.matching_service.v1.Bid.destination:type_name -> logistic.matching_service.v1.Location
+	11, // 6: logistic.matching_service.v1.Bid.expires_at:type_name -> google.protobuf.Timestamp
+	11, // 7: logistic.matching_service.v1.Bid.created_at:type_name -> google.protobuf.Timestamp
+	5,  // 8: logistic.matching_service.v1.Bids.bids:type_name -> logistic.matching_service.v1.Bid
+	0,  // 9: logistic.matching_service.v1.Ask.current_location:type_name -> logistic.matching_service.v1.Location
+	0,  // 10: logistic.matching_service.v1.Ask.destination:type_name -> logistic.matching_service.v1.Location
+	11, // 11: logistic.matching_service.v1.Ask.expires_at:type_name -> google.protobuf.Timestamp
+	11, // 12: logistic.matching_service.v1.Ask.created_at:type_name -> google.protobuf.Timestamp
+	7,  // 13: logistic.matching_service.v1.Asks.asks:type_name -> logistic.matching_service.v1.Ask
+	11, // 14: logistic.matching_service.v1.AcceptMatchRequest.agreed_at:type_name -> google.protobuf.Timestamp
+	11, // 15: logistic.matching_service.v1.AcceptMatchResponse.agreed_at:type_name -> google.protobuf.Timestamp
+	11, // 16: logistic.matching_service.v1.AcceptMatchResponse.created_at:type_name -> google.protobuf.Timestamp
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_logistic_matching_service_v1_matching_messages_proto_init() }
@@ -841,7 +1149,7 @@ func file_logistic_matching_service_v1_matching_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_logistic_matching_service_v1_matching_messages_proto_rawDesc), len(file_logistic_matching_service_v1_matching_messages_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
