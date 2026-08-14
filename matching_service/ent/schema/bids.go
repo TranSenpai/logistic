@@ -16,17 +16,25 @@ type Bids struct {
 func (Bids) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(func() uuid.UUID { return uuid.Must(uuid.NewV7()) }),
-		field.UUID("user_id", uuid.UUID{}),
+		field.UUID("shipper_id", uuid.UUID{}),
+		field.String("shipper_phone"),
+		field.String("shipper_mail"),
+		field.UUID("consignee_id", uuid.UUID{}),
+		field.String("consignee_phone"),
+		field.String("consignee_mail"),
 		field.Float("volume_m3"),
 		field.Float("weight_kg"),
 		field.Float("max_price").Optional().Nillable(),
+		field.Float("cargo_value"),
+		field.Float("required_deposit"),
+		field.Float("desired_deposit"),
 		field.String("zone_id"),
 		field.Float("origin_lat"),
 		field.Float("origin_lng"),
 		field.Float("destination_lat"),
 		field.Float("destination_lng"),
-		field.Bytes("route_id"),
-		field.Int8("status").Default(0),
+		field.Int8("status"),
+		field.Time("expires_at"),
 	}
 }
 

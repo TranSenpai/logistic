@@ -18,6 +18,8 @@ var (
 		{Name: "is_deleted", Type: field.TypeBool, Default: false},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "driver_id", Type: field.TypeUUID},
+		{Name: "driver_phone", Type: field.TypeString},
+		{Name: "driver_mail", Type: field.TypeString},
 		{Name: "vehicle_id", Type: field.TypeUUID},
 		{Name: "vehicle_type", Type: field.TypeInt8},
 		{Name: "capacity_weight_kg", Type: field.TypeFloat64},
@@ -25,13 +27,15 @@ var (
 		{Name: "available_volume_m3", Type: field.TypeFloat64},
 		{Name: "available_weight_kg", Type: field.TypeFloat64},
 		{Name: "min_price", Type: field.TypeFloat64, Nullable: true},
+		{Name: "desired_deposit", Type: field.TypeFloat64},
 		{Name: "zone_id", Type: field.TypeString},
 		{Name: "origin_lat", Type: field.TypeFloat64},
 		{Name: "origin_lng", Type: field.TypeFloat64},
 		{Name: "destination_lat", Type: field.TypeFloat64},
 		{Name: "destination_lng", Type: field.TypeFloat64},
 		{Name: "route_id", Type: field.TypeBytes},
-		{Name: "status", Type: field.TypeInt8, Default: 0},
+		{Name: "status", Type: field.TypeInt8},
+		{Name: "expires_at", Type: field.TypeTime},
 	}
 	// AsksTable holds the schema information for the "asks" table.
 	AsksTable = &schema.Table{
@@ -48,17 +52,25 @@ var (
 		{Name: "updated_by", Type: field.TypeUUID},
 		{Name: "is_deleted", Type: field.TypeBool, Default: false},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
-		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "shipper_id", Type: field.TypeUUID},
+		{Name: "shipper_phone", Type: field.TypeString},
+		{Name: "shipper_mail", Type: field.TypeString},
+		{Name: "consignee_id", Type: field.TypeUUID},
+		{Name: "consignee_phone", Type: field.TypeString},
+		{Name: "consignee_mail", Type: field.TypeString},
 		{Name: "volume_m3", Type: field.TypeFloat64},
 		{Name: "weight_kg", Type: field.TypeFloat64},
 		{Name: "max_price", Type: field.TypeFloat64, Nullable: true},
+		{Name: "cargo_value", Type: field.TypeFloat64},
+		{Name: "required_deposit", Type: field.TypeFloat64},
+		{Name: "desired_deposit", Type: field.TypeFloat64},
 		{Name: "zone_id", Type: field.TypeString},
 		{Name: "origin_lat", Type: field.TypeFloat64},
 		{Name: "origin_lng", Type: field.TypeFloat64},
 		{Name: "destination_lat", Type: field.TypeFloat64},
 		{Name: "destination_lng", Type: field.TypeFloat64},
-		{Name: "route_id", Type: field.TypeBytes},
-		{Name: "status", Type: field.TypeInt8, Default: 0},
+		{Name: "status", Type: field.TypeInt8},
+		{Name: "expires_at", Type: field.TypeTime},
 	}
 	// BidsTable holds the schema information for the "bids" table.
 	BidsTable = &schema.Table{
@@ -100,7 +112,7 @@ var (
 	}
 	// MatchesColumns holds the columns for the "matches" table.
 	MatchesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "id", Type: field.TypeUUID},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "created_by", Type: field.TypeUUID},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -109,6 +121,12 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "agreed_price", Type: field.TypeFloat64},
 		{Name: "status", Type: field.TypeInt, Default: 1},
+		{Name: "consensus_price", Type: field.TypeFloat64},
+		{Name: "consensus_deposit", Type: field.TypeFloat64},
+		{Name: "shipper_signature", Type: field.TypeString},
+		{Name: "driver_signature", Type: field.TypeString},
+		{Name: "system_signature", Type: field.TypeString},
+		{Name: "agreed_at", Type: field.TypeTime},
 		{Name: "ask_id", Type: field.TypeUUID},
 		{Name: "bid_id", Type: field.TypeUUID},
 	}
@@ -120,13 +138,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "matches_asks_matches",
-				Columns:    []*schema.Column{MatchesColumns[9]},
+				Columns:    []*schema.Column{MatchesColumns[15]},
 				RefColumns: []*schema.Column{AsksColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "matches_bids_matches",
-				Columns:    []*schema.Column{MatchesColumns[10]},
+				Columns:    []*schema.Column{MatchesColumns[16]},
 				RefColumns: []*schema.Column{BidsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},

@@ -36,6 +36,18 @@ const (
 	FieldAgreedPrice = "agreed_price"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldConsensusPrice holds the string denoting the consensus_price field in the database.
+	FieldConsensusPrice = "consensus_price"
+	// FieldConsensusDeposit holds the string denoting the consensus_deposit field in the database.
+	FieldConsensusDeposit = "consensus_deposit"
+	// FieldShipperSignature holds the string denoting the shipper_signature field in the database.
+	FieldShipperSignature = "shipper_signature"
+	// FieldDriverSignature holds the string denoting the driver_signature field in the database.
+	FieldDriverSignature = "driver_signature"
+	// FieldSystemSignature holds the string denoting the system_signature field in the database.
+	FieldSystemSignature = "system_signature"
+	// FieldAgreedAt holds the string denoting the agreed_at field in the database.
+	FieldAgreedAt = "agreed_at"
 	// EdgeAsks holds the string denoting the asks edge name in mutations.
 	EdgeAsks = "asks"
 	// EdgeBids holds the string denoting the bids edge name in mutations.
@@ -71,6 +83,12 @@ var Columns = []string{
 	FieldAskID,
 	FieldAgreedPrice,
 	FieldStatus,
+	FieldConsensusPrice,
+	FieldConsensusDeposit,
+	FieldShipperSignature,
+	FieldDriverSignature,
+	FieldSystemSignature,
+	FieldAgreedAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -105,6 +123,8 @@ var (
 	DefaultIsDeleted bool
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus int
+	// DefaultID holds the default value on creation for the "id" field.
+	DefaultID func() uuid.UUID
 )
 
 // OrderOption defines the ordering options for the Match queries.
@@ -163,6 +183,36 @@ func ByAgreedPrice(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByConsensusPrice orders the results by the consensus_price field.
+func ByConsensusPrice(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldConsensusPrice, opts...).ToFunc()
+}
+
+// ByConsensusDeposit orders the results by the consensus_deposit field.
+func ByConsensusDeposit(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldConsensusDeposit, opts...).ToFunc()
+}
+
+// ByShipperSignature orders the results by the shipper_signature field.
+func ByShipperSignature(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldShipperSignature, opts...).ToFunc()
+}
+
+// ByDriverSignature orders the results by the driver_signature field.
+func ByDriverSignature(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDriverSignature, opts...).ToFunc()
+}
+
+// BySystemSignature orders the results by the system_signature field.
+func BySystemSignature(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSystemSignature, opts...).ToFunc()
+}
+
+// ByAgreedAt orders the results by the agreed_at field.
+func ByAgreedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAgreedAt, opts...).ToFunc()
 }
 
 // ByAsksField orders the results by asks field.

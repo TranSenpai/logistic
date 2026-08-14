@@ -7,9 +7,13 @@ import (
 	"log"
 	"matching_service/internal/biz"
 	"matching_service/internal/broker"
+	"matching_service/internal/entity"
 	"matching_service/internal/mapper"
 
+	pb "github.com/logistic/api/logistic/matching_service/v1"
+
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ biz.EventPublisher = (*natsPublisher)(nil)
@@ -30,10 +34,24 @@ func (n *natsPublisher) payloadToBytes(payload any) ([]byte, error) {
 	switch v := payload.(type) {
 	case []byte:
 		return v, nil
-	// TƯƠNG LAI BỔ SUNG TYPE ASSERTION Ở ĐÂY:
-	// case *entity.Bid:
-	//     pbBid := n.mapper.EntityBidToPbBid(v) 
-	//     return proto.Marshal(pbBid)
+	case entity.Bid:
+		pbBid := n.mapper.EntityBidToPbBid(v)
+		return proto.Marshal(pbBid)
+	case entity.Ask:
+		pbAsk := n.mapper.EntityAskToPbAsk(v)
+		return proto.Marshal(pbAsk)
+	case []entity.Bid:
+		if v == nil {
+			return nil, broker.ErrNilMessage
+		}
+		payload := &pb.Bids{Bids: n.mapper.EntityBidListToPbBidList(v)}
+		return proto.Marshal(payload)
+	case []entity.Ask:
+		if v == nil {
+			return nil, broker.ErrNilMessage
+		}
+		payload := &pb.Asks{Asks: n.mapper.EntityAskListToPbAskList(v)}
+		return proto.Marshal(payload)
 	default:
 		return nil, fmt.Errorf("unsupported payload type for protobuf serialization")
 	}

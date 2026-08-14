@@ -32,6 +32,10 @@ type Asks struct {
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// DriverID holds the value of the "driver_id" field.
 	DriverID uuid.UUID `json:"driver_id,omitempty"`
+	// DriverPhone holds the value of the "driver_phone" field.
+	DriverPhone string `json:"driver_phone,omitempty"`
+	// DriverMail holds the value of the "driver_mail" field.
+	DriverMail string `json:"driver_mail,omitempty"`
 	// VehicleID holds the value of the "vehicle_id" field.
 	VehicleID uuid.UUID `json:"vehicle_id,omitempty"`
 	// VehicleType holds the value of the "vehicle_type" field.
@@ -46,6 +50,8 @@ type Asks struct {
 	AvailableWeightKg float64 `json:"available_weight_kg,omitempty"`
 	// MinPrice holds the value of the "min_price" field.
 	MinPrice *float64 `json:"min_price,omitempty"`
+	// DesiredDeposit holds the value of the "desired_deposit" field.
+	DesiredDeposit float64 `json:"desired_deposit,omitempty"`
 	// ZoneID holds the value of the "zone_id" field.
 	ZoneID string `json:"zone_id,omitempty"`
 	// OriginLat holds the value of the "origin_lat" field.
@@ -60,6 +66,8 @@ type Asks struct {
 	RouteID []byte `json:"route_id,omitempty"`
 	// Status holds the value of the "status" field.
 	Status int8 `json:"status,omitempty"`
+	// ExpiresAt holds the value of the "expires_at" field.
+	ExpiresAt time.Time `json:"expires_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the AsksQuery when eager-loading is set.
 	Edges        AsksEdges `json:"edges"`
@@ -93,13 +101,13 @@ func (*Asks) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case asks.FieldIsDeleted:
 			values[i] = new(sql.NullBool)
-		case asks.FieldCapacityWeightKg, asks.FieldCapacityVolumeCbm, asks.FieldAvailableVolumeM3, asks.FieldAvailableWeightKg, asks.FieldMinPrice, asks.FieldOriginLat, asks.FieldOriginLng, asks.FieldDestinationLat, asks.FieldDestinationLng:
+		case asks.FieldCapacityWeightKg, asks.FieldCapacityVolumeCbm, asks.FieldAvailableVolumeM3, asks.FieldAvailableWeightKg, asks.FieldMinPrice, asks.FieldDesiredDeposit, asks.FieldOriginLat, asks.FieldOriginLng, asks.FieldDestinationLat, asks.FieldDestinationLng:
 			values[i] = new(sql.NullFloat64)
 		case asks.FieldVehicleType, asks.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case asks.FieldZoneID:
+		case asks.FieldDriverPhone, asks.FieldDriverMail, asks.FieldZoneID:
 			values[i] = new(sql.NullString)
-		case asks.FieldCreatedAt, asks.FieldUpdatedAt, asks.FieldDeletedAt:
+		case asks.FieldCreatedAt, asks.FieldUpdatedAt, asks.FieldDeletedAt, asks.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
 		case asks.FieldID, asks.FieldCreatedBy, asks.FieldUpdatedBy, asks.FieldDriverID, asks.FieldVehicleID:
 			values[i] = new(uuid.UUID)
@@ -166,6 +174,18 @@ func (_m *Asks) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.DriverID = *value
 			}
+		case asks.FieldDriverPhone:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field driver_phone", values[i])
+			} else if value.Valid {
+				_m.DriverPhone = value.String
+			}
+		case asks.FieldDriverMail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field driver_mail", values[i])
+			} else if value.Valid {
+				_m.DriverMail = value.String
+			}
 		case asks.FieldVehicleID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field vehicle_id", values[i])
@@ -209,6 +229,12 @@ func (_m *Asks) assignValues(columns []string, values []any) error {
 				_m.MinPrice = new(float64)
 				*_m.MinPrice = value.Float64
 			}
+		case asks.FieldDesiredDeposit:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field desired_deposit", values[i])
+			} else if value.Valid {
+				_m.DesiredDeposit = value.Float64
+			}
 		case asks.FieldZoneID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field zone_id", values[i])
@@ -250,6 +276,12 @@ func (_m *Asks) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = int8(value.Int64)
+			}
+		case asks.FieldExpiresAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field expires_at", values[i])
+			} else if value.Valid {
+				_m.ExpiresAt = value.Time
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -313,6 +345,12 @@ func (_m *Asks) String() string {
 	builder.WriteString("driver_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.DriverID))
 	builder.WriteString(", ")
+	builder.WriteString("driver_phone=")
+	builder.WriteString(_m.DriverPhone)
+	builder.WriteString(", ")
+	builder.WriteString("driver_mail=")
+	builder.WriteString(_m.DriverMail)
+	builder.WriteString(", ")
 	builder.WriteString("vehicle_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.VehicleID))
 	builder.WriteString(", ")
@@ -336,6 +374,9 @@ func (_m *Asks) String() string {
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
+	builder.WriteString("desired_deposit=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DesiredDeposit))
+	builder.WriteString(", ")
 	builder.WriteString("zone_id=")
 	builder.WriteString(_m.ZoneID)
 	builder.WriteString(", ")
@@ -356,6 +397,9 @@ func (_m *Asks) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
+	builder.WriteString(", ")
+	builder.WriteString("expires_at=")
+	builder.WriteString(_m.ExpiresAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

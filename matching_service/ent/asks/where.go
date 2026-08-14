@@ -91,6 +91,16 @@ func DriverID(v uuid.UUID) predicate.Asks {
 	return predicate.Asks(sql.FieldEQ(FieldDriverID, v))
 }
 
+// DriverPhone applies equality check predicate on the "driver_phone" field. It's identical to DriverPhoneEQ.
+func DriverPhone(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldEQ(FieldDriverPhone, v))
+}
+
+// DriverMail applies equality check predicate on the "driver_mail" field. It's identical to DriverMailEQ.
+func DriverMail(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldEQ(FieldDriverMail, v))
+}
+
 // VehicleID applies equality check predicate on the "vehicle_id" field. It's identical to VehicleIDEQ.
 func VehicleID(v uuid.UUID) predicate.Asks {
 	return predicate.Asks(sql.FieldEQ(FieldVehicleID, v))
@@ -126,6 +136,11 @@ func MinPrice(v float64) predicate.Asks {
 	return predicate.Asks(sql.FieldEQ(FieldMinPrice, v))
 }
 
+// DesiredDeposit applies equality check predicate on the "desired_deposit" field. It's identical to DesiredDepositEQ.
+func DesiredDeposit(v float64) predicate.Asks {
+	return predicate.Asks(sql.FieldEQ(FieldDesiredDeposit, v))
+}
+
 // ZoneID applies equality check predicate on the "zone_id" field. It's identical to ZoneIDEQ.
 func ZoneID(v string) predicate.Asks {
 	return predicate.Asks(sql.FieldEQ(FieldZoneID, v))
@@ -159,6 +174,11 @@ func RouteID(v []byte) predicate.Asks {
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v int8) predicate.Asks {
 	return predicate.Asks(sql.FieldEQ(FieldStatus, v))
+}
+
+// ExpiresAt applies equality check predicate on the "expires_at" field. It's identical to ExpiresAtEQ.
+func ExpiresAt(v time.Time) predicate.Asks {
+	return predicate.Asks(sql.FieldEQ(FieldExpiresAt, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -419,6 +439,136 @@ func DriverIDLT(v uuid.UUID) predicate.Asks {
 // DriverIDLTE applies the LTE predicate on the "driver_id" field.
 func DriverIDLTE(v uuid.UUID) predicate.Asks {
 	return predicate.Asks(sql.FieldLTE(FieldDriverID, v))
+}
+
+// DriverPhoneEQ applies the EQ predicate on the "driver_phone" field.
+func DriverPhoneEQ(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldEQ(FieldDriverPhone, v))
+}
+
+// DriverPhoneNEQ applies the NEQ predicate on the "driver_phone" field.
+func DriverPhoneNEQ(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldNEQ(FieldDriverPhone, v))
+}
+
+// DriverPhoneIn applies the In predicate on the "driver_phone" field.
+func DriverPhoneIn(vs ...string) predicate.Asks {
+	return predicate.Asks(sql.FieldIn(FieldDriverPhone, vs...))
+}
+
+// DriverPhoneNotIn applies the NotIn predicate on the "driver_phone" field.
+func DriverPhoneNotIn(vs ...string) predicate.Asks {
+	return predicate.Asks(sql.FieldNotIn(FieldDriverPhone, vs...))
+}
+
+// DriverPhoneGT applies the GT predicate on the "driver_phone" field.
+func DriverPhoneGT(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldGT(FieldDriverPhone, v))
+}
+
+// DriverPhoneGTE applies the GTE predicate on the "driver_phone" field.
+func DriverPhoneGTE(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldGTE(FieldDriverPhone, v))
+}
+
+// DriverPhoneLT applies the LT predicate on the "driver_phone" field.
+func DriverPhoneLT(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldLT(FieldDriverPhone, v))
+}
+
+// DriverPhoneLTE applies the LTE predicate on the "driver_phone" field.
+func DriverPhoneLTE(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldLTE(FieldDriverPhone, v))
+}
+
+// DriverPhoneContains applies the Contains predicate on the "driver_phone" field.
+func DriverPhoneContains(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldContains(FieldDriverPhone, v))
+}
+
+// DriverPhoneHasPrefix applies the HasPrefix predicate on the "driver_phone" field.
+func DriverPhoneHasPrefix(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldHasPrefix(FieldDriverPhone, v))
+}
+
+// DriverPhoneHasSuffix applies the HasSuffix predicate on the "driver_phone" field.
+func DriverPhoneHasSuffix(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldHasSuffix(FieldDriverPhone, v))
+}
+
+// DriverPhoneEqualFold applies the EqualFold predicate on the "driver_phone" field.
+func DriverPhoneEqualFold(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldEqualFold(FieldDriverPhone, v))
+}
+
+// DriverPhoneContainsFold applies the ContainsFold predicate on the "driver_phone" field.
+func DriverPhoneContainsFold(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldContainsFold(FieldDriverPhone, v))
+}
+
+// DriverMailEQ applies the EQ predicate on the "driver_mail" field.
+func DriverMailEQ(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldEQ(FieldDriverMail, v))
+}
+
+// DriverMailNEQ applies the NEQ predicate on the "driver_mail" field.
+func DriverMailNEQ(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldNEQ(FieldDriverMail, v))
+}
+
+// DriverMailIn applies the In predicate on the "driver_mail" field.
+func DriverMailIn(vs ...string) predicate.Asks {
+	return predicate.Asks(sql.FieldIn(FieldDriverMail, vs...))
+}
+
+// DriverMailNotIn applies the NotIn predicate on the "driver_mail" field.
+func DriverMailNotIn(vs ...string) predicate.Asks {
+	return predicate.Asks(sql.FieldNotIn(FieldDriverMail, vs...))
+}
+
+// DriverMailGT applies the GT predicate on the "driver_mail" field.
+func DriverMailGT(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldGT(FieldDriverMail, v))
+}
+
+// DriverMailGTE applies the GTE predicate on the "driver_mail" field.
+func DriverMailGTE(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldGTE(FieldDriverMail, v))
+}
+
+// DriverMailLT applies the LT predicate on the "driver_mail" field.
+func DriverMailLT(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldLT(FieldDriverMail, v))
+}
+
+// DriverMailLTE applies the LTE predicate on the "driver_mail" field.
+func DriverMailLTE(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldLTE(FieldDriverMail, v))
+}
+
+// DriverMailContains applies the Contains predicate on the "driver_mail" field.
+func DriverMailContains(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldContains(FieldDriverMail, v))
+}
+
+// DriverMailHasPrefix applies the HasPrefix predicate on the "driver_mail" field.
+func DriverMailHasPrefix(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldHasPrefix(FieldDriverMail, v))
+}
+
+// DriverMailHasSuffix applies the HasSuffix predicate on the "driver_mail" field.
+func DriverMailHasSuffix(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldHasSuffix(FieldDriverMail, v))
+}
+
+// DriverMailEqualFold applies the EqualFold predicate on the "driver_mail" field.
+func DriverMailEqualFold(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldEqualFold(FieldDriverMail, v))
+}
+
+// DriverMailContainsFold applies the ContainsFold predicate on the "driver_mail" field.
+func DriverMailContainsFold(v string) predicate.Asks {
+	return predicate.Asks(sql.FieldContainsFold(FieldDriverMail, v))
 }
 
 // VehicleIDEQ applies the EQ predicate on the "vehicle_id" field.
@@ -709,6 +859,46 @@ func MinPriceIsNil() predicate.Asks {
 // MinPriceNotNil applies the NotNil predicate on the "min_price" field.
 func MinPriceNotNil() predicate.Asks {
 	return predicate.Asks(sql.FieldNotNull(FieldMinPrice))
+}
+
+// DesiredDepositEQ applies the EQ predicate on the "desired_deposit" field.
+func DesiredDepositEQ(v float64) predicate.Asks {
+	return predicate.Asks(sql.FieldEQ(FieldDesiredDeposit, v))
+}
+
+// DesiredDepositNEQ applies the NEQ predicate on the "desired_deposit" field.
+func DesiredDepositNEQ(v float64) predicate.Asks {
+	return predicate.Asks(sql.FieldNEQ(FieldDesiredDeposit, v))
+}
+
+// DesiredDepositIn applies the In predicate on the "desired_deposit" field.
+func DesiredDepositIn(vs ...float64) predicate.Asks {
+	return predicate.Asks(sql.FieldIn(FieldDesiredDeposit, vs...))
+}
+
+// DesiredDepositNotIn applies the NotIn predicate on the "desired_deposit" field.
+func DesiredDepositNotIn(vs ...float64) predicate.Asks {
+	return predicate.Asks(sql.FieldNotIn(FieldDesiredDeposit, vs...))
+}
+
+// DesiredDepositGT applies the GT predicate on the "desired_deposit" field.
+func DesiredDepositGT(v float64) predicate.Asks {
+	return predicate.Asks(sql.FieldGT(FieldDesiredDeposit, v))
+}
+
+// DesiredDepositGTE applies the GTE predicate on the "desired_deposit" field.
+func DesiredDepositGTE(v float64) predicate.Asks {
+	return predicate.Asks(sql.FieldGTE(FieldDesiredDeposit, v))
+}
+
+// DesiredDepositLT applies the LT predicate on the "desired_deposit" field.
+func DesiredDepositLT(v float64) predicate.Asks {
+	return predicate.Asks(sql.FieldLT(FieldDesiredDeposit, v))
+}
+
+// DesiredDepositLTE applies the LTE predicate on the "desired_deposit" field.
+func DesiredDepositLTE(v float64) predicate.Asks {
+	return predicate.Asks(sql.FieldLTE(FieldDesiredDeposit, v))
 }
 
 // ZoneIDEQ applies the EQ predicate on the "zone_id" field.
@@ -1014,6 +1204,46 @@ func StatusLT(v int8) predicate.Asks {
 // StatusLTE applies the LTE predicate on the "status" field.
 func StatusLTE(v int8) predicate.Asks {
 	return predicate.Asks(sql.FieldLTE(FieldStatus, v))
+}
+
+// ExpiresAtEQ applies the EQ predicate on the "expires_at" field.
+func ExpiresAtEQ(v time.Time) predicate.Asks {
+	return predicate.Asks(sql.FieldEQ(FieldExpiresAt, v))
+}
+
+// ExpiresAtNEQ applies the NEQ predicate on the "expires_at" field.
+func ExpiresAtNEQ(v time.Time) predicate.Asks {
+	return predicate.Asks(sql.FieldNEQ(FieldExpiresAt, v))
+}
+
+// ExpiresAtIn applies the In predicate on the "expires_at" field.
+func ExpiresAtIn(vs ...time.Time) predicate.Asks {
+	return predicate.Asks(sql.FieldIn(FieldExpiresAt, vs...))
+}
+
+// ExpiresAtNotIn applies the NotIn predicate on the "expires_at" field.
+func ExpiresAtNotIn(vs ...time.Time) predicate.Asks {
+	return predicate.Asks(sql.FieldNotIn(FieldExpiresAt, vs...))
+}
+
+// ExpiresAtGT applies the GT predicate on the "expires_at" field.
+func ExpiresAtGT(v time.Time) predicate.Asks {
+	return predicate.Asks(sql.FieldGT(FieldExpiresAt, v))
+}
+
+// ExpiresAtGTE applies the GTE predicate on the "expires_at" field.
+func ExpiresAtGTE(v time.Time) predicate.Asks {
+	return predicate.Asks(sql.FieldGTE(FieldExpiresAt, v))
+}
+
+// ExpiresAtLT applies the LT predicate on the "expires_at" field.
+func ExpiresAtLT(v time.Time) predicate.Asks {
+	return predicate.Asks(sql.FieldLT(FieldExpiresAt, v))
+}
+
+// ExpiresAtLTE applies the LTE predicate on the "expires_at" field.
+func ExpiresAtLTE(v time.Time) predicate.Asks {
+	return predicate.Asks(sql.FieldLTE(FieldExpiresAt, v))
 }
 
 // HasMatches applies the HasEdge predicate on the "matches" edge.

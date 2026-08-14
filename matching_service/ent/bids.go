@@ -30,14 +30,30 @@ type Bids struct {
 	IsDeleted bool `json:"is_deleted,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
-	// UserID holds the value of the "user_id" field.
-	UserID uuid.UUID `json:"user_id,omitempty"`
+	// ShipperID holds the value of the "shipper_id" field.
+	ShipperID uuid.UUID `json:"shipper_id,omitempty"`
+	// ShipperPhone holds the value of the "shipper_phone" field.
+	ShipperPhone string `json:"shipper_phone,omitempty"`
+	// ShipperMail holds the value of the "shipper_mail" field.
+	ShipperMail string `json:"shipper_mail,omitempty"`
+	// ConsigneeID holds the value of the "consignee_id" field.
+	ConsigneeID uuid.UUID `json:"consignee_id,omitempty"`
+	// ConsigneePhone holds the value of the "consignee_phone" field.
+	ConsigneePhone string `json:"consignee_phone,omitempty"`
+	// ConsigneeMail holds the value of the "consignee_mail" field.
+	ConsigneeMail string `json:"consignee_mail,omitempty"`
 	// VolumeM3 holds the value of the "volume_m3" field.
 	VolumeM3 float64 `json:"volume_m3,omitempty"`
 	// WeightKg holds the value of the "weight_kg" field.
 	WeightKg float64 `json:"weight_kg,omitempty"`
 	// MaxPrice holds the value of the "max_price" field.
 	MaxPrice *float64 `json:"max_price,omitempty"`
+	// CargoValue holds the value of the "cargo_value" field.
+	CargoValue float64 `json:"cargo_value,omitempty"`
+	// RequiredDeposit holds the value of the "required_deposit" field.
+	RequiredDeposit float64 `json:"required_deposit,omitempty"`
+	// DesiredDeposit holds the value of the "desired_deposit" field.
+	DesiredDeposit float64 `json:"desired_deposit,omitempty"`
 	// ZoneID holds the value of the "zone_id" field.
 	ZoneID string `json:"zone_id,omitempty"`
 	// OriginLat holds the value of the "origin_lat" field.
@@ -48,10 +64,10 @@ type Bids struct {
 	DestinationLat float64 `json:"destination_lat,omitempty"`
 	// DestinationLng holds the value of the "destination_lng" field.
 	DestinationLng float64 `json:"destination_lng,omitempty"`
-	// RouteID holds the value of the "route_id" field.
-	RouteID []byte `json:"route_id,omitempty"`
 	// Status holds the value of the "status" field.
 	Status int8 `json:"status,omitempty"`
+	// ExpiresAt holds the value of the "expires_at" field.
+	ExpiresAt time.Time `json:"expires_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BidsQuery when eager-loading is set.
 	Edges        BidsEdges `json:"edges"`
@@ -92,19 +108,17 @@ func (*Bids) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case bids.FieldRouteID:
-			values[i] = new([]byte)
 		case bids.FieldIsDeleted:
 			values[i] = new(sql.NullBool)
-		case bids.FieldVolumeM3, bids.FieldWeightKg, bids.FieldMaxPrice, bids.FieldOriginLat, bids.FieldOriginLng, bids.FieldDestinationLat, bids.FieldDestinationLng:
+		case bids.FieldVolumeM3, bids.FieldWeightKg, bids.FieldMaxPrice, bids.FieldCargoValue, bids.FieldRequiredDeposit, bids.FieldDesiredDeposit, bids.FieldOriginLat, bids.FieldOriginLng, bids.FieldDestinationLat, bids.FieldDestinationLng:
 			values[i] = new(sql.NullFloat64)
 		case bids.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case bids.FieldZoneID:
+		case bids.FieldShipperPhone, bids.FieldShipperMail, bids.FieldConsigneePhone, bids.FieldConsigneeMail, bids.FieldZoneID:
 			values[i] = new(sql.NullString)
-		case bids.FieldCreatedAt, bids.FieldUpdatedAt, bids.FieldDeletedAt:
+		case bids.FieldCreatedAt, bids.FieldUpdatedAt, bids.FieldDeletedAt, bids.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
-		case bids.FieldID, bids.FieldCreatedBy, bids.FieldUpdatedBy, bids.FieldUserID:
+		case bids.FieldID, bids.FieldCreatedBy, bids.FieldUpdatedBy, bids.FieldShipperID, bids.FieldConsigneeID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -163,11 +177,41 @@ func (_m *Bids) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DeletedAt = value.Time
 			}
-		case bids.FieldUserID:
+		case bids.FieldShipperID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field user_id", values[i])
+				return fmt.Errorf("unexpected type %T for field shipper_id", values[i])
 			} else if value != nil {
-				_m.UserID = *value
+				_m.ShipperID = *value
+			}
+		case bids.FieldShipperPhone:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field shipper_phone", values[i])
+			} else if value.Valid {
+				_m.ShipperPhone = value.String
+			}
+		case bids.FieldShipperMail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field shipper_mail", values[i])
+			} else if value.Valid {
+				_m.ShipperMail = value.String
+			}
+		case bids.FieldConsigneeID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field consignee_id", values[i])
+			} else if value != nil {
+				_m.ConsigneeID = *value
+			}
+		case bids.FieldConsigneePhone:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field consignee_phone", values[i])
+			} else if value.Valid {
+				_m.ConsigneePhone = value.String
+			}
+		case bids.FieldConsigneeMail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field consignee_mail", values[i])
+			} else if value.Valid {
+				_m.ConsigneeMail = value.String
 			}
 		case bids.FieldVolumeM3:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -187,6 +231,24 @@ func (_m *Bids) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.MaxPrice = new(float64)
 				*_m.MaxPrice = value.Float64
+			}
+		case bids.FieldCargoValue:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field cargo_value", values[i])
+			} else if value.Valid {
+				_m.CargoValue = value.Float64
+			}
+		case bids.FieldRequiredDeposit:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field required_deposit", values[i])
+			} else if value.Valid {
+				_m.RequiredDeposit = value.Float64
+			}
+		case bids.FieldDesiredDeposit:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field desired_deposit", values[i])
+			} else if value.Valid {
+				_m.DesiredDeposit = value.Float64
 			}
 		case bids.FieldZoneID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -218,17 +280,17 @@ func (_m *Bids) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DestinationLng = value.Float64
 			}
-		case bids.FieldRouteID:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field route_id", values[i])
-			} else if value != nil {
-				_m.RouteID = *value
-			}
 		case bids.FieldStatus:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = int8(value.Int64)
+			}
+		case bids.FieldExpiresAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field expires_at", values[i])
+			} else if value.Valid {
+				_m.ExpiresAt = value.Time
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -294,8 +356,23 @@ func (_m *Bids) String() string {
 	builder.WriteString("deleted_at=")
 	builder.WriteString(_m.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.UserID))
+	builder.WriteString("shipper_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ShipperID))
+	builder.WriteString(", ")
+	builder.WriteString("shipper_phone=")
+	builder.WriteString(_m.ShipperPhone)
+	builder.WriteString(", ")
+	builder.WriteString("shipper_mail=")
+	builder.WriteString(_m.ShipperMail)
+	builder.WriteString(", ")
+	builder.WriteString("consignee_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ConsigneeID))
+	builder.WriteString(", ")
+	builder.WriteString("consignee_phone=")
+	builder.WriteString(_m.ConsigneePhone)
+	builder.WriteString(", ")
+	builder.WriteString("consignee_mail=")
+	builder.WriteString(_m.ConsigneeMail)
 	builder.WriteString(", ")
 	builder.WriteString("volume_m3=")
 	builder.WriteString(fmt.Sprintf("%v", _m.VolumeM3))
@@ -307,6 +384,15 @@ func (_m *Bids) String() string {
 		builder.WriteString("max_price=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("cargo_value=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CargoValue))
+	builder.WriteString(", ")
+	builder.WriteString("required_deposit=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RequiredDeposit))
+	builder.WriteString(", ")
+	builder.WriteString("desired_deposit=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DesiredDeposit))
 	builder.WriteString(", ")
 	builder.WriteString("zone_id=")
 	builder.WriteString(_m.ZoneID)
@@ -323,11 +409,11 @@ func (_m *Bids) String() string {
 	builder.WriteString("destination_lng=")
 	builder.WriteString(fmt.Sprintf("%v", _m.DestinationLng))
 	builder.WriteString(", ")
-	builder.WriteString("route_id=")
-	builder.WriteString(fmt.Sprintf("%v", _m.RouteID))
-	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
+	builder.WriteString(", ")
+	builder.WriteString("expires_at=")
+	builder.WriteString(_m.ExpiresAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

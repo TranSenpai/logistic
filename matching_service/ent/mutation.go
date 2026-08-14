@@ -49,6 +49,8 @@ type AsksMutation struct {
 	is_deleted             *bool
 	deleted_at             *time.Time
 	driver_id              *uuid.UUID
+	driver_phone           *string
+	driver_mail            *string
 	vehicle_id             *uuid.UUID
 	vehicle_type           *int8
 	addvehicle_type        *int8
@@ -62,6 +64,8 @@ type AsksMutation struct {
 	addavailable_weight_kg *float64
 	min_price              *float64
 	addmin_price           *float64
+	desired_deposit        *float64
+	adddesired_deposit     *float64
 	zone_id                *string
 	origin_lat             *float64
 	addorigin_lat          *float64
@@ -74,9 +78,10 @@ type AsksMutation struct {
 	route_id               *[]byte
 	status                 *int8
 	addstatus              *int8
+	expires_at             *time.Time
 	clearedFields          map[string]struct{}
-	matches                map[int]struct{}
-	removedmatches         map[int]struct{}
+	matches                map[uuid.UUID]struct{}
+	removedmatches         map[uuid.UUID]struct{}
 	clearedmatches         bool
 	done                   bool
 	oldValue               func(context.Context) (*Asks, error)
@@ -450,6 +455,78 @@ func (m *AsksMutation) OldDriverID(ctx context.Context) (v uuid.UUID, err error)
 // ResetDriverID resets all changes to the "driver_id" field.
 func (m *AsksMutation) ResetDriverID() {
 	m.driver_id = nil
+}
+
+// SetDriverPhone sets the "driver_phone" field.
+func (m *AsksMutation) SetDriverPhone(s string) {
+	m.driver_phone = &s
+}
+
+// DriverPhone returns the value of the "driver_phone" field in the mutation.
+func (m *AsksMutation) DriverPhone() (r string, exists bool) {
+	v := m.driver_phone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDriverPhone returns the old "driver_phone" field's value of the Asks entity.
+// If the Asks object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AsksMutation) OldDriverPhone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDriverPhone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDriverPhone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDriverPhone: %w", err)
+	}
+	return oldValue.DriverPhone, nil
+}
+
+// ResetDriverPhone resets all changes to the "driver_phone" field.
+func (m *AsksMutation) ResetDriverPhone() {
+	m.driver_phone = nil
+}
+
+// SetDriverMail sets the "driver_mail" field.
+func (m *AsksMutation) SetDriverMail(s string) {
+	m.driver_mail = &s
+}
+
+// DriverMail returns the value of the "driver_mail" field in the mutation.
+func (m *AsksMutation) DriverMail() (r string, exists bool) {
+	v := m.driver_mail
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDriverMail returns the old "driver_mail" field's value of the Asks entity.
+// If the Asks object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AsksMutation) OldDriverMail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDriverMail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDriverMail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDriverMail: %w", err)
+	}
+	return oldValue.DriverMail, nil
+}
+
+// ResetDriverMail resets all changes to the "driver_mail" field.
+func (m *AsksMutation) ResetDriverMail() {
+	m.driver_mail = nil
 }
 
 // SetVehicleID sets the "vehicle_id" field.
@@ -838,6 +915,62 @@ func (m *AsksMutation) ResetMinPrice() {
 	delete(m.clearedFields, asks.FieldMinPrice)
 }
 
+// SetDesiredDeposit sets the "desired_deposit" field.
+func (m *AsksMutation) SetDesiredDeposit(f float64) {
+	m.desired_deposit = &f
+	m.adddesired_deposit = nil
+}
+
+// DesiredDeposit returns the value of the "desired_deposit" field in the mutation.
+func (m *AsksMutation) DesiredDeposit() (r float64, exists bool) {
+	v := m.desired_deposit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDesiredDeposit returns the old "desired_deposit" field's value of the Asks entity.
+// If the Asks object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AsksMutation) OldDesiredDeposit(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDesiredDeposit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDesiredDeposit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDesiredDeposit: %w", err)
+	}
+	return oldValue.DesiredDeposit, nil
+}
+
+// AddDesiredDeposit adds f to the "desired_deposit" field.
+func (m *AsksMutation) AddDesiredDeposit(f float64) {
+	if m.adddesired_deposit != nil {
+		*m.adddesired_deposit += f
+	} else {
+		m.adddesired_deposit = &f
+	}
+}
+
+// AddedDesiredDeposit returns the value that was added to the "desired_deposit" field in this mutation.
+func (m *AsksMutation) AddedDesiredDeposit() (r float64, exists bool) {
+	v := m.adddesired_deposit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDesiredDeposit resets all changes to the "desired_deposit" field.
+func (m *AsksMutation) ResetDesiredDeposit() {
+	m.desired_deposit = nil
+	m.adddesired_deposit = nil
+}
+
 // SetZoneID sets the "zone_id" field.
 func (m *AsksMutation) SetZoneID(s string) {
 	m.zone_id = &s
@@ -1190,10 +1323,46 @@ func (m *AsksMutation) ResetStatus() {
 	m.addstatus = nil
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (m *AsksMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *AsksMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the Asks entity.
+// If the Asks object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AsksMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *AsksMutation) ResetExpiresAt() {
+	m.expires_at = nil
+}
+
 // AddMatchIDs adds the "matches" edge to the Match entity by ids.
-func (m *AsksMutation) AddMatchIDs(ids ...int) {
+func (m *AsksMutation) AddMatchIDs(ids ...uuid.UUID) {
 	if m.matches == nil {
-		m.matches = make(map[int]struct{})
+		m.matches = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		m.matches[ids[i]] = struct{}{}
@@ -1211,9 +1380,9 @@ func (m *AsksMutation) MatchesCleared() bool {
 }
 
 // RemoveMatchIDs removes the "matches" edge to the Match entity by IDs.
-func (m *AsksMutation) RemoveMatchIDs(ids ...int) {
+func (m *AsksMutation) RemoveMatchIDs(ids ...uuid.UUID) {
 	if m.removedmatches == nil {
-		m.removedmatches = make(map[int]struct{})
+		m.removedmatches = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		delete(m.matches, ids[i])
@@ -1222,7 +1391,7 @@ func (m *AsksMutation) RemoveMatchIDs(ids ...int) {
 }
 
 // RemovedMatches returns the removed IDs of the "matches" edge to the Match entity.
-func (m *AsksMutation) RemovedMatchesIDs() (ids []int) {
+func (m *AsksMutation) RemovedMatchesIDs() (ids []uuid.UUID) {
 	for id := range m.removedmatches {
 		ids = append(ids, id)
 	}
@@ -1230,7 +1399,7 @@ func (m *AsksMutation) RemovedMatchesIDs() (ids []int) {
 }
 
 // MatchesIDs returns the "matches" edge IDs in the mutation.
-func (m *AsksMutation) MatchesIDs() (ids []int) {
+func (m *AsksMutation) MatchesIDs() (ids []uuid.UUID) {
 	for id := range m.matches {
 		ids = append(ids, id)
 	}
@@ -1278,7 +1447,7 @@ func (m *AsksMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AsksMutation) Fields() []string {
-	fields := make([]string, 0, 21)
+	fields := make([]string, 0, 25)
 	if m.created_at != nil {
 		fields = append(fields, asks.FieldCreatedAt)
 	}
@@ -1299,6 +1468,12 @@ func (m *AsksMutation) Fields() []string {
 	}
 	if m.driver_id != nil {
 		fields = append(fields, asks.FieldDriverID)
+	}
+	if m.driver_phone != nil {
+		fields = append(fields, asks.FieldDriverPhone)
+	}
+	if m.driver_mail != nil {
+		fields = append(fields, asks.FieldDriverMail)
 	}
 	if m.vehicle_id != nil {
 		fields = append(fields, asks.FieldVehicleID)
@@ -1321,6 +1496,9 @@ func (m *AsksMutation) Fields() []string {
 	if m.min_price != nil {
 		fields = append(fields, asks.FieldMinPrice)
 	}
+	if m.desired_deposit != nil {
+		fields = append(fields, asks.FieldDesiredDeposit)
+	}
 	if m.zone_id != nil {
 		fields = append(fields, asks.FieldZoneID)
 	}
@@ -1341,6 +1519,9 @@ func (m *AsksMutation) Fields() []string {
 	}
 	if m.status != nil {
 		fields = append(fields, asks.FieldStatus)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, asks.FieldExpiresAt)
 	}
 	return fields
 }
@@ -1364,6 +1545,10 @@ func (m *AsksMutation) Field(name string) (ent.Value, bool) {
 		return m.DeletedAt()
 	case asks.FieldDriverID:
 		return m.DriverID()
+	case asks.FieldDriverPhone:
+		return m.DriverPhone()
+	case asks.FieldDriverMail:
+		return m.DriverMail()
 	case asks.FieldVehicleID:
 		return m.VehicleID()
 	case asks.FieldVehicleType:
@@ -1378,6 +1563,8 @@ func (m *AsksMutation) Field(name string) (ent.Value, bool) {
 		return m.AvailableWeightKg()
 	case asks.FieldMinPrice:
 		return m.MinPrice()
+	case asks.FieldDesiredDeposit:
+		return m.DesiredDeposit()
 	case asks.FieldZoneID:
 		return m.ZoneID()
 	case asks.FieldOriginLat:
@@ -1392,6 +1579,8 @@ func (m *AsksMutation) Field(name string) (ent.Value, bool) {
 		return m.RouteID()
 	case asks.FieldStatus:
 		return m.Status()
+	case asks.FieldExpiresAt:
+		return m.ExpiresAt()
 	}
 	return nil, false
 }
@@ -1415,6 +1604,10 @@ func (m *AsksMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDeletedAt(ctx)
 	case asks.FieldDriverID:
 		return m.OldDriverID(ctx)
+	case asks.FieldDriverPhone:
+		return m.OldDriverPhone(ctx)
+	case asks.FieldDriverMail:
+		return m.OldDriverMail(ctx)
 	case asks.FieldVehicleID:
 		return m.OldVehicleID(ctx)
 	case asks.FieldVehicleType:
@@ -1429,6 +1622,8 @@ func (m *AsksMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldAvailableWeightKg(ctx)
 	case asks.FieldMinPrice:
 		return m.OldMinPrice(ctx)
+	case asks.FieldDesiredDeposit:
+		return m.OldDesiredDeposit(ctx)
 	case asks.FieldZoneID:
 		return m.OldZoneID(ctx)
 	case asks.FieldOriginLat:
@@ -1443,6 +1638,8 @@ func (m *AsksMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldRouteID(ctx)
 	case asks.FieldStatus:
 		return m.OldStatus(ctx)
+	case asks.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown Asks field %s", name)
 }
@@ -1501,6 +1698,20 @@ func (m *AsksMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDriverID(v)
 		return nil
+	case asks.FieldDriverPhone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDriverPhone(v)
+		return nil
+	case asks.FieldDriverMail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDriverMail(v)
+		return nil
 	case asks.FieldVehicleID:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -1549,6 +1760,13 @@ func (m *AsksMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMinPrice(v)
+		return nil
+	case asks.FieldDesiredDeposit:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDesiredDeposit(v)
 		return nil
 	case asks.FieldZoneID:
 		v, ok := value.(string)
@@ -1599,6 +1817,13 @@ func (m *AsksMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetStatus(v)
 		return nil
+	case asks.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Asks field %s", name)
 }
@@ -1624,6 +1849,9 @@ func (m *AsksMutation) AddedFields() []string {
 	}
 	if m.addmin_price != nil {
 		fields = append(fields, asks.FieldMinPrice)
+	}
+	if m.adddesired_deposit != nil {
+		fields = append(fields, asks.FieldDesiredDeposit)
 	}
 	if m.addorigin_lat != nil {
 		fields = append(fields, asks.FieldOriginLat)
@@ -1660,6 +1888,8 @@ func (m *AsksMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedAvailableWeightKg()
 	case asks.FieldMinPrice:
 		return m.AddedMinPrice()
+	case asks.FieldDesiredDeposit:
+		return m.AddedDesiredDeposit()
 	case asks.FieldOriginLat:
 		return m.AddedOriginLat()
 	case asks.FieldOriginLng:
@@ -1720,6 +1950,13 @@ func (m *AsksMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddMinPrice(v)
+		return nil
+	case asks.FieldDesiredDeposit:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDesiredDeposit(v)
 		return nil
 	case asks.FieldOriginLat:
 		v, ok := value.(float64)
@@ -1819,6 +2056,12 @@ func (m *AsksMutation) ResetField(name string) error {
 	case asks.FieldDriverID:
 		m.ResetDriverID()
 		return nil
+	case asks.FieldDriverPhone:
+		m.ResetDriverPhone()
+		return nil
+	case asks.FieldDriverMail:
+		m.ResetDriverMail()
+		return nil
 	case asks.FieldVehicleID:
 		m.ResetVehicleID()
 		return nil
@@ -1840,6 +2083,9 @@ func (m *AsksMutation) ResetField(name string) error {
 	case asks.FieldMinPrice:
 		m.ResetMinPrice()
 		return nil
+	case asks.FieldDesiredDeposit:
+		m.ResetDesiredDeposit()
+		return nil
 	case asks.FieldZoneID:
 		m.ResetZoneID()
 		return nil
@@ -1860,6 +2106,9 @@ func (m *AsksMutation) ResetField(name string) error {
 		return nil
 	case asks.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case asks.FieldExpiresAt:
+		m.ResetExpiresAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Asks field %s", name)
@@ -1961,13 +2210,24 @@ type BidsMutation struct {
 	updated_by               *uuid.UUID
 	is_deleted               *bool
 	deleted_at               *time.Time
-	user_id                  *uuid.UUID
+	shipper_id               *uuid.UUID
+	shipper_phone            *string
+	shipper_mail             *string
+	consignee_id             *uuid.UUID
+	consignee_phone          *string
+	consignee_mail           *string
 	volume_m3                *float64
 	addvolume_m3             *float64
 	weight_kg                *float64
 	addweight_kg             *float64
 	max_price                *float64
 	addmax_price             *float64
+	cargo_value              *float64
+	addcargo_value           *float64
+	required_deposit         *float64
+	addrequired_deposit      *float64
+	desired_deposit          *float64
+	adddesired_deposit       *float64
 	zone_id                  *string
 	origin_lat               *float64
 	addorigin_lat            *float64
@@ -1977,12 +2237,12 @@ type BidsMutation struct {
 	adddestination_lat       *float64
 	destination_lng          *float64
 	adddestination_lng       *float64
-	route_id                 *[]byte
 	status                   *int8
 	addstatus                *int8
+	expires_at               *time.Time
 	clearedFields            map[string]struct{}
-	matches                  map[int]struct{}
-	removedmatches           map[int]struct{}
+	matches                  map[uuid.UUID]struct{}
+	removedmatches           map[uuid.UUID]struct{}
 	clearedmatches           bool
 	bids_requirements        map[uuid.UUID]struct{}
 	removedbids_requirements map[uuid.UUID]struct{}
@@ -2325,40 +2585,220 @@ func (m *BidsMutation) ResetDeletedAt() {
 	delete(m.clearedFields, bids.FieldDeletedAt)
 }
 
-// SetUserID sets the "user_id" field.
-func (m *BidsMutation) SetUserID(u uuid.UUID) {
-	m.user_id = &u
+// SetShipperID sets the "shipper_id" field.
+func (m *BidsMutation) SetShipperID(u uuid.UUID) {
+	m.shipper_id = &u
 }
 
-// UserID returns the value of the "user_id" field in the mutation.
-func (m *BidsMutation) UserID() (r uuid.UUID, exists bool) {
-	v := m.user_id
+// ShipperID returns the value of the "shipper_id" field in the mutation.
+func (m *BidsMutation) ShipperID() (r uuid.UUID, exists bool) {
+	v := m.shipper_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldUserID returns the old "user_id" field's value of the Bids entity.
+// OldShipperID returns the old "shipper_id" field's value of the Bids entity.
 // If the Bids object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BidsMutation) OldUserID(ctx context.Context) (v uuid.UUID, err error) {
+func (m *BidsMutation) OldShipperID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+		return v, errors.New("OldShipperID is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUserID requires an ID field in the mutation")
+		return v, errors.New("OldShipperID requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+		return v, fmt.Errorf("querying old value for OldShipperID: %w", err)
 	}
-	return oldValue.UserID, nil
+	return oldValue.ShipperID, nil
 }
 
-// ResetUserID resets all changes to the "user_id" field.
-func (m *BidsMutation) ResetUserID() {
-	m.user_id = nil
+// ResetShipperID resets all changes to the "shipper_id" field.
+func (m *BidsMutation) ResetShipperID() {
+	m.shipper_id = nil
+}
+
+// SetShipperPhone sets the "shipper_phone" field.
+func (m *BidsMutation) SetShipperPhone(s string) {
+	m.shipper_phone = &s
+}
+
+// ShipperPhone returns the value of the "shipper_phone" field in the mutation.
+func (m *BidsMutation) ShipperPhone() (r string, exists bool) {
+	v := m.shipper_phone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldShipperPhone returns the old "shipper_phone" field's value of the Bids entity.
+// If the Bids object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BidsMutation) OldShipperPhone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldShipperPhone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldShipperPhone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldShipperPhone: %w", err)
+	}
+	return oldValue.ShipperPhone, nil
+}
+
+// ResetShipperPhone resets all changes to the "shipper_phone" field.
+func (m *BidsMutation) ResetShipperPhone() {
+	m.shipper_phone = nil
+}
+
+// SetShipperMail sets the "shipper_mail" field.
+func (m *BidsMutation) SetShipperMail(s string) {
+	m.shipper_mail = &s
+}
+
+// ShipperMail returns the value of the "shipper_mail" field in the mutation.
+func (m *BidsMutation) ShipperMail() (r string, exists bool) {
+	v := m.shipper_mail
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldShipperMail returns the old "shipper_mail" field's value of the Bids entity.
+// If the Bids object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BidsMutation) OldShipperMail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldShipperMail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldShipperMail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldShipperMail: %w", err)
+	}
+	return oldValue.ShipperMail, nil
+}
+
+// ResetShipperMail resets all changes to the "shipper_mail" field.
+func (m *BidsMutation) ResetShipperMail() {
+	m.shipper_mail = nil
+}
+
+// SetConsigneeID sets the "consignee_id" field.
+func (m *BidsMutation) SetConsigneeID(u uuid.UUID) {
+	m.consignee_id = &u
+}
+
+// ConsigneeID returns the value of the "consignee_id" field in the mutation.
+func (m *BidsMutation) ConsigneeID() (r uuid.UUID, exists bool) {
+	v := m.consignee_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConsigneeID returns the old "consignee_id" field's value of the Bids entity.
+// If the Bids object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BidsMutation) OldConsigneeID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConsigneeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConsigneeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConsigneeID: %w", err)
+	}
+	return oldValue.ConsigneeID, nil
+}
+
+// ResetConsigneeID resets all changes to the "consignee_id" field.
+func (m *BidsMutation) ResetConsigneeID() {
+	m.consignee_id = nil
+}
+
+// SetConsigneePhone sets the "consignee_phone" field.
+func (m *BidsMutation) SetConsigneePhone(s string) {
+	m.consignee_phone = &s
+}
+
+// ConsigneePhone returns the value of the "consignee_phone" field in the mutation.
+func (m *BidsMutation) ConsigneePhone() (r string, exists bool) {
+	v := m.consignee_phone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConsigneePhone returns the old "consignee_phone" field's value of the Bids entity.
+// If the Bids object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BidsMutation) OldConsigneePhone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConsigneePhone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConsigneePhone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConsigneePhone: %w", err)
+	}
+	return oldValue.ConsigneePhone, nil
+}
+
+// ResetConsigneePhone resets all changes to the "consignee_phone" field.
+func (m *BidsMutation) ResetConsigneePhone() {
+	m.consignee_phone = nil
+}
+
+// SetConsigneeMail sets the "consignee_mail" field.
+func (m *BidsMutation) SetConsigneeMail(s string) {
+	m.consignee_mail = &s
+}
+
+// ConsigneeMail returns the value of the "consignee_mail" field in the mutation.
+func (m *BidsMutation) ConsigneeMail() (r string, exists bool) {
+	v := m.consignee_mail
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConsigneeMail returns the old "consignee_mail" field's value of the Bids entity.
+// If the Bids object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BidsMutation) OldConsigneeMail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConsigneeMail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConsigneeMail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConsigneeMail: %w", err)
+	}
+	return oldValue.ConsigneeMail, nil
+}
+
+// ResetConsigneeMail resets all changes to the "consignee_mail" field.
+func (m *BidsMutation) ResetConsigneeMail() {
+	m.consignee_mail = nil
 }
 
 // SetVolumeM3 sets the "volume_m3" field.
@@ -2541,6 +2981,174 @@ func (m *BidsMutation) ResetMaxPrice() {
 	m.max_price = nil
 	m.addmax_price = nil
 	delete(m.clearedFields, bids.FieldMaxPrice)
+}
+
+// SetCargoValue sets the "cargo_value" field.
+func (m *BidsMutation) SetCargoValue(f float64) {
+	m.cargo_value = &f
+	m.addcargo_value = nil
+}
+
+// CargoValue returns the value of the "cargo_value" field in the mutation.
+func (m *BidsMutation) CargoValue() (r float64, exists bool) {
+	v := m.cargo_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCargoValue returns the old "cargo_value" field's value of the Bids entity.
+// If the Bids object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BidsMutation) OldCargoValue(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCargoValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCargoValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCargoValue: %w", err)
+	}
+	return oldValue.CargoValue, nil
+}
+
+// AddCargoValue adds f to the "cargo_value" field.
+func (m *BidsMutation) AddCargoValue(f float64) {
+	if m.addcargo_value != nil {
+		*m.addcargo_value += f
+	} else {
+		m.addcargo_value = &f
+	}
+}
+
+// AddedCargoValue returns the value that was added to the "cargo_value" field in this mutation.
+func (m *BidsMutation) AddedCargoValue() (r float64, exists bool) {
+	v := m.addcargo_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCargoValue resets all changes to the "cargo_value" field.
+func (m *BidsMutation) ResetCargoValue() {
+	m.cargo_value = nil
+	m.addcargo_value = nil
+}
+
+// SetRequiredDeposit sets the "required_deposit" field.
+func (m *BidsMutation) SetRequiredDeposit(f float64) {
+	m.required_deposit = &f
+	m.addrequired_deposit = nil
+}
+
+// RequiredDeposit returns the value of the "required_deposit" field in the mutation.
+func (m *BidsMutation) RequiredDeposit() (r float64, exists bool) {
+	v := m.required_deposit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequiredDeposit returns the old "required_deposit" field's value of the Bids entity.
+// If the Bids object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BidsMutation) OldRequiredDeposit(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequiredDeposit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequiredDeposit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequiredDeposit: %w", err)
+	}
+	return oldValue.RequiredDeposit, nil
+}
+
+// AddRequiredDeposit adds f to the "required_deposit" field.
+func (m *BidsMutation) AddRequiredDeposit(f float64) {
+	if m.addrequired_deposit != nil {
+		*m.addrequired_deposit += f
+	} else {
+		m.addrequired_deposit = &f
+	}
+}
+
+// AddedRequiredDeposit returns the value that was added to the "required_deposit" field in this mutation.
+func (m *BidsMutation) AddedRequiredDeposit() (r float64, exists bool) {
+	v := m.addrequired_deposit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRequiredDeposit resets all changes to the "required_deposit" field.
+func (m *BidsMutation) ResetRequiredDeposit() {
+	m.required_deposit = nil
+	m.addrequired_deposit = nil
+}
+
+// SetDesiredDeposit sets the "desired_deposit" field.
+func (m *BidsMutation) SetDesiredDeposit(f float64) {
+	m.desired_deposit = &f
+	m.adddesired_deposit = nil
+}
+
+// DesiredDeposit returns the value of the "desired_deposit" field in the mutation.
+func (m *BidsMutation) DesiredDeposit() (r float64, exists bool) {
+	v := m.desired_deposit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDesiredDeposit returns the old "desired_deposit" field's value of the Bids entity.
+// If the Bids object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BidsMutation) OldDesiredDeposit(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDesiredDeposit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDesiredDeposit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDesiredDeposit: %w", err)
+	}
+	return oldValue.DesiredDeposit, nil
+}
+
+// AddDesiredDeposit adds f to the "desired_deposit" field.
+func (m *BidsMutation) AddDesiredDeposit(f float64) {
+	if m.adddesired_deposit != nil {
+		*m.adddesired_deposit += f
+	} else {
+		m.adddesired_deposit = &f
+	}
+}
+
+// AddedDesiredDeposit returns the value that was added to the "desired_deposit" field in this mutation.
+func (m *BidsMutation) AddedDesiredDeposit() (r float64, exists bool) {
+	v := m.adddesired_deposit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDesiredDeposit resets all changes to the "desired_deposit" field.
+func (m *BidsMutation) ResetDesiredDeposit() {
+	m.desired_deposit = nil
+	m.adddesired_deposit = nil
 }
 
 // SetZoneID sets the "zone_id" field.
@@ -2803,42 +3411,6 @@ func (m *BidsMutation) ResetDestinationLng() {
 	m.adddestination_lng = nil
 }
 
-// SetRouteID sets the "route_id" field.
-func (m *BidsMutation) SetRouteID(b []byte) {
-	m.route_id = &b
-}
-
-// RouteID returns the value of the "route_id" field in the mutation.
-func (m *BidsMutation) RouteID() (r []byte, exists bool) {
-	v := m.route_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldRouteID returns the old "route_id" field's value of the Bids entity.
-// If the Bids object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BidsMutation) OldRouteID(ctx context.Context) (v []byte, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRouteID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRouteID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRouteID: %w", err)
-	}
-	return oldValue.RouteID, nil
-}
-
-// ResetRouteID resets all changes to the "route_id" field.
-func (m *BidsMutation) ResetRouteID() {
-	m.route_id = nil
-}
-
 // SetStatus sets the "status" field.
 func (m *BidsMutation) SetStatus(i int8) {
 	m.status = &i
@@ -2895,10 +3467,46 @@ func (m *BidsMutation) ResetStatus() {
 	m.addstatus = nil
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (m *BidsMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *BidsMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the Bids entity.
+// If the Bids object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BidsMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *BidsMutation) ResetExpiresAt() {
+	m.expires_at = nil
+}
+
 // AddMatchIDs adds the "matches" edge to the Match entity by ids.
-func (m *BidsMutation) AddMatchIDs(ids ...int) {
+func (m *BidsMutation) AddMatchIDs(ids ...uuid.UUID) {
 	if m.matches == nil {
-		m.matches = make(map[int]struct{})
+		m.matches = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		m.matches[ids[i]] = struct{}{}
@@ -2916,9 +3524,9 @@ func (m *BidsMutation) MatchesCleared() bool {
 }
 
 // RemoveMatchIDs removes the "matches" edge to the Match entity by IDs.
-func (m *BidsMutation) RemoveMatchIDs(ids ...int) {
+func (m *BidsMutation) RemoveMatchIDs(ids ...uuid.UUID) {
 	if m.removedmatches == nil {
-		m.removedmatches = make(map[int]struct{})
+		m.removedmatches = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		delete(m.matches, ids[i])
@@ -2927,7 +3535,7 @@ func (m *BidsMutation) RemoveMatchIDs(ids ...int) {
 }
 
 // RemovedMatches returns the removed IDs of the "matches" edge to the Match entity.
-func (m *BidsMutation) RemovedMatchesIDs() (ids []int) {
+func (m *BidsMutation) RemovedMatchesIDs() (ids []uuid.UUID) {
 	for id := range m.removedmatches {
 		ids = append(ids, id)
 	}
@@ -2935,7 +3543,7 @@ func (m *BidsMutation) RemovedMatchesIDs() (ids []int) {
 }
 
 // MatchesIDs returns the "matches" edge IDs in the mutation.
-func (m *BidsMutation) MatchesIDs() (ids []int) {
+func (m *BidsMutation) MatchesIDs() (ids []uuid.UUID) {
 	for id := range m.matches {
 		ids = append(ids, id)
 	}
@@ -3037,7 +3645,7 @@ func (m *BidsMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BidsMutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 25)
 	if m.created_at != nil {
 		fields = append(fields, bids.FieldCreatedAt)
 	}
@@ -3056,8 +3664,23 @@ func (m *BidsMutation) Fields() []string {
 	if m.deleted_at != nil {
 		fields = append(fields, bids.FieldDeletedAt)
 	}
-	if m.user_id != nil {
-		fields = append(fields, bids.FieldUserID)
+	if m.shipper_id != nil {
+		fields = append(fields, bids.FieldShipperID)
+	}
+	if m.shipper_phone != nil {
+		fields = append(fields, bids.FieldShipperPhone)
+	}
+	if m.shipper_mail != nil {
+		fields = append(fields, bids.FieldShipperMail)
+	}
+	if m.consignee_id != nil {
+		fields = append(fields, bids.FieldConsigneeID)
+	}
+	if m.consignee_phone != nil {
+		fields = append(fields, bids.FieldConsigneePhone)
+	}
+	if m.consignee_mail != nil {
+		fields = append(fields, bids.FieldConsigneeMail)
 	}
 	if m.volume_m3 != nil {
 		fields = append(fields, bids.FieldVolumeM3)
@@ -3067,6 +3690,15 @@ func (m *BidsMutation) Fields() []string {
 	}
 	if m.max_price != nil {
 		fields = append(fields, bids.FieldMaxPrice)
+	}
+	if m.cargo_value != nil {
+		fields = append(fields, bids.FieldCargoValue)
+	}
+	if m.required_deposit != nil {
+		fields = append(fields, bids.FieldRequiredDeposit)
+	}
+	if m.desired_deposit != nil {
+		fields = append(fields, bids.FieldDesiredDeposit)
 	}
 	if m.zone_id != nil {
 		fields = append(fields, bids.FieldZoneID)
@@ -3083,11 +3715,11 @@ func (m *BidsMutation) Fields() []string {
 	if m.destination_lng != nil {
 		fields = append(fields, bids.FieldDestinationLng)
 	}
-	if m.route_id != nil {
-		fields = append(fields, bids.FieldRouteID)
-	}
 	if m.status != nil {
 		fields = append(fields, bids.FieldStatus)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, bids.FieldExpiresAt)
 	}
 	return fields
 }
@@ -3109,14 +3741,30 @@ func (m *BidsMutation) Field(name string) (ent.Value, bool) {
 		return m.IsDeleted()
 	case bids.FieldDeletedAt:
 		return m.DeletedAt()
-	case bids.FieldUserID:
-		return m.UserID()
+	case bids.FieldShipperID:
+		return m.ShipperID()
+	case bids.FieldShipperPhone:
+		return m.ShipperPhone()
+	case bids.FieldShipperMail:
+		return m.ShipperMail()
+	case bids.FieldConsigneeID:
+		return m.ConsigneeID()
+	case bids.FieldConsigneePhone:
+		return m.ConsigneePhone()
+	case bids.FieldConsigneeMail:
+		return m.ConsigneeMail()
 	case bids.FieldVolumeM3:
 		return m.VolumeM3()
 	case bids.FieldWeightKg:
 		return m.WeightKg()
 	case bids.FieldMaxPrice:
 		return m.MaxPrice()
+	case bids.FieldCargoValue:
+		return m.CargoValue()
+	case bids.FieldRequiredDeposit:
+		return m.RequiredDeposit()
+	case bids.FieldDesiredDeposit:
+		return m.DesiredDeposit()
 	case bids.FieldZoneID:
 		return m.ZoneID()
 	case bids.FieldOriginLat:
@@ -3127,10 +3775,10 @@ func (m *BidsMutation) Field(name string) (ent.Value, bool) {
 		return m.DestinationLat()
 	case bids.FieldDestinationLng:
 		return m.DestinationLng()
-	case bids.FieldRouteID:
-		return m.RouteID()
 	case bids.FieldStatus:
 		return m.Status()
+	case bids.FieldExpiresAt:
+		return m.ExpiresAt()
 	}
 	return nil, false
 }
@@ -3152,14 +3800,30 @@ func (m *BidsMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldIsDeleted(ctx)
 	case bids.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
-	case bids.FieldUserID:
-		return m.OldUserID(ctx)
+	case bids.FieldShipperID:
+		return m.OldShipperID(ctx)
+	case bids.FieldShipperPhone:
+		return m.OldShipperPhone(ctx)
+	case bids.FieldShipperMail:
+		return m.OldShipperMail(ctx)
+	case bids.FieldConsigneeID:
+		return m.OldConsigneeID(ctx)
+	case bids.FieldConsigneePhone:
+		return m.OldConsigneePhone(ctx)
+	case bids.FieldConsigneeMail:
+		return m.OldConsigneeMail(ctx)
 	case bids.FieldVolumeM3:
 		return m.OldVolumeM3(ctx)
 	case bids.FieldWeightKg:
 		return m.OldWeightKg(ctx)
 	case bids.FieldMaxPrice:
 		return m.OldMaxPrice(ctx)
+	case bids.FieldCargoValue:
+		return m.OldCargoValue(ctx)
+	case bids.FieldRequiredDeposit:
+		return m.OldRequiredDeposit(ctx)
+	case bids.FieldDesiredDeposit:
+		return m.OldDesiredDeposit(ctx)
 	case bids.FieldZoneID:
 		return m.OldZoneID(ctx)
 	case bids.FieldOriginLat:
@@ -3170,10 +3834,10 @@ func (m *BidsMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDestinationLat(ctx)
 	case bids.FieldDestinationLng:
 		return m.OldDestinationLng(ctx)
-	case bids.FieldRouteID:
-		return m.OldRouteID(ctx)
 	case bids.FieldStatus:
 		return m.OldStatus(ctx)
+	case bids.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown Bids field %s", name)
 }
@@ -3225,12 +3889,47 @@ func (m *BidsMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDeletedAt(v)
 		return nil
-	case bids.FieldUserID:
+	case bids.FieldShipperID:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetUserID(v)
+		m.SetShipperID(v)
+		return nil
+	case bids.FieldShipperPhone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetShipperPhone(v)
+		return nil
+	case bids.FieldShipperMail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetShipperMail(v)
+		return nil
+	case bids.FieldConsigneeID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConsigneeID(v)
+		return nil
+	case bids.FieldConsigneePhone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConsigneePhone(v)
+		return nil
+	case bids.FieldConsigneeMail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConsigneeMail(v)
 		return nil
 	case bids.FieldVolumeM3:
 		v, ok := value.(float64)
@@ -3252,6 +3951,27 @@ func (m *BidsMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMaxPrice(v)
+		return nil
+	case bids.FieldCargoValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCargoValue(v)
+		return nil
+	case bids.FieldRequiredDeposit:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequiredDeposit(v)
+		return nil
+	case bids.FieldDesiredDeposit:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDesiredDeposit(v)
 		return nil
 	case bids.FieldZoneID:
 		v, ok := value.(string)
@@ -3288,19 +4008,19 @@ func (m *BidsMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDestinationLng(v)
 		return nil
-	case bids.FieldRouteID:
-		v, ok := value.([]byte)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRouteID(v)
-		return nil
 	case bids.FieldStatus:
 		v, ok := value.(int8)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case bids.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Bids field %s", name)
@@ -3318,6 +4038,15 @@ func (m *BidsMutation) AddedFields() []string {
 	}
 	if m.addmax_price != nil {
 		fields = append(fields, bids.FieldMaxPrice)
+	}
+	if m.addcargo_value != nil {
+		fields = append(fields, bids.FieldCargoValue)
+	}
+	if m.addrequired_deposit != nil {
+		fields = append(fields, bids.FieldRequiredDeposit)
+	}
+	if m.adddesired_deposit != nil {
+		fields = append(fields, bids.FieldDesiredDeposit)
 	}
 	if m.addorigin_lat != nil {
 		fields = append(fields, bids.FieldOriginLat)
@@ -3348,6 +4077,12 @@ func (m *BidsMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedWeightKg()
 	case bids.FieldMaxPrice:
 		return m.AddedMaxPrice()
+	case bids.FieldCargoValue:
+		return m.AddedCargoValue()
+	case bids.FieldRequiredDeposit:
+		return m.AddedRequiredDeposit()
+	case bids.FieldDesiredDeposit:
+		return m.AddedDesiredDeposit()
 	case bids.FieldOriginLat:
 		return m.AddedOriginLat()
 	case bids.FieldOriginLng:
@@ -3387,6 +4122,27 @@ func (m *BidsMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddMaxPrice(v)
+		return nil
+	case bids.FieldCargoValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCargoValue(v)
+		return nil
+	case bids.FieldRequiredDeposit:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRequiredDeposit(v)
+		return nil
+	case bids.FieldDesiredDeposit:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDesiredDeposit(v)
 		return nil
 	case bids.FieldOriginLat:
 		v, ok := value.(float64)
@@ -3483,8 +4239,23 @@ func (m *BidsMutation) ResetField(name string) error {
 	case bids.FieldDeletedAt:
 		m.ResetDeletedAt()
 		return nil
-	case bids.FieldUserID:
-		m.ResetUserID()
+	case bids.FieldShipperID:
+		m.ResetShipperID()
+		return nil
+	case bids.FieldShipperPhone:
+		m.ResetShipperPhone()
+		return nil
+	case bids.FieldShipperMail:
+		m.ResetShipperMail()
+		return nil
+	case bids.FieldConsigneeID:
+		m.ResetConsigneeID()
+		return nil
+	case bids.FieldConsigneePhone:
+		m.ResetConsigneePhone()
+		return nil
+	case bids.FieldConsigneeMail:
+		m.ResetConsigneeMail()
 		return nil
 	case bids.FieldVolumeM3:
 		m.ResetVolumeM3()
@@ -3494,6 +4265,15 @@ func (m *BidsMutation) ResetField(name string) error {
 		return nil
 	case bids.FieldMaxPrice:
 		m.ResetMaxPrice()
+		return nil
+	case bids.FieldCargoValue:
+		m.ResetCargoValue()
+		return nil
+	case bids.FieldRequiredDeposit:
+		m.ResetRequiredDeposit()
+		return nil
+	case bids.FieldDesiredDeposit:
+		m.ResetDesiredDeposit()
 		return nil
 	case bids.FieldZoneID:
 		m.ResetZoneID()
@@ -3510,11 +4290,11 @@ func (m *BidsMutation) ResetField(name string) error {
 	case bids.FieldDestinationLng:
 		m.ResetDestinationLng()
 		return nil
-	case bids.FieldRouteID:
-		m.ResetRouteID()
-		return nil
 	case bids.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case bids.FieldExpiresAt:
+		m.ResetExpiresAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Bids field %s", name)
@@ -4465,27 +5245,35 @@ func (m *BidsRequirementsMutation) ResetEdge(name string) error {
 // MatchMutation represents an operation that mutates the Match nodes in the graph.
 type MatchMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *int
-	created_at      *time.Time
-	created_by      *uuid.UUID
-	updated_at      *time.Time
-	updated_by      *uuid.UUID
-	is_deleted      *bool
-	deleted_at      *time.Time
-	agreed_price    *float64
-	addagreed_price *float64
-	status          *int
-	addstatus       *int
-	clearedFields   map[string]struct{}
-	asks            *uuid.UUID
-	clearedasks     bool
-	bids            *uuid.UUID
-	clearedbids     bool
-	done            bool
-	oldValue        func(context.Context) (*Match, error)
-	predicates      []predicate.Match
+	op                   Op
+	typ                  string
+	id                   *uuid.UUID
+	created_at           *time.Time
+	created_by           *uuid.UUID
+	updated_at           *time.Time
+	updated_by           *uuid.UUID
+	is_deleted           *bool
+	deleted_at           *time.Time
+	agreed_price         *float64
+	addagreed_price      *float64
+	status               *int
+	addstatus            *int
+	consensus_price      *float64
+	addconsensus_price   *float64
+	consensus_deposit    *float64
+	addconsensus_deposit *float64
+	shipper_signature    *string
+	driver_signature     *string
+	system_signature     *string
+	agreed_at            *time.Time
+	clearedFields        map[string]struct{}
+	asks                 *uuid.UUID
+	clearedasks          bool
+	bids                 *uuid.UUID
+	clearedbids          bool
+	done                 bool
+	oldValue             func(context.Context) (*Match, error)
+	predicates           []predicate.Match
 }
 
 var _ ent.Mutation = (*MatchMutation)(nil)
@@ -4508,7 +5296,7 @@ func newMatchMutation(c config, op Op, opts ...matchOption) *MatchMutation {
 }
 
 // withMatchID sets the ID field of the mutation.
-func withMatchID(id int) matchOption {
+func withMatchID(id uuid.UUID) matchOption {
 	return func(m *MatchMutation) {
 		var (
 			err   error
@@ -4558,9 +5346,15 @@ func (m MatchMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Match entities.
+func (m *MatchMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *MatchMutation) ID() (id int, exists bool) {
+func (m *MatchMutation) ID() (id uuid.UUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -4571,12 +5365,12 @@ func (m *MatchMutation) ID() (id int, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *MatchMutation) IDs(ctx context.Context) ([]int, error) {
+func (m *MatchMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []int{id}, nil
+			return []uuid.UUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -4999,6 +5793,262 @@ func (m *MatchMutation) ResetStatus() {
 	m.addstatus = nil
 }
 
+// SetConsensusPrice sets the "consensus_price" field.
+func (m *MatchMutation) SetConsensusPrice(f float64) {
+	m.consensus_price = &f
+	m.addconsensus_price = nil
+}
+
+// ConsensusPrice returns the value of the "consensus_price" field in the mutation.
+func (m *MatchMutation) ConsensusPrice() (r float64, exists bool) {
+	v := m.consensus_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConsensusPrice returns the old "consensus_price" field's value of the Match entity.
+// If the Match object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MatchMutation) OldConsensusPrice(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConsensusPrice is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConsensusPrice requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConsensusPrice: %w", err)
+	}
+	return oldValue.ConsensusPrice, nil
+}
+
+// AddConsensusPrice adds f to the "consensus_price" field.
+func (m *MatchMutation) AddConsensusPrice(f float64) {
+	if m.addconsensus_price != nil {
+		*m.addconsensus_price += f
+	} else {
+		m.addconsensus_price = &f
+	}
+}
+
+// AddedConsensusPrice returns the value that was added to the "consensus_price" field in this mutation.
+func (m *MatchMutation) AddedConsensusPrice() (r float64, exists bool) {
+	v := m.addconsensus_price
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetConsensusPrice resets all changes to the "consensus_price" field.
+func (m *MatchMutation) ResetConsensusPrice() {
+	m.consensus_price = nil
+	m.addconsensus_price = nil
+}
+
+// SetConsensusDeposit sets the "consensus_deposit" field.
+func (m *MatchMutation) SetConsensusDeposit(f float64) {
+	m.consensus_deposit = &f
+	m.addconsensus_deposit = nil
+}
+
+// ConsensusDeposit returns the value of the "consensus_deposit" field in the mutation.
+func (m *MatchMutation) ConsensusDeposit() (r float64, exists bool) {
+	v := m.consensus_deposit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConsensusDeposit returns the old "consensus_deposit" field's value of the Match entity.
+// If the Match object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MatchMutation) OldConsensusDeposit(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConsensusDeposit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConsensusDeposit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConsensusDeposit: %w", err)
+	}
+	return oldValue.ConsensusDeposit, nil
+}
+
+// AddConsensusDeposit adds f to the "consensus_deposit" field.
+func (m *MatchMutation) AddConsensusDeposit(f float64) {
+	if m.addconsensus_deposit != nil {
+		*m.addconsensus_deposit += f
+	} else {
+		m.addconsensus_deposit = &f
+	}
+}
+
+// AddedConsensusDeposit returns the value that was added to the "consensus_deposit" field in this mutation.
+func (m *MatchMutation) AddedConsensusDeposit() (r float64, exists bool) {
+	v := m.addconsensus_deposit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetConsensusDeposit resets all changes to the "consensus_deposit" field.
+func (m *MatchMutation) ResetConsensusDeposit() {
+	m.consensus_deposit = nil
+	m.addconsensus_deposit = nil
+}
+
+// SetShipperSignature sets the "shipper_signature" field.
+func (m *MatchMutation) SetShipperSignature(s string) {
+	m.shipper_signature = &s
+}
+
+// ShipperSignature returns the value of the "shipper_signature" field in the mutation.
+func (m *MatchMutation) ShipperSignature() (r string, exists bool) {
+	v := m.shipper_signature
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldShipperSignature returns the old "shipper_signature" field's value of the Match entity.
+// If the Match object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MatchMutation) OldShipperSignature(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldShipperSignature is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldShipperSignature requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldShipperSignature: %w", err)
+	}
+	return oldValue.ShipperSignature, nil
+}
+
+// ResetShipperSignature resets all changes to the "shipper_signature" field.
+func (m *MatchMutation) ResetShipperSignature() {
+	m.shipper_signature = nil
+}
+
+// SetDriverSignature sets the "driver_signature" field.
+func (m *MatchMutation) SetDriverSignature(s string) {
+	m.driver_signature = &s
+}
+
+// DriverSignature returns the value of the "driver_signature" field in the mutation.
+func (m *MatchMutation) DriverSignature() (r string, exists bool) {
+	v := m.driver_signature
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDriverSignature returns the old "driver_signature" field's value of the Match entity.
+// If the Match object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MatchMutation) OldDriverSignature(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDriverSignature is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDriverSignature requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDriverSignature: %w", err)
+	}
+	return oldValue.DriverSignature, nil
+}
+
+// ResetDriverSignature resets all changes to the "driver_signature" field.
+func (m *MatchMutation) ResetDriverSignature() {
+	m.driver_signature = nil
+}
+
+// SetSystemSignature sets the "system_signature" field.
+func (m *MatchMutation) SetSystemSignature(s string) {
+	m.system_signature = &s
+}
+
+// SystemSignature returns the value of the "system_signature" field in the mutation.
+func (m *MatchMutation) SystemSignature() (r string, exists bool) {
+	v := m.system_signature
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSystemSignature returns the old "system_signature" field's value of the Match entity.
+// If the Match object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MatchMutation) OldSystemSignature(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSystemSignature is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSystemSignature requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSystemSignature: %w", err)
+	}
+	return oldValue.SystemSignature, nil
+}
+
+// ResetSystemSignature resets all changes to the "system_signature" field.
+func (m *MatchMutation) ResetSystemSignature() {
+	m.system_signature = nil
+}
+
+// SetAgreedAt sets the "agreed_at" field.
+func (m *MatchMutation) SetAgreedAt(t time.Time) {
+	m.agreed_at = &t
+}
+
+// AgreedAt returns the value of the "agreed_at" field in the mutation.
+func (m *MatchMutation) AgreedAt() (r time.Time, exists bool) {
+	v := m.agreed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAgreedAt returns the old "agreed_at" field's value of the Match entity.
+// If the Match object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MatchMutation) OldAgreedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAgreedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAgreedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAgreedAt: %w", err)
+	}
+	return oldValue.AgreedAt, nil
+}
+
+// ResetAgreedAt resets all changes to the "agreed_at" field.
+func (m *MatchMutation) ResetAgreedAt() {
+	m.agreed_at = nil
+}
+
 // SetAsksID sets the "asks" edge to the Asks entity by id.
 func (m *MatchMutation) SetAsksID(id uuid.UUID) {
 	m.asks = &id
@@ -5113,7 +6163,7 @@ func (m *MatchMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MatchMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 16)
 	if m.created_at != nil {
 		fields = append(fields, match.FieldCreatedAt)
 	}
@@ -5144,6 +6194,24 @@ func (m *MatchMutation) Fields() []string {
 	if m.status != nil {
 		fields = append(fields, match.FieldStatus)
 	}
+	if m.consensus_price != nil {
+		fields = append(fields, match.FieldConsensusPrice)
+	}
+	if m.consensus_deposit != nil {
+		fields = append(fields, match.FieldConsensusDeposit)
+	}
+	if m.shipper_signature != nil {
+		fields = append(fields, match.FieldShipperSignature)
+	}
+	if m.driver_signature != nil {
+		fields = append(fields, match.FieldDriverSignature)
+	}
+	if m.system_signature != nil {
+		fields = append(fields, match.FieldSystemSignature)
+	}
+	if m.agreed_at != nil {
+		fields = append(fields, match.FieldAgreedAt)
+	}
 	return fields
 }
 
@@ -5172,6 +6240,18 @@ func (m *MatchMutation) Field(name string) (ent.Value, bool) {
 		return m.AgreedPrice()
 	case match.FieldStatus:
 		return m.Status()
+	case match.FieldConsensusPrice:
+		return m.ConsensusPrice()
+	case match.FieldConsensusDeposit:
+		return m.ConsensusDeposit()
+	case match.FieldShipperSignature:
+		return m.ShipperSignature()
+	case match.FieldDriverSignature:
+		return m.DriverSignature()
+	case match.FieldSystemSignature:
+		return m.SystemSignature()
+	case match.FieldAgreedAt:
+		return m.AgreedAt()
 	}
 	return nil, false
 }
@@ -5201,6 +6281,18 @@ func (m *MatchMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldAgreedPrice(ctx)
 	case match.FieldStatus:
 		return m.OldStatus(ctx)
+	case match.FieldConsensusPrice:
+		return m.OldConsensusPrice(ctx)
+	case match.FieldConsensusDeposit:
+		return m.OldConsensusDeposit(ctx)
+	case match.FieldShipperSignature:
+		return m.OldShipperSignature(ctx)
+	case match.FieldDriverSignature:
+		return m.OldDriverSignature(ctx)
+	case match.FieldSystemSignature:
+		return m.OldSystemSignature(ctx)
+	case match.FieldAgreedAt:
+		return m.OldAgreedAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown Match field %s", name)
 }
@@ -5280,6 +6372,48 @@ func (m *MatchMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetStatus(v)
 		return nil
+	case match.FieldConsensusPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConsensusPrice(v)
+		return nil
+	case match.FieldConsensusDeposit:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConsensusDeposit(v)
+		return nil
+	case match.FieldShipperSignature:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetShipperSignature(v)
+		return nil
+	case match.FieldDriverSignature:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDriverSignature(v)
+		return nil
+	case match.FieldSystemSignature:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSystemSignature(v)
+		return nil
+	case match.FieldAgreedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAgreedAt(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Match field %s", name)
 }
@@ -5294,6 +6428,12 @@ func (m *MatchMutation) AddedFields() []string {
 	if m.addstatus != nil {
 		fields = append(fields, match.FieldStatus)
 	}
+	if m.addconsensus_price != nil {
+		fields = append(fields, match.FieldConsensusPrice)
+	}
+	if m.addconsensus_deposit != nil {
+		fields = append(fields, match.FieldConsensusDeposit)
+	}
 	return fields
 }
 
@@ -5306,6 +6446,10 @@ func (m *MatchMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedAgreedPrice()
 	case match.FieldStatus:
 		return m.AddedStatus()
+	case match.FieldConsensusPrice:
+		return m.AddedConsensusPrice()
+	case match.FieldConsensusDeposit:
+		return m.AddedConsensusDeposit()
 	}
 	return nil, false
 }
@@ -5328,6 +6472,20 @@ func (m *MatchMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddStatus(v)
+		return nil
+	case match.FieldConsensusPrice:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddConsensusPrice(v)
+		return nil
+	case match.FieldConsensusDeposit:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddConsensusDeposit(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Match numeric field %s", name)
@@ -5394,6 +6552,24 @@ func (m *MatchMutation) ResetField(name string) error {
 		return nil
 	case match.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case match.FieldConsensusPrice:
+		m.ResetConsensusPrice()
+		return nil
+	case match.FieldConsensusDeposit:
+		m.ResetConsensusDeposit()
+		return nil
+	case match.FieldShipperSignature:
+		m.ResetShipperSignature()
+		return nil
+	case match.FieldDriverSignature:
+		m.ResetDriverSignature()
+		return nil
+	case match.FieldSystemSignature:
+		m.ResetSystemSignature()
+		return nil
+	case match.FieldAgreedAt:
+		m.ResetAgreedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Match field %s", name)

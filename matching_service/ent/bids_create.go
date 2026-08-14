@@ -107,9 +107,39 @@ func (_c *BidsCreate) SetNillableDeletedAt(v *time.Time) *BidsCreate {
 	return _c
 }
 
-// SetUserID sets the "user_id" field.
-func (_c *BidsCreate) SetUserID(v uuid.UUID) *BidsCreate {
-	_c.mutation.SetUserID(v)
+// SetShipperID sets the "shipper_id" field.
+func (_c *BidsCreate) SetShipperID(v uuid.UUID) *BidsCreate {
+	_c.mutation.SetShipperID(v)
+	return _c
+}
+
+// SetShipperPhone sets the "shipper_phone" field.
+func (_c *BidsCreate) SetShipperPhone(v string) *BidsCreate {
+	_c.mutation.SetShipperPhone(v)
+	return _c
+}
+
+// SetShipperMail sets the "shipper_mail" field.
+func (_c *BidsCreate) SetShipperMail(v string) *BidsCreate {
+	_c.mutation.SetShipperMail(v)
+	return _c
+}
+
+// SetConsigneeID sets the "consignee_id" field.
+func (_c *BidsCreate) SetConsigneeID(v uuid.UUID) *BidsCreate {
+	_c.mutation.SetConsigneeID(v)
+	return _c
+}
+
+// SetConsigneePhone sets the "consignee_phone" field.
+func (_c *BidsCreate) SetConsigneePhone(v string) *BidsCreate {
+	_c.mutation.SetConsigneePhone(v)
+	return _c
+}
+
+// SetConsigneeMail sets the "consignee_mail" field.
+func (_c *BidsCreate) SetConsigneeMail(v string) *BidsCreate {
+	_c.mutation.SetConsigneeMail(v)
 	return _c
 }
 
@@ -136,6 +166,24 @@ func (_c *BidsCreate) SetNillableMaxPrice(v *float64) *BidsCreate {
 	if v != nil {
 		_c.SetMaxPrice(*v)
 	}
+	return _c
+}
+
+// SetCargoValue sets the "cargo_value" field.
+func (_c *BidsCreate) SetCargoValue(v float64) *BidsCreate {
+	_c.mutation.SetCargoValue(v)
+	return _c
+}
+
+// SetRequiredDeposit sets the "required_deposit" field.
+func (_c *BidsCreate) SetRequiredDeposit(v float64) *BidsCreate {
+	_c.mutation.SetRequiredDeposit(v)
+	return _c
+}
+
+// SetDesiredDeposit sets the "desired_deposit" field.
+func (_c *BidsCreate) SetDesiredDeposit(v float64) *BidsCreate {
+	_c.mutation.SetDesiredDeposit(v)
 	return _c
 }
 
@@ -169,23 +217,15 @@ func (_c *BidsCreate) SetDestinationLng(v float64) *BidsCreate {
 	return _c
 }
 
-// SetRouteID sets the "route_id" field.
-func (_c *BidsCreate) SetRouteID(v []byte) *BidsCreate {
-	_c.mutation.SetRouteID(v)
-	return _c
-}
-
 // SetStatus sets the "status" field.
 func (_c *BidsCreate) SetStatus(v int8) *BidsCreate {
 	_c.mutation.SetStatus(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *BidsCreate) SetNillableStatus(v *int8) *BidsCreate {
-	if v != nil {
-		_c.SetStatus(*v)
-	}
+// SetExpiresAt sets the "expires_at" field.
+func (_c *BidsCreate) SetExpiresAt(v time.Time) *BidsCreate {
+	_c.mutation.SetExpiresAt(v)
 	return _c
 }
 
@@ -204,14 +244,14 @@ func (_c *BidsCreate) SetNillableID(v *uuid.UUID) *BidsCreate {
 }
 
 // AddMatchIDs adds the "matches" edge to the Match entity by IDs.
-func (_c *BidsCreate) AddMatchIDs(ids ...int) *BidsCreate {
+func (_c *BidsCreate) AddMatchIDs(ids ...uuid.UUID) *BidsCreate {
 	_c.mutation.AddMatchIDs(ids...)
 	return _c
 }
 
 // AddMatches adds the "matches" edges to the Match entity.
 func (_c *BidsCreate) AddMatches(v ...*Match) *BidsCreate {
-	ids := make([]int, len(v))
+	ids := make([]uuid.UUID, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
@@ -302,10 +342,6 @@ func (_c *BidsCreate) defaults() error {
 		v := bids.DefaultIsDeleted
 		_c.mutation.SetIsDeleted(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := bids.DefaultStatus
-		_c.mutation.SetStatus(v)
-	}
 	if _, ok := _c.mutation.ID(); !ok {
 		if bids.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized bids.DefaultID (forgotten import ent/runtime?)")
@@ -333,14 +369,38 @@ func (_c *BidsCreate) check() error {
 	if _, ok := _c.mutation.IsDeleted(); !ok {
 		return &ValidationError{Name: "is_deleted", err: errors.New(`ent: missing required field "Bids.is_deleted"`)}
 	}
-	if _, ok := _c.mutation.UserID(); !ok {
-		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "Bids.user_id"`)}
+	if _, ok := _c.mutation.ShipperID(); !ok {
+		return &ValidationError{Name: "shipper_id", err: errors.New(`ent: missing required field "Bids.shipper_id"`)}
+	}
+	if _, ok := _c.mutation.ShipperPhone(); !ok {
+		return &ValidationError{Name: "shipper_phone", err: errors.New(`ent: missing required field "Bids.shipper_phone"`)}
+	}
+	if _, ok := _c.mutation.ShipperMail(); !ok {
+		return &ValidationError{Name: "shipper_mail", err: errors.New(`ent: missing required field "Bids.shipper_mail"`)}
+	}
+	if _, ok := _c.mutation.ConsigneeID(); !ok {
+		return &ValidationError{Name: "consignee_id", err: errors.New(`ent: missing required field "Bids.consignee_id"`)}
+	}
+	if _, ok := _c.mutation.ConsigneePhone(); !ok {
+		return &ValidationError{Name: "consignee_phone", err: errors.New(`ent: missing required field "Bids.consignee_phone"`)}
+	}
+	if _, ok := _c.mutation.ConsigneeMail(); !ok {
+		return &ValidationError{Name: "consignee_mail", err: errors.New(`ent: missing required field "Bids.consignee_mail"`)}
 	}
 	if _, ok := _c.mutation.VolumeM3(); !ok {
 		return &ValidationError{Name: "volume_m3", err: errors.New(`ent: missing required field "Bids.volume_m3"`)}
 	}
 	if _, ok := _c.mutation.WeightKg(); !ok {
 		return &ValidationError{Name: "weight_kg", err: errors.New(`ent: missing required field "Bids.weight_kg"`)}
+	}
+	if _, ok := _c.mutation.CargoValue(); !ok {
+		return &ValidationError{Name: "cargo_value", err: errors.New(`ent: missing required field "Bids.cargo_value"`)}
+	}
+	if _, ok := _c.mutation.RequiredDeposit(); !ok {
+		return &ValidationError{Name: "required_deposit", err: errors.New(`ent: missing required field "Bids.required_deposit"`)}
+	}
+	if _, ok := _c.mutation.DesiredDeposit(); !ok {
+		return &ValidationError{Name: "desired_deposit", err: errors.New(`ent: missing required field "Bids.desired_deposit"`)}
 	}
 	if _, ok := _c.mutation.ZoneID(); !ok {
 		return &ValidationError{Name: "zone_id", err: errors.New(`ent: missing required field "Bids.zone_id"`)}
@@ -357,11 +417,11 @@ func (_c *BidsCreate) check() error {
 	if _, ok := _c.mutation.DestinationLng(); !ok {
 		return &ValidationError{Name: "destination_lng", err: errors.New(`ent: missing required field "Bids.destination_lng"`)}
 	}
-	if _, ok := _c.mutation.RouteID(); !ok {
-		return &ValidationError{Name: "route_id", err: errors.New(`ent: missing required field "Bids.route_id"`)}
-	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Bids.status"`)}
+	}
+	if _, ok := _c.mutation.ExpiresAt(); !ok {
+		return &ValidationError{Name: "expires_at", err: errors.New(`ent: missing required field "Bids.expires_at"`)}
 	}
 	return nil
 }
@@ -422,9 +482,29 @@ func (_c *BidsCreate) createSpec() (*Bids, *sqlgraph.CreateSpec) {
 		_spec.SetField(bids.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
 	}
-	if value, ok := _c.mutation.UserID(); ok {
-		_spec.SetField(bids.FieldUserID, field.TypeUUID, value)
-		_node.UserID = value
+	if value, ok := _c.mutation.ShipperID(); ok {
+		_spec.SetField(bids.FieldShipperID, field.TypeUUID, value)
+		_node.ShipperID = value
+	}
+	if value, ok := _c.mutation.ShipperPhone(); ok {
+		_spec.SetField(bids.FieldShipperPhone, field.TypeString, value)
+		_node.ShipperPhone = value
+	}
+	if value, ok := _c.mutation.ShipperMail(); ok {
+		_spec.SetField(bids.FieldShipperMail, field.TypeString, value)
+		_node.ShipperMail = value
+	}
+	if value, ok := _c.mutation.ConsigneeID(); ok {
+		_spec.SetField(bids.FieldConsigneeID, field.TypeUUID, value)
+		_node.ConsigneeID = value
+	}
+	if value, ok := _c.mutation.ConsigneePhone(); ok {
+		_spec.SetField(bids.FieldConsigneePhone, field.TypeString, value)
+		_node.ConsigneePhone = value
+	}
+	if value, ok := _c.mutation.ConsigneeMail(); ok {
+		_spec.SetField(bids.FieldConsigneeMail, field.TypeString, value)
+		_node.ConsigneeMail = value
 	}
 	if value, ok := _c.mutation.VolumeM3(); ok {
 		_spec.SetField(bids.FieldVolumeM3, field.TypeFloat64, value)
@@ -437,6 +517,18 @@ func (_c *BidsCreate) createSpec() (*Bids, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.MaxPrice(); ok {
 		_spec.SetField(bids.FieldMaxPrice, field.TypeFloat64, value)
 		_node.MaxPrice = &value
+	}
+	if value, ok := _c.mutation.CargoValue(); ok {
+		_spec.SetField(bids.FieldCargoValue, field.TypeFloat64, value)
+		_node.CargoValue = value
+	}
+	if value, ok := _c.mutation.RequiredDeposit(); ok {
+		_spec.SetField(bids.FieldRequiredDeposit, field.TypeFloat64, value)
+		_node.RequiredDeposit = value
+	}
+	if value, ok := _c.mutation.DesiredDeposit(); ok {
+		_spec.SetField(bids.FieldDesiredDeposit, field.TypeFloat64, value)
+		_node.DesiredDeposit = value
 	}
 	if value, ok := _c.mutation.ZoneID(); ok {
 		_spec.SetField(bids.FieldZoneID, field.TypeString, value)
@@ -458,13 +550,13 @@ func (_c *BidsCreate) createSpec() (*Bids, *sqlgraph.CreateSpec) {
 		_spec.SetField(bids.FieldDestinationLng, field.TypeFloat64, value)
 		_node.DestinationLng = value
 	}
-	if value, ok := _c.mutation.RouteID(); ok {
-		_spec.SetField(bids.FieldRouteID, field.TypeBytes, value)
-		_node.RouteID = value
-	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(bids.FieldStatus, field.TypeInt8, value)
 		_node.Status = value
+	}
+	if value, ok := _c.mutation.ExpiresAt(); ok {
+		_spec.SetField(bids.FieldExpiresAt, field.TypeTime, value)
+		_node.ExpiresAt = value
 	}
 	if nodes := _c.mutation.MatchesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -474,7 +566,7 @@ func (_c *BidsCreate) createSpec() (*Bids, *sqlgraph.CreateSpec) {
 			Columns: []string{bids.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

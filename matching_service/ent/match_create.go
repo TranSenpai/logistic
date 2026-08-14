@@ -139,6 +139,56 @@ func (_c *MatchCreate) SetNillableStatus(v *int) *MatchCreate {
 	return _c
 }
 
+// SetConsensusPrice sets the "consensus_price" field.
+func (_c *MatchCreate) SetConsensusPrice(v float64) *MatchCreate {
+	_c.mutation.SetConsensusPrice(v)
+	return _c
+}
+
+// SetConsensusDeposit sets the "consensus_deposit" field.
+func (_c *MatchCreate) SetConsensusDeposit(v float64) *MatchCreate {
+	_c.mutation.SetConsensusDeposit(v)
+	return _c
+}
+
+// SetShipperSignature sets the "shipper_signature" field.
+func (_c *MatchCreate) SetShipperSignature(v string) *MatchCreate {
+	_c.mutation.SetShipperSignature(v)
+	return _c
+}
+
+// SetDriverSignature sets the "driver_signature" field.
+func (_c *MatchCreate) SetDriverSignature(v string) *MatchCreate {
+	_c.mutation.SetDriverSignature(v)
+	return _c
+}
+
+// SetSystemSignature sets the "system_signature" field.
+func (_c *MatchCreate) SetSystemSignature(v string) *MatchCreate {
+	_c.mutation.SetSystemSignature(v)
+	return _c
+}
+
+// SetAgreedAt sets the "agreed_at" field.
+func (_c *MatchCreate) SetAgreedAt(v time.Time) *MatchCreate {
+	_c.mutation.SetAgreedAt(v)
+	return _c
+}
+
+// SetID sets the "id" field.
+func (_c *MatchCreate) SetID(v uuid.UUID) *MatchCreate {
+	_c.mutation.SetID(v)
+	return _c
+}
+
+// SetNillableID sets the "id" field if the given value is not nil.
+func (_c *MatchCreate) SetNillableID(v *uuid.UUID) *MatchCreate {
+	if v != nil {
+		_c.SetID(*v)
+	}
+	return _c
+}
+
 // SetAsksID sets the "asks" edge to the Asks entity by ID.
 func (_c *MatchCreate) SetAsksID(id uuid.UUID) *MatchCreate {
 	_c.mutation.SetAsksID(id)
@@ -234,6 +284,13 @@ func (_c *MatchCreate) defaults() error {
 		v := match.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.ID(); !ok {
+		if match.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized match.DefaultID (forgotten import ent/runtime?)")
+		}
+		v := match.DefaultID()
+		_c.mutation.SetID(v)
+	}
 	return nil
 }
 
@@ -266,6 +323,24 @@ func (_c *MatchCreate) check() error {
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Match.status"`)}
 	}
+	if _, ok := _c.mutation.ConsensusPrice(); !ok {
+		return &ValidationError{Name: "consensus_price", err: errors.New(`ent: missing required field "Match.consensus_price"`)}
+	}
+	if _, ok := _c.mutation.ConsensusDeposit(); !ok {
+		return &ValidationError{Name: "consensus_deposit", err: errors.New(`ent: missing required field "Match.consensus_deposit"`)}
+	}
+	if _, ok := _c.mutation.ShipperSignature(); !ok {
+		return &ValidationError{Name: "shipper_signature", err: errors.New(`ent: missing required field "Match.shipper_signature"`)}
+	}
+	if _, ok := _c.mutation.DriverSignature(); !ok {
+		return &ValidationError{Name: "driver_signature", err: errors.New(`ent: missing required field "Match.driver_signature"`)}
+	}
+	if _, ok := _c.mutation.SystemSignature(); !ok {
+		return &ValidationError{Name: "system_signature", err: errors.New(`ent: missing required field "Match.system_signature"`)}
+	}
+	if _, ok := _c.mutation.AgreedAt(); !ok {
+		return &ValidationError{Name: "agreed_at", err: errors.New(`ent: missing required field "Match.agreed_at"`)}
+	}
 	if len(_c.mutation.AsksIDs()) == 0 {
 		return &ValidationError{Name: "asks", err: errors.New(`ent: missing required edge "Match.asks"`)}
 	}
@@ -286,8 +361,13 @@ func (_c *MatchCreate) sqlSave(ctx context.Context) (*Match, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	_c.mutation.id = &_node.ID
 	_c.mutation.done = true
 	return _node, nil
@@ -296,8 +376,12 @@ func (_c *MatchCreate) sqlSave(ctx context.Context) (*Match, error) {
 func (_c *MatchCreate) createSpec() (*Match, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Match{config: _c.config}
-		_spec = sqlgraph.NewCreateSpec(match.Table, sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(match.Table, sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID))
 	)
+	if id, ok := _c.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(match.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
@@ -329,6 +413,30 @@ func (_c *MatchCreate) createSpec() (*Match, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(match.FieldStatus, field.TypeInt, value)
 		_node.Status = value
+	}
+	if value, ok := _c.mutation.ConsensusPrice(); ok {
+		_spec.SetField(match.FieldConsensusPrice, field.TypeFloat64, value)
+		_node.ConsensusPrice = value
+	}
+	if value, ok := _c.mutation.ConsensusDeposit(); ok {
+		_spec.SetField(match.FieldConsensusDeposit, field.TypeFloat64, value)
+		_node.ConsensusDeposit = value
+	}
+	if value, ok := _c.mutation.ShipperSignature(); ok {
+		_spec.SetField(match.FieldShipperSignature, field.TypeString, value)
+		_node.ShipperSignature = value
+	}
+	if value, ok := _c.mutation.DriverSignature(); ok {
+		_spec.SetField(match.FieldDriverSignature, field.TypeString, value)
+		_node.DriverSignature = value
+	}
+	if value, ok := _c.mutation.SystemSignature(); ok {
+		_spec.SetField(match.FieldSystemSignature, field.TypeString, value)
+		_node.SystemSignature = value
+	}
+	if value, ok := _c.mutation.AgreedAt(); ok {
+		_spec.SetField(match.FieldAgreedAt, field.TypeTime, value)
+		_node.AgreedAt = value
 	}
 	if nodes := _c.mutation.AsksIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -412,10 +520,6 @@ func (_c *MatchCreateBulk) Save(ctx context.Context) ([]*Match, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})

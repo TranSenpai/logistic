@@ -39,17 +39,22 @@ type AppMapper interface {
 	// goverter:ignore ID
 	// goverter:ignore CreatedAt
 	// goverter:ignore Status
-	// goverter:map UserId UserID | BytesToUUID
+	// goverter:map ShipperId ShipperID | BytesToUUID
+	// goverter:map ConsigneeId ConsigneeID | BytesToUUID
 	// goverter:map ExpiresAt ExpiresAt | TimestampToTime
-	SubmitBidReqToEntity(req *pb.SubmitBidRequest) (entity.Bid, error)
+	PbBidToEntity(req *pb.Bid) (entity.Bid, error)
 
 	// goverter:ignore ID
 	// goverter:ignore CreatedAt
 	// goverter:ignore Status
+	// goverter:ignore VehicleType
+	// goverter:ignore CapacityWeightKg
+	// goverter:ignore CapacityVolumeCbm
+	// goverter:ignore RouteID
 	// goverter:map VehicleId VehicleID | BytesToUUID
 	// goverter:map DriverId DriverID | BytesToUUID
 	// goverter:map ExpiresAt ExpiresAt | TimestampToTime
-	SubmitAskReqToEntity(req *pb.SubmitAskRequest) (entity.Ask, error)
+	PbAskToEntity(req *pb.Ask) (entity.Ask, error)
 
 	// goverter:map ZoneId ZoneID
 	MapLocation(loc *pb.Location) entity.Location
@@ -60,7 +65,8 @@ type AppMapper interface {
 	// ==================== BROKER MAPPER ====================
 
 	// goverter:map ID Id | UUIDToBytes
-	// goverter:map UserID UserId | UUIDToBytes
+	// goverter:map ShipperID ShipperId | UUIDToBytes
+	// goverter:map ConsigneeID ConsigneeId | UUIDToBytes
 	// goverter:map Status Status | Int8ToInt32
 	// goverter:map ExpiresAt ExpiresAt | TimeToTimestamp
 	// goverter:map CreatedAt CreatedAt | TimeToTimestamp

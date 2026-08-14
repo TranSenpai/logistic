@@ -12,47 +12,47 @@ import (
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.Match {
+func ID(id uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.Match {
+func IDEQ(id uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.Match {
+func IDNEQ(id uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.Match {
+func IDIn(ids ...uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.Match {
+func IDNotIn(ids ...uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.Match {
+func IDGT(id uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.Match {
+func IDGTE(id uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.Match {
+func IDLT(id uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.Match {
+func IDLTE(id uuid.UUID) predicate.Match {
 	return predicate.Match(sql.FieldLTE(FieldID, id))
 }
 
@@ -104,6 +104,36 @@ func AgreedPrice(v float64) predicate.Match {
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v int) predicate.Match {
 	return predicate.Match(sql.FieldEQ(FieldStatus, v))
+}
+
+// ConsensusPrice applies equality check predicate on the "consensus_price" field. It's identical to ConsensusPriceEQ.
+func ConsensusPrice(v float64) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldConsensusPrice, v))
+}
+
+// ConsensusDeposit applies equality check predicate on the "consensus_deposit" field. It's identical to ConsensusDepositEQ.
+func ConsensusDeposit(v float64) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldConsensusDeposit, v))
+}
+
+// ShipperSignature applies equality check predicate on the "shipper_signature" field. It's identical to ShipperSignatureEQ.
+func ShipperSignature(v string) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldShipperSignature, v))
+}
+
+// DriverSignature applies equality check predicate on the "driver_signature" field. It's identical to DriverSignatureEQ.
+func DriverSignature(v string) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldDriverSignature, v))
+}
+
+// SystemSignature applies equality check predicate on the "system_signature" field. It's identical to SystemSignatureEQ.
+func SystemSignature(v string) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldSystemSignature, v))
+}
+
+// AgreedAt applies equality check predicate on the "agreed_at" field. It's identical to AgreedAtEQ.
+func AgreedAt(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldAgreedAt, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -444,6 +474,321 @@ func StatusLT(v int) predicate.Match {
 // StatusLTE applies the LTE predicate on the "status" field.
 func StatusLTE(v int) predicate.Match {
 	return predicate.Match(sql.FieldLTE(FieldStatus, v))
+}
+
+// ConsensusPriceEQ applies the EQ predicate on the "consensus_price" field.
+func ConsensusPriceEQ(v float64) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldConsensusPrice, v))
+}
+
+// ConsensusPriceNEQ applies the NEQ predicate on the "consensus_price" field.
+func ConsensusPriceNEQ(v float64) predicate.Match {
+	return predicate.Match(sql.FieldNEQ(FieldConsensusPrice, v))
+}
+
+// ConsensusPriceIn applies the In predicate on the "consensus_price" field.
+func ConsensusPriceIn(vs ...float64) predicate.Match {
+	return predicate.Match(sql.FieldIn(FieldConsensusPrice, vs...))
+}
+
+// ConsensusPriceNotIn applies the NotIn predicate on the "consensus_price" field.
+func ConsensusPriceNotIn(vs ...float64) predicate.Match {
+	return predicate.Match(sql.FieldNotIn(FieldConsensusPrice, vs...))
+}
+
+// ConsensusPriceGT applies the GT predicate on the "consensus_price" field.
+func ConsensusPriceGT(v float64) predicate.Match {
+	return predicate.Match(sql.FieldGT(FieldConsensusPrice, v))
+}
+
+// ConsensusPriceGTE applies the GTE predicate on the "consensus_price" field.
+func ConsensusPriceGTE(v float64) predicate.Match {
+	return predicate.Match(sql.FieldGTE(FieldConsensusPrice, v))
+}
+
+// ConsensusPriceLT applies the LT predicate on the "consensus_price" field.
+func ConsensusPriceLT(v float64) predicate.Match {
+	return predicate.Match(sql.FieldLT(FieldConsensusPrice, v))
+}
+
+// ConsensusPriceLTE applies the LTE predicate on the "consensus_price" field.
+func ConsensusPriceLTE(v float64) predicate.Match {
+	return predicate.Match(sql.FieldLTE(FieldConsensusPrice, v))
+}
+
+// ConsensusDepositEQ applies the EQ predicate on the "consensus_deposit" field.
+func ConsensusDepositEQ(v float64) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldConsensusDeposit, v))
+}
+
+// ConsensusDepositNEQ applies the NEQ predicate on the "consensus_deposit" field.
+func ConsensusDepositNEQ(v float64) predicate.Match {
+	return predicate.Match(sql.FieldNEQ(FieldConsensusDeposit, v))
+}
+
+// ConsensusDepositIn applies the In predicate on the "consensus_deposit" field.
+func ConsensusDepositIn(vs ...float64) predicate.Match {
+	return predicate.Match(sql.FieldIn(FieldConsensusDeposit, vs...))
+}
+
+// ConsensusDepositNotIn applies the NotIn predicate on the "consensus_deposit" field.
+func ConsensusDepositNotIn(vs ...float64) predicate.Match {
+	return predicate.Match(sql.FieldNotIn(FieldConsensusDeposit, vs...))
+}
+
+// ConsensusDepositGT applies the GT predicate on the "consensus_deposit" field.
+func ConsensusDepositGT(v float64) predicate.Match {
+	return predicate.Match(sql.FieldGT(FieldConsensusDeposit, v))
+}
+
+// ConsensusDepositGTE applies the GTE predicate on the "consensus_deposit" field.
+func ConsensusDepositGTE(v float64) predicate.Match {
+	return predicate.Match(sql.FieldGTE(FieldConsensusDeposit, v))
+}
+
+// ConsensusDepositLT applies the LT predicate on the "consensus_deposit" field.
+func ConsensusDepositLT(v float64) predicate.Match {
+	return predicate.Match(sql.FieldLT(FieldConsensusDeposit, v))
+}
+
+// ConsensusDepositLTE applies the LTE predicate on the "consensus_deposit" field.
+func ConsensusDepositLTE(v float64) predicate.Match {
+	return predicate.Match(sql.FieldLTE(FieldConsensusDeposit, v))
+}
+
+// ShipperSignatureEQ applies the EQ predicate on the "shipper_signature" field.
+func ShipperSignatureEQ(v string) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldShipperSignature, v))
+}
+
+// ShipperSignatureNEQ applies the NEQ predicate on the "shipper_signature" field.
+func ShipperSignatureNEQ(v string) predicate.Match {
+	return predicate.Match(sql.FieldNEQ(FieldShipperSignature, v))
+}
+
+// ShipperSignatureIn applies the In predicate on the "shipper_signature" field.
+func ShipperSignatureIn(vs ...string) predicate.Match {
+	return predicate.Match(sql.FieldIn(FieldShipperSignature, vs...))
+}
+
+// ShipperSignatureNotIn applies the NotIn predicate on the "shipper_signature" field.
+func ShipperSignatureNotIn(vs ...string) predicate.Match {
+	return predicate.Match(sql.FieldNotIn(FieldShipperSignature, vs...))
+}
+
+// ShipperSignatureGT applies the GT predicate on the "shipper_signature" field.
+func ShipperSignatureGT(v string) predicate.Match {
+	return predicate.Match(sql.FieldGT(FieldShipperSignature, v))
+}
+
+// ShipperSignatureGTE applies the GTE predicate on the "shipper_signature" field.
+func ShipperSignatureGTE(v string) predicate.Match {
+	return predicate.Match(sql.FieldGTE(FieldShipperSignature, v))
+}
+
+// ShipperSignatureLT applies the LT predicate on the "shipper_signature" field.
+func ShipperSignatureLT(v string) predicate.Match {
+	return predicate.Match(sql.FieldLT(FieldShipperSignature, v))
+}
+
+// ShipperSignatureLTE applies the LTE predicate on the "shipper_signature" field.
+func ShipperSignatureLTE(v string) predicate.Match {
+	return predicate.Match(sql.FieldLTE(FieldShipperSignature, v))
+}
+
+// ShipperSignatureContains applies the Contains predicate on the "shipper_signature" field.
+func ShipperSignatureContains(v string) predicate.Match {
+	return predicate.Match(sql.FieldContains(FieldShipperSignature, v))
+}
+
+// ShipperSignatureHasPrefix applies the HasPrefix predicate on the "shipper_signature" field.
+func ShipperSignatureHasPrefix(v string) predicate.Match {
+	return predicate.Match(sql.FieldHasPrefix(FieldShipperSignature, v))
+}
+
+// ShipperSignatureHasSuffix applies the HasSuffix predicate on the "shipper_signature" field.
+func ShipperSignatureHasSuffix(v string) predicate.Match {
+	return predicate.Match(sql.FieldHasSuffix(FieldShipperSignature, v))
+}
+
+// ShipperSignatureEqualFold applies the EqualFold predicate on the "shipper_signature" field.
+func ShipperSignatureEqualFold(v string) predicate.Match {
+	return predicate.Match(sql.FieldEqualFold(FieldShipperSignature, v))
+}
+
+// ShipperSignatureContainsFold applies the ContainsFold predicate on the "shipper_signature" field.
+func ShipperSignatureContainsFold(v string) predicate.Match {
+	return predicate.Match(sql.FieldContainsFold(FieldShipperSignature, v))
+}
+
+// DriverSignatureEQ applies the EQ predicate on the "driver_signature" field.
+func DriverSignatureEQ(v string) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldDriverSignature, v))
+}
+
+// DriverSignatureNEQ applies the NEQ predicate on the "driver_signature" field.
+func DriverSignatureNEQ(v string) predicate.Match {
+	return predicate.Match(sql.FieldNEQ(FieldDriverSignature, v))
+}
+
+// DriverSignatureIn applies the In predicate on the "driver_signature" field.
+func DriverSignatureIn(vs ...string) predicate.Match {
+	return predicate.Match(sql.FieldIn(FieldDriverSignature, vs...))
+}
+
+// DriverSignatureNotIn applies the NotIn predicate on the "driver_signature" field.
+func DriverSignatureNotIn(vs ...string) predicate.Match {
+	return predicate.Match(sql.FieldNotIn(FieldDriverSignature, vs...))
+}
+
+// DriverSignatureGT applies the GT predicate on the "driver_signature" field.
+func DriverSignatureGT(v string) predicate.Match {
+	return predicate.Match(sql.FieldGT(FieldDriverSignature, v))
+}
+
+// DriverSignatureGTE applies the GTE predicate on the "driver_signature" field.
+func DriverSignatureGTE(v string) predicate.Match {
+	return predicate.Match(sql.FieldGTE(FieldDriverSignature, v))
+}
+
+// DriverSignatureLT applies the LT predicate on the "driver_signature" field.
+func DriverSignatureLT(v string) predicate.Match {
+	return predicate.Match(sql.FieldLT(FieldDriverSignature, v))
+}
+
+// DriverSignatureLTE applies the LTE predicate on the "driver_signature" field.
+func DriverSignatureLTE(v string) predicate.Match {
+	return predicate.Match(sql.FieldLTE(FieldDriverSignature, v))
+}
+
+// DriverSignatureContains applies the Contains predicate on the "driver_signature" field.
+func DriverSignatureContains(v string) predicate.Match {
+	return predicate.Match(sql.FieldContains(FieldDriverSignature, v))
+}
+
+// DriverSignatureHasPrefix applies the HasPrefix predicate on the "driver_signature" field.
+func DriverSignatureHasPrefix(v string) predicate.Match {
+	return predicate.Match(sql.FieldHasPrefix(FieldDriverSignature, v))
+}
+
+// DriverSignatureHasSuffix applies the HasSuffix predicate on the "driver_signature" field.
+func DriverSignatureHasSuffix(v string) predicate.Match {
+	return predicate.Match(sql.FieldHasSuffix(FieldDriverSignature, v))
+}
+
+// DriverSignatureEqualFold applies the EqualFold predicate on the "driver_signature" field.
+func DriverSignatureEqualFold(v string) predicate.Match {
+	return predicate.Match(sql.FieldEqualFold(FieldDriverSignature, v))
+}
+
+// DriverSignatureContainsFold applies the ContainsFold predicate on the "driver_signature" field.
+func DriverSignatureContainsFold(v string) predicate.Match {
+	return predicate.Match(sql.FieldContainsFold(FieldDriverSignature, v))
+}
+
+// SystemSignatureEQ applies the EQ predicate on the "system_signature" field.
+func SystemSignatureEQ(v string) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldSystemSignature, v))
+}
+
+// SystemSignatureNEQ applies the NEQ predicate on the "system_signature" field.
+func SystemSignatureNEQ(v string) predicate.Match {
+	return predicate.Match(sql.FieldNEQ(FieldSystemSignature, v))
+}
+
+// SystemSignatureIn applies the In predicate on the "system_signature" field.
+func SystemSignatureIn(vs ...string) predicate.Match {
+	return predicate.Match(sql.FieldIn(FieldSystemSignature, vs...))
+}
+
+// SystemSignatureNotIn applies the NotIn predicate on the "system_signature" field.
+func SystemSignatureNotIn(vs ...string) predicate.Match {
+	return predicate.Match(sql.FieldNotIn(FieldSystemSignature, vs...))
+}
+
+// SystemSignatureGT applies the GT predicate on the "system_signature" field.
+func SystemSignatureGT(v string) predicate.Match {
+	return predicate.Match(sql.FieldGT(FieldSystemSignature, v))
+}
+
+// SystemSignatureGTE applies the GTE predicate on the "system_signature" field.
+func SystemSignatureGTE(v string) predicate.Match {
+	return predicate.Match(sql.FieldGTE(FieldSystemSignature, v))
+}
+
+// SystemSignatureLT applies the LT predicate on the "system_signature" field.
+func SystemSignatureLT(v string) predicate.Match {
+	return predicate.Match(sql.FieldLT(FieldSystemSignature, v))
+}
+
+// SystemSignatureLTE applies the LTE predicate on the "system_signature" field.
+func SystemSignatureLTE(v string) predicate.Match {
+	return predicate.Match(sql.FieldLTE(FieldSystemSignature, v))
+}
+
+// SystemSignatureContains applies the Contains predicate on the "system_signature" field.
+func SystemSignatureContains(v string) predicate.Match {
+	return predicate.Match(sql.FieldContains(FieldSystemSignature, v))
+}
+
+// SystemSignatureHasPrefix applies the HasPrefix predicate on the "system_signature" field.
+func SystemSignatureHasPrefix(v string) predicate.Match {
+	return predicate.Match(sql.FieldHasPrefix(FieldSystemSignature, v))
+}
+
+// SystemSignatureHasSuffix applies the HasSuffix predicate on the "system_signature" field.
+func SystemSignatureHasSuffix(v string) predicate.Match {
+	return predicate.Match(sql.FieldHasSuffix(FieldSystemSignature, v))
+}
+
+// SystemSignatureEqualFold applies the EqualFold predicate on the "system_signature" field.
+func SystemSignatureEqualFold(v string) predicate.Match {
+	return predicate.Match(sql.FieldEqualFold(FieldSystemSignature, v))
+}
+
+// SystemSignatureContainsFold applies the ContainsFold predicate on the "system_signature" field.
+func SystemSignatureContainsFold(v string) predicate.Match {
+	return predicate.Match(sql.FieldContainsFold(FieldSystemSignature, v))
+}
+
+// AgreedAtEQ applies the EQ predicate on the "agreed_at" field.
+func AgreedAtEQ(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldEQ(FieldAgreedAt, v))
+}
+
+// AgreedAtNEQ applies the NEQ predicate on the "agreed_at" field.
+func AgreedAtNEQ(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldNEQ(FieldAgreedAt, v))
+}
+
+// AgreedAtIn applies the In predicate on the "agreed_at" field.
+func AgreedAtIn(vs ...time.Time) predicate.Match {
+	return predicate.Match(sql.FieldIn(FieldAgreedAt, vs...))
+}
+
+// AgreedAtNotIn applies the NotIn predicate on the "agreed_at" field.
+func AgreedAtNotIn(vs ...time.Time) predicate.Match {
+	return predicate.Match(sql.FieldNotIn(FieldAgreedAt, vs...))
+}
+
+// AgreedAtGT applies the GT predicate on the "agreed_at" field.
+func AgreedAtGT(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldGT(FieldAgreedAt, v))
+}
+
+// AgreedAtGTE applies the GTE predicate on the "agreed_at" field.
+func AgreedAtGTE(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldGTE(FieldAgreedAt, v))
+}
+
+// AgreedAtLT applies the LT predicate on the "agreed_at" field.
+func AgreedAtLT(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldLT(FieldAgreedAt, v))
+}
+
+// AgreedAtLTE applies the LTE predicate on the "agreed_at" field.
+func AgreedAtLTE(v time.Time) predicate.Match {
+	return predicate.Match(sql.FieldLTE(FieldAgreedAt, v))
 }
 
 // HasAsks applies the HasEdge predicate on the "asks" edge.

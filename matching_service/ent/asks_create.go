@@ -112,6 +112,18 @@ func (_c *AsksCreate) SetDriverID(v uuid.UUID) *AsksCreate {
 	return _c
 }
 
+// SetDriverPhone sets the "driver_phone" field.
+func (_c *AsksCreate) SetDriverPhone(v string) *AsksCreate {
+	_c.mutation.SetDriverPhone(v)
+	return _c
+}
+
+// SetDriverMail sets the "driver_mail" field.
+func (_c *AsksCreate) SetDriverMail(v string) *AsksCreate {
+	_c.mutation.SetDriverMail(v)
+	return _c
+}
+
 // SetVehicleID sets the "vehicle_id" field.
 func (_c *AsksCreate) SetVehicleID(v uuid.UUID) *AsksCreate {
 	_c.mutation.SetVehicleID(v)
@@ -162,6 +174,12 @@ func (_c *AsksCreate) SetNillableMinPrice(v *float64) *AsksCreate {
 	return _c
 }
 
+// SetDesiredDeposit sets the "desired_deposit" field.
+func (_c *AsksCreate) SetDesiredDeposit(v float64) *AsksCreate {
+	_c.mutation.SetDesiredDeposit(v)
+	return _c
+}
+
 // SetZoneID sets the "zone_id" field.
 func (_c *AsksCreate) SetZoneID(v string) *AsksCreate {
 	_c.mutation.SetZoneID(v)
@@ -204,11 +222,9 @@ func (_c *AsksCreate) SetStatus(v int8) *AsksCreate {
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *AsksCreate) SetNillableStatus(v *int8) *AsksCreate {
-	if v != nil {
-		_c.SetStatus(*v)
-	}
+// SetExpiresAt sets the "expires_at" field.
+func (_c *AsksCreate) SetExpiresAt(v time.Time) *AsksCreate {
+	_c.mutation.SetExpiresAt(v)
 	return _c
 }
 
@@ -227,14 +243,14 @@ func (_c *AsksCreate) SetNillableID(v *uuid.UUID) *AsksCreate {
 }
 
 // AddMatchIDs adds the "matches" edge to the Match entity by IDs.
-func (_c *AsksCreate) AddMatchIDs(ids ...int) *AsksCreate {
+func (_c *AsksCreate) AddMatchIDs(ids ...uuid.UUID) *AsksCreate {
 	_c.mutation.AddMatchIDs(ids...)
 	return _c
 }
 
 // AddMatches adds the "matches" edges to the Match entity.
 func (_c *AsksCreate) AddMatches(v ...*Match) *AsksCreate {
-	ids := make([]int, len(v))
+	ids := make([]uuid.UUID, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
@@ -310,10 +326,6 @@ func (_c *AsksCreate) defaults() error {
 		v := asks.DefaultIsDeleted
 		_c.mutation.SetIsDeleted(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := asks.DefaultStatus
-		_c.mutation.SetStatus(v)
-	}
 	if _, ok := _c.mutation.ID(); !ok {
 		if asks.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized asks.DefaultID (forgotten import ent/runtime?)")
@@ -344,6 +356,12 @@ func (_c *AsksCreate) check() error {
 	if _, ok := _c.mutation.DriverID(); !ok {
 		return &ValidationError{Name: "driver_id", err: errors.New(`ent: missing required field "Asks.driver_id"`)}
 	}
+	if _, ok := _c.mutation.DriverPhone(); !ok {
+		return &ValidationError{Name: "driver_phone", err: errors.New(`ent: missing required field "Asks.driver_phone"`)}
+	}
+	if _, ok := _c.mutation.DriverMail(); !ok {
+		return &ValidationError{Name: "driver_mail", err: errors.New(`ent: missing required field "Asks.driver_mail"`)}
+	}
 	if _, ok := _c.mutation.VehicleID(); !ok {
 		return &ValidationError{Name: "vehicle_id", err: errors.New(`ent: missing required field "Asks.vehicle_id"`)}
 	}
@@ -361,6 +379,9 @@ func (_c *AsksCreate) check() error {
 	}
 	if _, ok := _c.mutation.AvailableWeightKg(); !ok {
 		return &ValidationError{Name: "available_weight_kg", err: errors.New(`ent: missing required field "Asks.available_weight_kg"`)}
+	}
+	if _, ok := _c.mutation.DesiredDeposit(); !ok {
+		return &ValidationError{Name: "desired_deposit", err: errors.New(`ent: missing required field "Asks.desired_deposit"`)}
 	}
 	if _, ok := _c.mutation.ZoneID(); !ok {
 		return &ValidationError{Name: "zone_id", err: errors.New(`ent: missing required field "Asks.zone_id"`)}
@@ -382,6 +403,9 @@ func (_c *AsksCreate) check() error {
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Asks.status"`)}
+	}
+	if _, ok := _c.mutation.ExpiresAt(); !ok {
+		return &ValidationError{Name: "expires_at", err: errors.New(`ent: missing required field "Asks.expires_at"`)}
 	}
 	return nil
 }
@@ -446,6 +470,14 @@ func (_c *AsksCreate) createSpec() (*Asks, *sqlgraph.CreateSpec) {
 		_spec.SetField(asks.FieldDriverID, field.TypeUUID, value)
 		_node.DriverID = value
 	}
+	if value, ok := _c.mutation.DriverPhone(); ok {
+		_spec.SetField(asks.FieldDriverPhone, field.TypeString, value)
+		_node.DriverPhone = value
+	}
+	if value, ok := _c.mutation.DriverMail(); ok {
+		_spec.SetField(asks.FieldDriverMail, field.TypeString, value)
+		_node.DriverMail = value
+	}
 	if value, ok := _c.mutation.VehicleID(); ok {
 		_spec.SetField(asks.FieldVehicleID, field.TypeUUID, value)
 		_node.VehicleID = value
@@ -473,6 +505,10 @@ func (_c *AsksCreate) createSpec() (*Asks, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.MinPrice(); ok {
 		_spec.SetField(asks.FieldMinPrice, field.TypeFloat64, value)
 		_node.MinPrice = &value
+	}
+	if value, ok := _c.mutation.DesiredDeposit(); ok {
+		_spec.SetField(asks.FieldDesiredDeposit, field.TypeFloat64, value)
+		_node.DesiredDeposit = value
 	}
 	if value, ok := _c.mutation.ZoneID(); ok {
 		_spec.SetField(asks.FieldZoneID, field.TypeString, value)
@@ -502,6 +538,10 @@ func (_c *AsksCreate) createSpec() (*Asks, *sqlgraph.CreateSpec) {
 		_spec.SetField(asks.FieldStatus, field.TypeInt8, value)
 		_node.Status = value
 	}
+	if value, ok := _c.mutation.ExpiresAt(); ok {
+		_spec.SetField(asks.FieldExpiresAt, field.TypeTime, value)
+		_node.ExpiresAt = value
+	}
 	if nodes := _c.mutation.MatchesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -510,7 +550,7 @@ func (_c *AsksCreate) createSpec() (*Asks, *sqlgraph.CreateSpec) {
 			Columns: []string{asks.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

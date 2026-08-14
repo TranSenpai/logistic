@@ -30,6 +30,10 @@ const (
 	FieldDeletedAt = "deleted_at"
 	// FieldDriverID holds the string denoting the driver_id field in the database.
 	FieldDriverID = "driver_id"
+	// FieldDriverPhone holds the string denoting the driver_phone field in the database.
+	FieldDriverPhone = "driver_phone"
+	// FieldDriverMail holds the string denoting the driver_mail field in the database.
+	FieldDriverMail = "driver_mail"
 	// FieldVehicleID holds the string denoting the vehicle_id field in the database.
 	FieldVehicleID = "vehicle_id"
 	// FieldVehicleType holds the string denoting the vehicle_type field in the database.
@@ -44,6 +48,8 @@ const (
 	FieldAvailableWeightKg = "available_weight_kg"
 	// FieldMinPrice holds the string denoting the min_price field in the database.
 	FieldMinPrice = "min_price"
+	// FieldDesiredDeposit holds the string denoting the desired_deposit field in the database.
+	FieldDesiredDeposit = "desired_deposit"
 	// FieldZoneID holds the string denoting the zone_id field in the database.
 	FieldZoneID = "zone_id"
 	// FieldOriginLat holds the string denoting the origin_lat field in the database.
@@ -58,6 +64,8 @@ const (
 	FieldRouteID = "route_id"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldExpiresAt holds the string denoting the expires_at field in the database.
+	FieldExpiresAt = "expires_at"
 	// EdgeMatches holds the string denoting the matches edge name in mutations.
 	EdgeMatches = "matches"
 	// Table holds the table name of the asks in the database.
@@ -81,6 +89,8 @@ var Columns = []string{
 	FieldIsDeleted,
 	FieldDeletedAt,
 	FieldDriverID,
+	FieldDriverPhone,
+	FieldDriverMail,
 	FieldVehicleID,
 	FieldVehicleType,
 	FieldCapacityWeightKg,
@@ -88,6 +98,7 @@ var Columns = []string{
 	FieldAvailableVolumeM3,
 	FieldAvailableWeightKg,
 	FieldMinPrice,
+	FieldDesiredDeposit,
 	FieldZoneID,
 	FieldOriginLat,
 	FieldOriginLng,
@@ -95,6 +106,7 @@ var Columns = []string{
 	FieldDestinationLng,
 	FieldRouteID,
 	FieldStatus,
+	FieldExpiresAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -127,8 +139,6 @@ var (
 	DefaultUpdatedBy func() uuid.UUID
 	// DefaultIsDeleted holds the default value on creation for the "is_deleted" field.
 	DefaultIsDeleted bool
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus int8
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -176,6 +186,16 @@ func ByDriverID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDriverID, opts...).ToFunc()
 }
 
+// ByDriverPhone orders the results by the driver_phone field.
+func ByDriverPhone(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDriverPhone, opts...).ToFunc()
+}
+
+// ByDriverMail orders the results by the driver_mail field.
+func ByDriverMail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDriverMail, opts...).ToFunc()
+}
+
 // ByVehicleID orders the results by the vehicle_id field.
 func ByVehicleID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldVehicleID, opts...).ToFunc()
@@ -211,6 +231,11 @@ func ByMinPrice(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMinPrice, opts...).ToFunc()
 }
 
+// ByDesiredDeposit orders the results by the desired_deposit field.
+func ByDesiredDeposit(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDesiredDeposit, opts...).ToFunc()
+}
+
 // ByZoneID orders the results by the zone_id field.
 func ByZoneID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldZoneID, opts...).ToFunc()
@@ -239,6 +264,11 @@ func ByDestinationLng(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByExpiresAt orders the results by the expires_at field.
+func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExpiresAt, opts...).ToFunc()
 }
 
 // ByMatchesCount orders the results by matches count.

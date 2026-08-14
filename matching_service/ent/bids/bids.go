@@ -28,14 +28,30 @@ const (
 	FieldIsDeleted = "is_deleted"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
-	// FieldUserID holds the string denoting the user_id field in the database.
-	FieldUserID = "user_id"
+	// FieldShipperID holds the string denoting the shipper_id field in the database.
+	FieldShipperID = "shipper_id"
+	// FieldShipperPhone holds the string denoting the shipper_phone field in the database.
+	FieldShipperPhone = "shipper_phone"
+	// FieldShipperMail holds the string denoting the shipper_mail field in the database.
+	FieldShipperMail = "shipper_mail"
+	// FieldConsigneeID holds the string denoting the consignee_id field in the database.
+	FieldConsigneeID = "consignee_id"
+	// FieldConsigneePhone holds the string denoting the consignee_phone field in the database.
+	FieldConsigneePhone = "consignee_phone"
+	// FieldConsigneeMail holds the string denoting the consignee_mail field in the database.
+	FieldConsigneeMail = "consignee_mail"
 	// FieldVolumeM3 holds the string denoting the volume_m3 field in the database.
 	FieldVolumeM3 = "volume_m3"
 	// FieldWeightKg holds the string denoting the weight_kg field in the database.
 	FieldWeightKg = "weight_kg"
 	// FieldMaxPrice holds the string denoting the max_price field in the database.
 	FieldMaxPrice = "max_price"
+	// FieldCargoValue holds the string denoting the cargo_value field in the database.
+	FieldCargoValue = "cargo_value"
+	// FieldRequiredDeposit holds the string denoting the required_deposit field in the database.
+	FieldRequiredDeposit = "required_deposit"
+	// FieldDesiredDeposit holds the string denoting the desired_deposit field in the database.
+	FieldDesiredDeposit = "desired_deposit"
 	// FieldZoneID holds the string denoting the zone_id field in the database.
 	FieldZoneID = "zone_id"
 	// FieldOriginLat holds the string denoting the origin_lat field in the database.
@@ -46,10 +62,10 @@ const (
 	FieldDestinationLat = "destination_lat"
 	// FieldDestinationLng holds the string denoting the destination_lng field in the database.
 	FieldDestinationLng = "destination_lng"
-	// FieldRouteID holds the string denoting the route_id field in the database.
-	FieldRouteID = "route_id"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldExpiresAt holds the string denoting the expires_at field in the database.
+	FieldExpiresAt = "expires_at"
 	// EdgeMatches holds the string denoting the matches edge name in mutations.
 	EdgeMatches = "matches"
 	// EdgeBidsRequirements holds the string denoting the bids_requirements edge name in mutations.
@@ -81,17 +97,25 @@ var Columns = []string{
 	FieldUpdatedBy,
 	FieldIsDeleted,
 	FieldDeletedAt,
-	FieldUserID,
+	FieldShipperID,
+	FieldShipperPhone,
+	FieldShipperMail,
+	FieldConsigneeID,
+	FieldConsigneePhone,
+	FieldConsigneeMail,
 	FieldVolumeM3,
 	FieldWeightKg,
 	FieldMaxPrice,
+	FieldCargoValue,
+	FieldRequiredDeposit,
+	FieldDesiredDeposit,
 	FieldZoneID,
 	FieldOriginLat,
 	FieldOriginLng,
 	FieldDestinationLat,
 	FieldDestinationLng,
-	FieldRouteID,
 	FieldStatus,
+	FieldExpiresAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -124,8 +148,6 @@ var (
 	DefaultUpdatedBy func() uuid.UUID
 	// DefaultIsDeleted holds the default value on creation for the "is_deleted" field.
 	DefaultIsDeleted bool
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus int8
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -168,9 +190,34 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
 }
 
-// ByUserID orders the results by the user_id field.
-func ByUserID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUserID, opts...).ToFunc()
+// ByShipperID orders the results by the shipper_id field.
+func ByShipperID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldShipperID, opts...).ToFunc()
+}
+
+// ByShipperPhone orders the results by the shipper_phone field.
+func ByShipperPhone(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldShipperPhone, opts...).ToFunc()
+}
+
+// ByShipperMail orders the results by the shipper_mail field.
+func ByShipperMail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldShipperMail, opts...).ToFunc()
+}
+
+// ByConsigneeID orders the results by the consignee_id field.
+func ByConsigneeID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldConsigneeID, opts...).ToFunc()
+}
+
+// ByConsigneePhone orders the results by the consignee_phone field.
+func ByConsigneePhone(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldConsigneePhone, opts...).ToFunc()
+}
+
+// ByConsigneeMail orders the results by the consignee_mail field.
+func ByConsigneeMail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldConsigneeMail, opts...).ToFunc()
 }
 
 // ByVolumeM3 orders the results by the volume_m3 field.
@@ -186,6 +233,21 @@ func ByWeightKg(opts ...sql.OrderTermOption) OrderOption {
 // ByMaxPrice orders the results by the max_price field.
 func ByMaxPrice(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMaxPrice, opts...).ToFunc()
+}
+
+// ByCargoValue orders the results by the cargo_value field.
+func ByCargoValue(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCargoValue, opts...).ToFunc()
+}
+
+// ByRequiredDeposit orders the results by the required_deposit field.
+func ByRequiredDeposit(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRequiredDeposit, opts...).ToFunc()
+}
+
+// ByDesiredDeposit orders the results by the desired_deposit field.
+func ByDesiredDeposit(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDesiredDeposit, opts...).ToFunc()
 }
 
 // ByZoneID orders the results by the zone_id field.
@@ -216,6 +278,11 @@ func ByDestinationLng(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByExpiresAt orders the results by the expires_at field.
+func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExpiresAt, opts...).ToFunc()
 }
 
 // ByMatchesCount orders the results by matches count.

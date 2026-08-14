@@ -787,7 +787,7 @@ func (c *MatchClient) UpdateOne(_m *Match) *MatchUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *MatchClient) UpdateOneID(id int) *MatchUpdateOne {
+func (c *MatchClient) UpdateOneID(id uuid.UUID) *MatchUpdateOne {
 	mutation := newMatchMutation(c.config, OpUpdateOne, withMatchID(id))
 	return &MatchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -804,7 +804,7 @@ func (c *MatchClient) DeleteOne(_m *Match) *MatchDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *MatchClient) DeleteOneID(id int) *MatchDeleteOne {
+func (c *MatchClient) DeleteOneID(id uuid.UUID) *MatchDeleteOne {
 	builder := c.Delete().Where(match.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -821,12 +821,12 @@ func (c *MatchClient) Query() *MatchQuery {
 }
 
 // Get returns a Match entity by its id.
-func (c *MatchClient) Get(ctx context.Context, id int) (*Match, error) {
+func (c *MatchClient) Get(ctx context.Context, id uuid.UUID) (*Match, error) {
 	return c.Query().Where(match.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *MatchClient) GetX(ctx context.Context, id int) *Match {
+func (c *MatchClient) GetX(ctx context.Context, id uuid.UUID) *Match {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)

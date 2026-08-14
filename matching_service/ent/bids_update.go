@@ -99,16 +99,86 @@ func (_u *BidsUpdate) ClearDeletedAt() *BidsUpdate {
 	return _u
 }
 
-// SetUserID sets the "user_id" field.
-func (_u *BidsUpdate) SetUserID(v uuid.UUID) *BidsUpdate {
-	_u.mutation.SetUserID(v)
+// SetShipperID sets the "shipper_id" field.
+func (_u *BidsUpdate) SetShipperID(v uuid.UUID) *BidsUpdate {
+	_u.mutation.SetShipperID(v)
 	return _u
 }
 
-// SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (_u *BidsUpdate) SetNillableUserID(v *uuid.UUID) *BidsUpdate {
+// SetNillableShipperID sets the "shipper_id" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableShipperID(v *uuid.UUID) *BidsUpdate {
 	if v != nil {
-		_u.SetUserID(*v)
+		_u.SetShipperID(*v)
+	}
+	return _u
+}
+
+// SetShipperPhone sets the "shipper_phone" field.
+func (_u *BidsUpdate) SetShipperPhone(v string) *BidsUpdate {
+	_u.mutation.SetShipperPhone(v)
+	return _u
+}
+
+// SetNillableShipperPhone sets the "shipper_phone" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableShipperPhone(v *string) *BidsUpdate {
+	if v != nil {
+		_u.SetShipperPhone(*v)
+	}
+	return _u
+}
+
+// SetShipperMail sets the "shipper_mail" field.
+func (_u *BidsUpdate) SetShipperMail(v string) *BidsUpdate {
+	_u.mutation.SetShipperMail(v)
+	return _u
+}
+
+// SetNillableShipperMail sets the "shipper_mail" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableShipperMail(v *string) *BidsUpdate {
+	if v != nil {
+		_u.SetShipperMail(*v)
+	}
+	return _u
+}
+
+// SetConsigneeID sets the "consignee_id" field.
+func (_u *BidsUpdate) SetConsigneeID(v uuid.UUID) *BidsUpdate {
+	_u.mutation.SetConsigneeID(v)
+	return _u
+}
+
+// SetNillableConsigneeID sets the "consignee_id" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableConsigneeID(v *uuid.UUID) *BidsUpdate {
+	if v != nil {
+		_u.SetConsigneeID(*v)
+	}
+	return _u
+}
+
+// SetConsigneePhone sets the "consignee_phone" field.
+func (_u *BidsUpdate) SetConsigneePhone(v string) *BidsUpdate {
+	_u.mutation.SetConsigneePhone(v)
+	return _u
+}
+
+// SetNillableConsigneePhone sets the "consignee_phone" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableConsigneePhone(v *string) *BidsUpdate {
+	if v != nil {
+		_u.SetConsigneePhone(*v)
+	}
+	return _u
+}
+
+// SetConsigneeMail sets the "consignee_mail" field.
+func (_u *BidsUpdate) SetConsigneeMail(v string) *BidsUpdate {
+	_u.mutation.SetConsigneeMail(v)
+	return _u
+}
+
+// SetNillableConsigneeMail sets the "consignee_mail" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableConsigneeMail(v *string) *BidsUpdate {
+	if v != nil {
+		_u.SetConsigneeMail(*v)
 	}
 	return _u
 }
@@ -179,6 +249,69 @@ func (_u *BidsUpdate) AddMaxPrice(v float64) *BidsUpdate {
 // ClearMaxPrice clears the value of the "max_price" field.
 func (_u *BidsUpdate) ClearMaxPrice() *BidsUpdate {
 	_u.mutation.ClearMaxPrice()
+	return _u
+}
+
+// SetCargoValue sets the "cargo_value" field.
+func (_u *BidsUpdate) SetCargoValue(v float64) *BidsUpdate {
+	_u.mutation.ResetCargoValue()
+	_u.mutation.SetCargoValue(v)
+	return _u
+}
+
+// SetNillableCargoValue sets the "cargo_value" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableCargoValue(v *float64) *BidsUpdate {
+	if v != nil {
+		_u.SetCargoValue(*v)
+	}
+	return _u
+}
+
+// AddCargoValue adds value to the "cargo_value" field.
+func (_u *BidsUpdate) AddCargoValue(v float64) *BidsUpdate {
+	_u.mutation.AddCargoValue(v)
+	return _u
+}
+
+// SetRequiredDeposit sets the "required_deposit" field.
+func (_u *BidsUpdate) SetRequiredDeposit(v float64) *BidsUpdate {
+	_u.mutation.ResetRequiredDeposit()
+	_u.mutation.SetRequiredDeposit(v)
+	return _u
+}
+
+// SetNillableRequiredDeposit sets the "required_deposit" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableRequiredDeposit(v *float64) *BidsUpdate {
+	if v != nil {
+		_u.SetRequiredDeposit(*v)
+	}
+	return _u
+}
+
+// AddRequiredDeposit adds value to the "required_deposit" field.
+func (_u *BidsUpdate) AddRequiredDeposit(v float64) *BidsUpdate {
+	_u.mutation.AddRequiredDeposit(v)
+	return _u
+}
+
+// SetDesiredDeposit sets the "desired_deposit" field.
+func (_u *BidsUpdate) SetDesiredDeposit(v float64) *BidsUpdate {
+	_u.mutation.ResetDesiredDeposit()
+	_u.mutation.SetDesiredDeposit(v)
+	return _u
+}
+
+// SetNillableDesiredDeposit sets the "desired_deposit" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableDesiredDeposit(v *float64) *BidsUpdate {
+	if v != nil {
+		_u.SetDesiredDeposit(*v)
+	}
+	return _u
+}
+
+// AddDesiredDeposit adds value to the "desired_deposit" field.
+func (_u *BidsUpdate) AddDesiredDeposit(v float64) *BidsUpdate {
+	_u.mutation.AddDesiredDeposit(v)
 	return _u
 }
 
@@ -280,12 +413,6 @@ func (_u *BidsUpdate) AddDestinationLng(v float64) *BidsUpdate {
 	return _u
 }
 
-// SetRouteID sets the "route_id" field.
-func (_u *BidsUpdate) SetRouteID(v []byte) *BidsUpdate {
-	_u.mutation.SetRouteID(v)
-	return _u
-}
-
 // SetStatus sets the "status" field.
 func (_u *BidsUpdate) SetStatus(v int8) *BidsUpdate {
 	_u.mutation.ResetStatus()
@@ -307,15 +434,29 @@ func (_u *BidsUpdate) AddStatus(v int8) *BidsUpdate {
 	return _u
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (_u *BidsUpdate) SetExpiresAt(v time.Time) *BidsUpdate {
+	_u.mutation.SetExpiresAt(v)
+	return _u
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableExpiresAt(v *time.Time) *BidsUpdate {
+	if v != nil {
+		_u.SetExpiresAt(*v)
+	}
+	return _u
+}
+
 // AddMatchIDs adds the "matches" edge to the Match entity by IDs.
-func (_u *BidsUpdate) AddMatchIDs(ids ...int) *BidsUpdate {
+func (_u *BidsUpdate) AddMatchIDs(ids ...uuid.UUID) *BidsUpdate {
 	_u.mutation.AddMatchIDs(ids...)
 	return _u
 }
 
 // AddMatches adds the "matches" edges to the Match entity.
 func (_u *BidsUpdate) AddMatches(v ...*Match) *BidsUpdate {
-	ids := make([]int, len(v))
+	ids := make([]uuid.UUID, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
@@ -349,14 +490,14 @@ func (_u *BidsUpdate) ClearMatches() *BidsUpdate {
 }
 
 // RemoveMatchIDs removes the "matches" edge to Match entities by IDs.
-func (_u *BidsUpdate) RemoveMatchIDs(ids ...int) *BidsUpdate {
+func (_u *BidsUpdate) RemoveMatchIDs(ids ...uuid.UUID) *BidsUpdate {
 	_u.mutation.RemoveMatchIDs(ids...)
 	return _u
 }
 
 // RemoveMatches removes "matches" edges to Match entities.
 func (_u *BidsUpdate) RemoveMatches(v ...*Match) *BidsUpdate {
-	ids := make([]int, len(v))
+	ids := make([]uuid.UUID, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
@@ -453,8 +594,23 @@ func (_u *BidsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(bids.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := _u.mutation.UserID(); ok {
-		_spec.SetField(bids.FieldUserID, field.TypeUUID, value)
+	if value, ok := _u.mutation.ShipperID(); ok {
+		_spec.SetField(bids.FieldShipperID, field.TypeUUID, value)
+	}
+	if value, ok := _u.mutation.ShipperPhone(); ok {
+		_spec.SetField(bids.FieldShipperPhone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ShipperMail(); ok {
+		_spec.SetField(bids.FieldShipperMail, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ConsigneeID(); ok {
+		_spec.SetField(bids.FieldConsigneeID, field.TypeUUID, value)
+	}
+	if value, ok := _u.mutation.ConsigneePhone(); ok {
+		_spec.SetField(bids.FieldConsigneePhone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ConsigneeMail(); ok {
+		_spec.SetField(bids.FieldConsigneeMail, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.VolumeM3(); ok {
 		_spec.SetField(bids.FieldVolumeM3, field.TypeFloat64, value)
@@ -476,6 +632,24 @@ func (_u *BidsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.MaxPriceCleared() {
 		_spec.ClearField(bids.FieldMaxPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.CargoValue(); ok {
+		_spec.SetField(bids.FieldCargoValue, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedCargoValue(); ok {
+		_spec.AddField(bids.FieldCargoValue, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RequiredDeposit(); ok {
+		_spec.SetField(bids.FieldRequiredDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRequiredDeposit(); ok {
+		_spec.AddField(bids.FieldRequiredDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DesiredDeposit(); ok {
+		_spec.SetField(bids.FieldDesiredDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDesiredDeposit(); ok {
+		_spec.AddField(bids.FieldDesiredDeposit, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.ZoneID(); ok {
 		_spec.SetField(bids.FieldZoneID, field.TypeString, value)
@@ -504,14 +678,14 @@ func (_u *BidsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AddedDestinationLng(); ok {
 		_spec.AddField(bids.FieldDestinationLng, field.TypeFloat64, value)
 	}
-	if value, ok := _u.mutation.RouteID(); ok {
-		_spec.SetField(bids.FieldRouteID, field.TypeBytes, value)
-	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(bids.FieldStatus, field.TypeInt8, value)
 	}
 	if value, ok := _u.mutation.AddedStatus(); ok {
 		_spec.AddField(bids.FieldStatus, field.TypeInt8, value)
+	}
+	if value, ok := _u.mutation.ExpiresAt(); ok {
+		_spec.SetField(bids.FieldExpiresAt, field.TypeTime, value)
 	}
 	if _u.mutation.MatchesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -521,7 +695,7 @@ func (_u *BidsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{bids.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -534,7 +708,7 @@ func (_u *BidsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{bids.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -550,7 +724,7 @@ func (_u *BidsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{bids.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -691,16 +865,86 @@ func (_u *BidsUpdateOne) ClearDeletedAt() *BidsUpdateOne {
 	return _u
 }
 
-// SetUserID sets the "user_id" field.
-func (_u *BidsUpdateOne) SetUserID(v uuid.UUID) *BidsUpdateOne {
-	_u.mutation.SetUserID(v)
+// SetShipperID sets the "shipper_id" field.
+func (_u *BidsUpdateOne) SetShipperID(v uuid.UUID) *BidsUpdateOne {
+	_u.mutation.SetShipperID(v)
 	return _u
 }
 
-// SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (_u *BidsUpdateOne) SetNillableUserID(v *uuid.UUID) *BidsUpdateOne {
+// SetNillableShipperID sets the "shipper_id" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableShipperID(v *uuid.UUID) *BidsUpdateOne {
 	if v != nil {
-		_u.SetUserID(*v)
+		_u.SetShipperID(*v)
+	}
+	return _u
+}
+
+// SetShipperPhone sets the "shipper_phone" field.
+func (_u *BidsUpdateOne) SetShipperPhone(v string) *BidsUpdateOne {
+	_u.mutation.SetShipperPhone(v)
+	return _u
+}
+
+// SetNillableShipperPhone sets the "shipper_phone" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableShipperPhone(v *string) *BidsUpdateOne {
+	if v != nil {
+		_u.SetShipperPhone(*v)
+	}
+	return _u
+}
+
+// SetShipperMail sets the "shipper_mail" field.
+func (_u *BidsUpdateOne) SetShipperMail(v string) *BidsUpdateOne {
+	_u.mutation.SetShipperMail(v)
+	return _u
+}
+
+// SetNillableShipperMail sets the "shipper_mail" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableShipperMail(v *string) *BidsUpdateOne {
+	if v != nil {
+		_u.SetShipperMail(*v)
+	}
+	return _u
+}
+
+// SetConsigneeID sets the "consignee_id" field.
+func (_u *BidsUpdateOne) SetConsigneeID(v uuid.UUID) *BidsUpdateOne {
+	_u.mutation.SetConsigneeID(v)
+	return _u
+}
+
+// SetNillableConsigneeID sets the "consignee_id" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableConsigneeID(v *uuid.UUID) *BidsUpdateOne {
+	if v != nil {
+		_u.SetConsigneeID(*v)
+	}
+	return _u
+}
+
+// SetConsigneePhone sets the "consignee_phone" field.
+func (_u *BidsUpdateOne) SetConsigneePhone(v string) *BidsUpdateOne {
+	_u.mutation.SetConsigneePhone(v)
+	return _u
+}
+
+// SetNillableConsigneePhone sets the "consignee_phone" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableConsigneePhone(v *string) *BidsUpdateOne {
+	if v != nil {
+		_u.SetConsigneePhone(*v)
+	}
+	return _u
+}
+
+// SetConsigneeMail sets the "consignee_mail" field.
+func (_u *BidsUpdateOne) SetConsigneeMail(v string) *BidsUpdateOne {
+	_u.mutation.SetConsigneeMail(v)
+	return _u
+}
+
+// SetNillableConsigneeMail sets the "consignee_mail" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableConsigneeMail(v *string) *BidsUpdateOne {
+	if v != nil {
+		_u.SetConsigneeMail(*v)
 	}
 	return _u
 }
@@ -771,6 +1015,69 @@ func (_u *BidsUpdateOne) AddMaxPrice(v float64) *BidsUpdateOne {
 // ClearMaxPrice clears the value of the "max_price" field.
 func (_u *BidsUpdateOne) ClearMaxPrice() *BidsUpdateOne {
 	_u.mutation.ClearMaxPrice()
+	return _u
+}
+
+// SetCargoValue sets the "cargo_value" field.
+func (_u *BidsUpdateOne) SetCargoValue(v float64) *BidsUpdateOne {
+	_u.mutation.ResetCargoValue()
+	_u.mutation.SetCargoValue(v)
+	return _u
+}
+
+// SetNillableCargoValue sets the "cargo_value" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableCargoValue(v *float64) *BidsUpdateOne {
+	if v != nil {
+		_u.SetCargoValue(*v)
+	}
+	return _u
+}
+
+// AddCargoValue adds value to the "cargo_value" field.
+func (_u *BidsUpdateOne) AddCargoValue(v float64) *BidsUpdateOne {
+	_u.mutation.AddCargoValue(v)
+	return _u
+}
+
+// SetRequiredDeposit sets the "required_deposit" field.
+func (_u *BidsUpdateOne) SetRequiredDeposit(v float64) *BidsUpdateOne {
+	_u.mutation.ResetRequiredDeposit()
+	_u.mutation.SetRequiredDeposit(v)
+	return _u
+}
+
+// SetNillableRequiredDeposit sets the "required_deposit" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableRequiredDeposit(v *float64) *BidsUpdateOne {
+	if v != nil {
+		_u.SetRequiredDeposit(*v)
+	}
+	return _u
+}
+
+// AddRequiredDeposit adds value to the "required_deposit" field.
+func (_u *BidsUpdateOne) AddRequiredDeposit(v float64) *BidsUpdateOne {
+	_u.mutation.AddRequiredDeposit(v)
+	return _u
+}
+
+// SetDesiredDeposit sets the "desired_deposit" field.
+func (_u *BidsUpdateOne) SetDesiredDeposit(v float64) *BidsUpdateOne {
+	_u.mutation.ResetDesiredDeposit()
+	_u.mutation.SetDesiredDeposit(v)
+	return _u
+}
+
+// SetNillableDesiredDeposit sets the "desired_deposit" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableDesiredDeposit(v *float64) *BidsUpdateOne {
+	if v != nil {
+		_u.SetDesiredDeposit(*v)
+	}
+	return _u
+}
+
+// AddDesiredDeposit adds value to the "desired_deposit" field.
+func (_u *BidsUpdateOne) AddDesiredDeposit(v float64) *BidsUpdateOne {
+	_u.mutation.AddDesiredDeposit(v)
 	return _u
 }
 
@@ -872,12 +1179,6 @@ func (_u *BidsUpdateOne) AddDestinationLng(v float64) *BidsUpdateOne {
 	return _u
 }
 
-// SetRouteID sets the "route_id" field.
-func (_u *BidsUpdateOne) SetRouteID(v []byte) *BidsUpdateOne {
-	_u.mutation.SetRouteID(v)
-	return _u
-}
-
 // SetStatus sets the "status" field.
 func (_u *BidsUpdateOne) SetStatus(v int8) *BidsUpdateOne {
 	_u.mutation.ResetStatus()
@@ -899,15 +1200,29 @@ func (_u *BidsUpdateOne) AddStatus(v int8) *BidsUpdateOne {
 	return _u
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (_u *BidsUpdateOne) SetExpiresAt(v time.Time) *BidsUpdateOne {
+	_u.mutation.SetExpiresAt(v)
+	return _u
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableExpiresAt(v *time.Time) *BidsUpdateOne {
+	if v != nil {
+		_u.SetExpiresAt(*v)
+	}
+	return _u
+}
+
 // AddMatchIDs adds the "matches" edge to the Match entity by IDs.
-func (_u *BidsUpdateOne) AddMatchIDs(ids ...int) *BidsUpdateOne {
+func (_u *BidsUpdateOne) AddMatchIDs(ids ...uuid.UUID) *BidsUpdateOne {
 	_u.mutation.AddMatchIDs(ids...)
 	return _u
 }
 
 // AddMatches adds the "matches" edges to the Match entity.
 func (_u *BidsUpdateOne) AddMatches(v ...*Match) *BidsUpdateOne {
-	ids := make([]int, len(v))
+	ids := make([]uuid.UUID, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
@@ -941,14 +1256,14 @@ func (_u *BidsUpdateOne) ClearMatches() *BidsUpdateOne {
 }
 
 // RemoveMatchIDs removes the "matches" edge to Match entities by IDs.
-func (_u *BidsUpdateOne) RemoveMatchIDs(ids ...int) *BidsUpdateOne {
+func (_u *BidsUpdateOne) RemoveMatchIDs(ids ...uuid.UUID) *BidsUpdateOne {
 	_u.mutation.RemoveMatchIDs(ids...)
 	return _u
 }
 
 // RemoveMatches removes "matches" edges to Match entities.
 func (_u *BidsUpdateOne) RemoveMatches(v ...*Match) *BidsUpdateOne {
-	ids := make([]int, len(v))
+	ids := make([]uuid.UUID, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
@@ -1075,8 +1390,23 @@ func (_u *BidsUpdateOne) sqlSave(ctx context.Context) (_node *Bids, err error) {
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(bids.FieldDeletedAt, field.TypeTime)
 	}
-	if value, ok := _u.mutation.UserID(); ok {
-		_spec.SetField(bids.FieldUserID, field.TypeUUID, value)
+	if value, ok := _u.mutation.ShipperID(); ok {
+		_spec.SetField(bids.FieldShipperID, field.TypeUUID, value)
+	}
+	if value, ok := _u.mutation.ShipperPhone(); ok {
+		_spec.SetField(bids.FieldShipperPhone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ShipperMail(); ok {
+		_spec.SetField(bids.FieldShipperMail, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ConsigneeID(); ok {
+		_spec.SetField(bids.FieldConsigneeID, field.TypeUUID, value)
+	}
+	if value, ok := _u.mutation.ConsigneePhone(); ok {
+		_spec.SetField(bids.FieldConsigneePhone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ConsigneeMail(); ok {
+		_spec.SetField(bids.FieldConsigneeMail, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.VolumeM3(); ok {
 		_spec.SetField(bids.FieldVolumeM3, field.TypeFloat64, value)
@@ -1098,6 +1428,24 @@ func (_u *BidsUpdateOne) sqlSave(ctx context.Context) (_node *Bids, err error) {
 	}
 	if _u.mutation.MaxPriceCleared() {
 		_spec.ClearField(bids.FieldMaxPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.CargoValue(); ok {
+		_spec.SetField(bids.FieldCargoValue, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedCargoValue(); ok {
+		_spec.AddField(bids.FieldCargoValue, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RequiredDeposit(); ok {
+		_spec.SetField(bids.FieldRequiredDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRequiredDeposit(); ok {
+		_spec.AddField(bids.FieldRequiredDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DesiredDeposit(); ok {
+		_spec.SetField(bids.FieldDesiredDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDesiredDeposit(); ok {
+		_spec.AddField(bids.FieldDesiredDeposit, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.ZoneID(); ok {
 		_spec.SetField(bids.FieldZoneID, field.TypeString, value)
@@ -1126,14 +1474,14 @@ func (_u *BidsUpdateOne) sqlSave(ctx context.Context) (_node *Bids, err error) {
 	if value, ok := _u.mutation.AddedDestinationLng(); ok {
 		_spec.AddField(bids.FieldDestinationLng, field.TypeFloat64, value)
 	}
-	if value, ok := _u.mutation.RouteID(); ok {
-		_spec.SetField(bids.FieldRouteID, field.TypeBytes, value)
-	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(bids.FieldStatus, field.TypeInt8, value)
 	}
 	if value, ok := _u.mutation.AddedStatus(); ok {
 		_spec.AddField(bids.FieldStatus, field.TypeInt8, value)
+	}
+	if value, ok := _u.mutation.ExpiresAt(); ok {
+		_spec.SetField(bids.FieldExpiresAt, field.TypeTime, value)
 	}
 	if _u.mutation.MatchesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1143,7 +1491,7 @@ func (_u *BidsUpdateOne) sqlSave(ctx context.Context) (_node *Bids, err error) {
 			Columns: []string{bids.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1156,7 +1504,7 @@ func (_u *BidsUpdateOne) sqlSave(ctx context.Context) (_node *Bids, err error) {
 			Columns: []string{bids.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1172,7 +1520,7 @@ func (_u *BidsUpdateOne) sqlSave(ctx context.Context) (_node *Bids, err error) {
 			Columns: []string{bids.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

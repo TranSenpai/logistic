@@ -41,19 +41,23 @@ func (p *kafkaPublisher) payloadToBytes(payload any) ([]byte, error) {
 	switch v := payload.(type) {
 	case []byte:
 		return v, nil
-	case *entity.Bid:
+	case entity.Bid:
+		pbBid := p.mapper.EntityBidToPbBid(v)
+		return proto.Marshal(pbBid)
+	case entity.Ask:
+		pbAsk := p.mapper.EntityAskToPbAsk(v)
+		return proto.Marshal(pbAsk)
+	case []entity.Bid:
 		if v == nil {
 			return nil, broker.ErrNilMessage
 		}
-		pbBid := p.mapper.EntityBidToPbBid(*v)
-
-		return proto.Marshal(pbBid)
+		payload := &pb.Bids{Bids: p.mapper.EntityBidListToPbBidList(v)}
+		return proto.Marshal(payload)
 	case []entity.Ask:
 		if v == nil {
 			return nil, broker.ErrNilMessage
 		}
 		payload := &pb.Asks{Asks: p.mapper.EntityAskListToPbAskList(v)}
-
 		return proto.Marshal(payload)
 	default:
 		return nil, fmt.Errorf("unsupported payload type for protobuf serialization")

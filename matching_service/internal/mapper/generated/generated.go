@@ -27,13 +27,25 @@ func (c *AppMapperImpl) EntAskToEntityAsk(source *ent.Asks) entity.Ask {
 	var entityAsk entity.Ask
 	if source != nil {
 		entityAsk.ID = c.uuidUUIDToUuidUUID((*source).ID)
-		entityAsk.VehicleID = c.uuidUUIDToUuidUUID((*source).VehicleID)
 		entityAsk.DriverID = c.uuidUUIDToUuidUUID((*source).DriverID)
+		entityAsk.DriverPhone = (*source).DriverPhone
+		entityAsk.DriverMail = (*source).DriverMail
+		entityAsk.VehicleID = c.uuidUUIDToUuidUUID((*source).VehicleID)
+		entityAsk.VehicleType = (*source).VehicleType
 		entityAsk.CurrentLocation = mapper.MapAskCurrentLocation(source)
 		entityAsk.Destination = mapper.MapAskDestination(source)
+		if (*source).RouteID != nil {
+			entityAsk.RouteID = make([]uint8, len((*source).RouteID))
+			for i := 0; i < len((*source).RouteID); i++ {
+				entityAsk.RouteID[i] = (*source).RouteID[i]
+			}
+		}
+		entityAsk.CapacityVolumeCbm = (*source).CapacityVolumeCbm
 		entityAsk.AvailableVolumeM3 = (*source).AvailableVolumeM3
+		entityAsk.CapacityWeightKg = (*source).CapacityWeightKg
 		entityAsk.AvailableWeightKg = (*source).AvailableWeightKg
 		entityAsk.MinPrice = mapper.Float64PtrToFloat64((*source).MinPrice)
+		entityAsk.DesiredDeposit = (*source).DesiredDeposit
 		entityAsk.Status = (*source).Status
 		entityAsk.CreatedAt = mapper.IdentityTime((*source).CreatedAt)
 	}
@@ -53,13 +65,21 @@ func (c *AppMapperImpl) EntBidToEntityBid(source *ent.Bids) entity.Bid {
 	var entityBid entity.Bid
 	if source != nil {
 		entityBid.ID = c.uuidUUIDToUuidUUID((*source).ID)
-		entityBid.UserID = c.uuidUUIDToUuidUUID((*source).UserID)
+		entityBid.ShipperID = c.uuidUUIDToUuidUUID((*source).ShipperID)
+		entityBid.ShipperPhone = (*source).ShipperPhone
+		entityBid.ShipperMail = (*source).ShipperMail
+		entityBid.ConsigneeID = c.uuidUUIDToUuidUUID((*source).ConsigneeID)
+		entityBid.ConsigneePhone = (*source).ConsigneePhone
+		entityBid.ConsigneeMail = (*source).ConsigneeMail
 		entityBid.Origin = mapper.MapBidOrigin(source)
 		entityBid.Destination = mapper.MapBidDestination(source)
 		entityBid.VolumeM3 = (*source).VolumeM3
 		entityBid.WeightKg = (*source).WeightKg
 		entityBid.MaxPrice = mapper.Float64PtrToFloat64((*source).MaxPrice)
 		entityBid.Status = (*source).Status
+		entityBid.CargoValue = (*source).CargoValue
+		entityBid.RequiredDeposit = (*source).RequiredDeposit
+		entityBid.DesiredDeposit = (*source).DesiredDeposit
 		entityBid.CreatedAt = mapper.IdentityTime((*source).CreatedAt)
 	}
 	return entityBid
@@ -77,14 +97,17 @@ func (c *AppMapperImpl) EntityAskListToPbAskList(source []entity.Ask) []*v1.Ask 
 func (c *AppMapperImpl) EntityAskToPbAsk(source entity.Ask) *v1.Ask {
 	var v1Ask v1.Ask
 	v1Ask.Id = mapper.UUIDToBytes(source.ID)
-	v1Ask.VehicleId = mapper.UUIDToBytes(source.VehicleID)
 	v1Ask.DriverId = mapper.UUIDToBytes(source.DriverID)
+	v1Ask.DriverPhone = source.DriverPhone
+	v1Ask.DriverMail = source.DriverMail
+	v1Ask.VehicleId = mapper.UUIDToBytes(source.VehicleID)
 	v1Ask.CurrentLocation = c.MapEntityLocationToPb(source.CurrentLocation)
 	v1Ask.Destination = c.MapEntityLocationToPb(source.Destination)
 	v1Ask.AvailableVolumeM3 = source.AvailableVolumeM3
 	v1Ask.AvailableWeightKg = source.AvailableWeightKg
 	v1Ask.MinPrice = source.MinPrice
 	v1Ask.Status = mapper.Int8ToInt32(source.Status)
+	v1Ask.DesiredDeposit = source.DesiredDeposit
 	v1Ask.ExpiresAt = mapper.TimeToTimestamp(source.ExpiresAt)
 	v1Ask.CreatedAt = mapper.TimeToTimestamp(source.CreatedAt)
 	return &v1Ask
@@ -102,13 +125,21 @@ func (c *AppMapperImpl) EntityBidListToPbBidList(source []entity.Bid) []*v1.Bid 
 func (c *AppMapperImpl) EntityBidToPbBid(source entity.Bid) *v1.Bid {
 	var v1Bid v1.Bid
 	v1Bid.Id = mapper.UUIDToBytes(source.ID)
-	v1Bid.UserId = mapper.UUIDToBytes(source.UserID)
+	v1Bid.ShipperId = mapper.UUIDToBytes(source.ShipperID)
+	v1Bid.ShipperPhone = source.ShipperPhone
+	v1Bid.ShipperMail = source.ShipperMail
+	v1Bid.ConsigneeId = mapper.UUIDToBytes(source.ConsigneeID)
+	v1Bid.ConsigneePhone = source.ConsigneePhone
+	v1Bid.ConsigneeMail = source.ConsigneeMail
 	v1Bid.Origin = c.MapEntityLocationToPb(source.Origin)
 	v1Bid.Destination = c.MapEntityLocationToPb(source.Destination)
 	v1Bid.VolumeM3 = source.VolumeM3
 	v1Bid.WeightKg = source.WeightKg
 	v1Bid.MaxPrice = source.MaxPrice
 	v1Bid.Status = mapper.Int8ToInt32(source.Status)
+	v1Bid.CargoValue = source.CargoValue
+	v1Bid.RequiredDeposit = source.RequiredDeposit
+	v1Bid.DesiredDeposit = source.DesiredDeposit
 	v1Bid.ExpiresAt = mapper.TimeToTimestamp(source.ExpiresAt)
 	v1Bid.CreatedAt = mapper.TimeToTimestamp(source.CreatedAt)
 	return &v1Bid
@@ -129,41 +160,56 @@ func (c *AppMapperImpl) MapLocation(source *v1.Location) entity.Location {
 	}
 	return entityLocation
 }
-func (c *AppMapperImpl) SubmitAskReqToEntity(source *v1.SubmitAskRequest) (entity.Ask, error) {
+func (c *AppMapperImpl) PbAskToEntity(source *v1.Ask) (entity.Ask, error) {
 	var entityAsk entity.Ask
 	if source != nil {
-		uuidUUID, err := mapper.BytesToUUID((*source).VehicleId)
+		uuidUUID, err := mapper.BytesToUUID((*source).DriverId)
 		if err != nil {
 			return entityAsk, err
 		}
-		entityAsk.VehicleID = uuidUUID
-		uuidUUID2, err := mapper.BytesToUUID((*source).DriverId)
+		entityAsk.DriverID = uuidUUID
+		entityAsk.DriverPhone = (*source).DriverPhone
+		entityAsk.DriverMail = (*source).DriverMail
+		uuidUUID2, err := mapper.BytesToUUID((*source).VehicleId)
 		if err != nil {
 			return entityAsk, err
 		}
-		entityAsk.DriverID = uuidUUID2
+		entityAsk.VehicleID = uuidUUID2
 		entityAsk.CurrentLocation = c.MapLocation((*source).CurrentLocation)
 		entityAsk.Destination = c.MapLocation((*source).Destination)
 		entityAsk.AvailableVolumeM3 = (*source).AvailableVolumeM3
 		entityAsk.AvailableWeightKg = (*source).AvailableWeightKg
 		entityAsk.MinPrice = (*source).MinPrice
+		entityAsk.DesiredDeposit = (*source).DesiredDeposit
 		entityAsk.ExpiresAt = mapper.TimestampToTime((*source).ExpiresAt)
 	}
 	return entityAsk, nil
 }
-func (c *AppMapperImpl) SubmitBidReqToEntity(source *v1.SubmitBidRequest) (entity.Bid, error) {
+func (c *AppMapperImpl) PbBidToEntity(source *v1.Bid) (entity.Bid, error) {
 	var entityBid entity.Bid
 	if source != nil {
-		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
+		uuidUUID, err := mapper.BytesToUUID((*source).ShipperId)
 		if err != nil {
 			return entityBid, err
 		}
-		entityBid.UserID = uuidUUID
+		entityBid.ShipperID = uuidUUID
+		entityBid.ShipperPhone = (*source).ShipperPhone
+		entityBid.ShipperMail = (*source).ShipperMail
+		uuidUUID2, err := mapper.BytesToUUID((*source).ConsigneeId)
+		if err != nil {
+			return entityBid, err
+		}
+		entityBid.ConsigneeID = uuidUUID2
+		entityBid.ConsigneePhone = (*source).ConsigneePhone
+		entityBid.ConsigneeMail = (*source).ConsigneeMail
 		entityBid.Origin = c.MapLocation((*source).Origin)
 		entityBid.Destination = c.MapLocation((*source).Destination)
 		entityBid.VolumeM3 = (*source).VolumeM3
 		entityBid.WeightKg = (*source).WeightKg
 		entityBid.MaxPrice = (*source).MaxPrice
+		entityBid.CargoValue = (*source).CargoValue
+		entityBid.RequiredDeposit = (*source).RequiredDeposit
+		entityBid.DesiredDeposit = (*source).DesiredDeposit
 		entityBid.ExpiresAt = mapper.TimestampToTime((*source).ExpiresAt)
 	}
 	return entityBid, nil

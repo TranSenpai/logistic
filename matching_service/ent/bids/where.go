@@ -86,9 +86,34 @@ func DeletedAt(v time.Time) predicate.Bids {
 	return predicate.Bids(sql.FieldEQ(FieldDeletedAt, v))
 }
 
-// UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
-func UserID(v uuid.UUID) predicate.Bids {
-	return predicate.Bids(sql.FieldEQ(FieldUserID, v))
+// ShipperID applies equality check predicate on the "shipper_id" field. It's identical to ShipperIDEQ.
+func ShipperID(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldShipperID, v))
+}
+
+// ShipperPhone applies equality check predicate on the "shipper_phone" field. It's identical to ShipperPhoneEQ.
+func ShipperPhone(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldShipperPhone, v))
+}
+
+// ShipperMail applies equality check predicate on the "shipper_mail" field. It's identical to ShipperMailEQ.
+func ShipperMail(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldShipperMail, v))
+}
+
+// ConsigneeID applies equality check predicate on the "consignee_id" field. It's identical to ConsigneeIDEQ.
+func ConsigneeID(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldConsigneeID, v))
+}
+
+// ConsigneePhone applies equality check predicate on the "consignee_phone" field. It's identical to ConsigneePhoneEQ.
+func ConsigneePhone(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldConsigneePhone, v))
+}
+
+// ConsigneeMail applies equality check predicate on the "consignee_mail" field. It's identical to ConsigneeMailEQ.
+func ConsigneeMail(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldConsigneeMail, v))
 }
 
 // VolumeM3 applies equality check predicate on the "volume_m3" field. It's identical to VolumeM3EQ.
@@ -104,6 +129,21 @@ func WeightKg(v float64) predicate.Bids {
 // MaxPrice applies equality check predicate on the "max_price" field. It's identical to MaxPriceEQ.
 func MaxPrice(v float64) predicate.Bids {
 	return predicate.Bids(sql.FieldEQ(FieldMaxPrice, v))
+}
+
+// CargoValue applies equality check predicate on the "cargo_value" field. It's identical to CargoValueEQ.
+func CargoValue(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldCargoValue, v))
+}
+
+// RequiredDeposit applies equality check predicate on the "required_deposit" field. It's identical to RequiredDepositEQ.
+func RequiredDeposit(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldRequiredDeposit, v))
+}
+
+// DesiredDeposit applies equality check predicate on the "desired_deposit" field. It's identical to DesiredDepositEQ.
+func DesiredDeposit(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldDesiredDeposit, v))
 }
 
 // ZoneID applies equality check predicate on the "zone_id" field. It's identical to ZoneIDEQ.
@@ -131,14 +171,14 @@ func DestinationLng(v float64) predicate.Bids {
 	return predicate.Bids(sql.FieldEQ(FieldDestinationLng, v))
 }
 
-// RouteID applies equality check predicate on the "route_id" field. It's identical to RouteIDEQ.
-func RouteID(v []byte) predicate.Bids {
-	return predicate.Bids(sql.FieldEQ(FieldRouteID, v))
-}
-
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v int8) predicate.Bids {
 	return predicate.Bids(sql.FieldEQ(FieldStatus, v))
+}
+
+// ExpiresAt applies equality check predicate on the "expires_at" field. It's identical to ExpiresAtEQ.
+func ExpiresAt(v time.Time) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldExpiresAt, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -361,44 +401,344 @@ func DeletedAtNotNil() predicate.Bids {
 	return predicate.Bids(sql.FieldNotNull(FieldDeletedAt))
 }
 
-// UserIDEQ applies the EQ predicate on the "user_id" field.
-func UserIDEQ(v uuid.UUID) predicate.Bids {
-	return predicate.Bids(sql.FieldEQ(FieldUserID, v))
+// ShipperIDEQ applies the EQ predicate on the "shipper_id" field.
+func ShipperIDEQ(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldShipperID, v))
 }
 
-// UserIDNEQ applies the NEQ predicate on the "user_id" field.
-func UserIDNEQ(v uuid.UUID) predicate.Bids {
-	return predicate.Bids(sql.FieldNEQ(FieldUserID, v))
+// ShipperIDNEQ applies the NEQ predicate on the "shipper_id" field.
+func ShipperIDNEQ(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldNEQ(FieldShipperID, v))
 }
 
-// UserIDIn applies the In predicate on the "user_id" field.
-func UserIDIn(vs ...uuid.UUID) predicate.Bids {
-	return predicate.Bids(sql.FieldIn(FieldUserID, vs...))
+// ShipperIDIn applies the In predicate on the "shipper_id" field.
+func ShipperIDIn(vs ...uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldIn(FieldShipperID, vs...))
 }
 
-// UserIDNotIn applies the NotIn predicate on the "user_id" field.
-func UserIDNotIn(vs ...uuid.UUID) predicate.Bids {
-	return predicate.Bids(sql.FieldNotIn(FieldUserID, vs...))
+// ShipperIDNotIn applies the NotIn predicate on the "shipper_id" field.
+func ShipperIDNotIn(vs ...uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldNotIn(FieldShipperID, vs...))
 }
 
-// UserIDGT applies the GT predicate on the "user_id" field.
-func UserIDGT(v uuid.UUID) predicate.Bids {
-	return predicate.Bids(sql.FieldGT(FieldUserID, v))
+// ShipperIDGT applies the GT predicate on the "shipper_id" field.
+func ShipperIDGT(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldGT(FieldShipperID, v))
 }
 
-// UserIDGTE applies the GTE predicate on the "user_id" field.
-func UserIDGTE(v uuid.UUID) predicate.Bids {
-	return predicate.Bids(sql.FieldGTE(FieldUserID, v))
+// ShipperIDGTE applies the GTE predicate on the "shipper_id" field.
+func ShipperIDGTE(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldGTE(FieldShipperID, v))
 }
 
-// UserIDLT applies the LT predicate on the "user_id" field.
-func UserIDLT(v uuid.UUID) predicate.Bids {
-	return predicate.Bids(sql.FieldLT(FieldUserID, v))
+// ShipperIDLT applies the LT predicate on the "shipper_id" field.
+func ShipperIDLT(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldLT(FieldShipperID, v))
 }
 
-// UserIDLTE applies the LTE predicate on the "user_id" field.
-func UserIDLTE(v uuid.UUID) predicate.Bids {
-	return predicate.Bids(sql.FieldLTE(FieldUserID, v))
+// ShipperIDLTE applies the LTE predicate on the "shipper_id" field.
+func ShipperIDLTE(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldLTE(FieldShipperID, v))
+}
+
+// ShipperPhoneEQ applies the EQ predicate on the "shipper_phone" field.
+func ShipperPhoneEQ(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldShipperPhone, v))
+}
+
+// ShipperPhoneNEQ applies the NEQ predicate on the "shipper_phone" field.
+func ShipperPhoneNEQ(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldNEQ(FieldShipperPhone, v))
+}
+
+// ShipperPhoneIn applies the In predicate on the "shipper_phone" field.
+func ShipperPhoneIn(vs ...string) predicate.Bids {
+	return predicate.Bids(sql.FieldIn(FieldShipperPhone, vs...))
+}
+
+// ShipperPhoneNotIn applies the NotIn predicate on the "shipper_phone" field.
+func ShipperPhoneNotIn(vs ...string) predicate.Bids {
+	return predicate.Bids(sql.FieldNotIn(FieldShipperPhone, vs...))
+}
+
+// ShipperPhoneGT applies the GT predicate on the "shipper_phone" field.
+func ShipperPhoneGT(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldGT(FieldShipperPhone, v))
+}
+
+// ShipperPhoneGTE applies the GTE predicate on the "shipper_phone" field.
+func ShipperPhoneGTE(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldGTE(FieldShipperPhone, v))
+}
+
+// ShipperPhoneLT applies the LT predicate on the "shipper_phone" field.
+func ShipperPhoneLT(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldLT(FieldShipperPhone, v))
+}
+
+// ShipperPhoneLTE applies the LTE predicate on the "shipper_phone" field.
+func ShipperPhoneLTE(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldLTE(FieldShipperPhone, v))
+}
+
+// ShipperPhoneContains applies the Contains predicate on the "shipper_phone" field.
+func ShipperPhoneContains(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldContains(FieldShipperPhone, v))
+}
+
+// ShipperPhoneHasPrefix applies the HasPrefix predicate on the "shipper_phone" field.
+func ShipperPhoneHasPrefix(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldHasPrefix(FieldShipperPhone, v))
+}
+
+// ShipperPhoneHasSuffix applies the HasSuffix predicate on the "shipper_phone" field.
+func ShipperPhoneHasSuffix(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldHasSuffix(FieldShipperPhone, v))
+}
+
+// ShipperPhoneEqualFold applies the EqualFold predicate on the "shipper_phone" field.
+func ShipperPhoneEqualFold(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEqualFold(FieldShipperPhone, v))
+}
+
+// ShipperPhoneContainsFold applies the ContainsFold predicate on the "shipper_phone" field.
+func ShipperPhoneContainsFold(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldContainsFold(FieldShipperPhone, v))
+}
+
+// ShipperMailEQ applies the EQ predicate on the "shipper_mail" field.
+func ShipperMailEQ(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldShipperMail, v))
+}
+
+// ShipperMailNEQ applies the NEQ predicate on the "shipper_mail" field.
+func ShipperMailNEQ(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldNEQ(FieldShipperMail, v))
+}
+
+// ShipperMailIn applies the In predicate on the "shipper_mail" field.
+func ShipperMailIn(vs ...string) predicate.Bids {
+	return predicate.Bids(sql.FieldIn(FieldShipperMail, vs...))
+}
+
+// ShipperMailNotIn applies the NotIn predicate on the "shipper_mail" field.
+func ShipperMailNotIn(vs ...string) predicate.Bids {
+	return predicate.Bids(sql.FieldNotIn(FieldShipperMail, vs...))
+}
+
+// ShipperMailGT applies the GT predicate on the "shipper_mail" field.
+func ShipperMailGT(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldGT(FieldShipperMail, v))
+}
+
+// ShipperMailGTE applies the GTE predicate on the "shipper_mail" field.
+func ShipperMailGTE(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldGTE(FieldShipperMail, v))
+}
+
+// ShipperMailLT applies the LT predicate on the "shipper_mail" field.
+func ShipperMailLT(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldLT(FieldShipperMail, v))
+}
+
+// ShipperMailLTE applies the LTE predicate on the "shipper_mail" field.
+func ShipperMailLTE(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldLTE(FieldShipperMail, v))
+}
+
+// ShipperMailContains applies the Contains predicate on the "shipper_mail" field.
+func ShipperMailContains(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldContains(FieldShipperMail, v))
+}
+
+// ShipperMailHasPrefix applies the HasPrefix predicate on the "shipper_mail" field.
+func ShipperMailHasPrefix(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldHasPrefix(FieldShipperMail, v))
+}
+
+// ShipperMailHasSuffix applies the HasSuffix predicate on the "shipper_mail" field.
+func ShipperMailHasSuffix(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldHasSuffix(FieldShipperMail, v))
+}
+
+// ShipperMailEqualFold applies the EqualFold predicate on the "shipper_mail" field.
+func ShipperMailEqualFold(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEqualFold(FieldShipperMail, v))
+}
+
+// ShipperMailContainsFold applies the ContainsFold predicate on the "shipper_mail" field.
+func ShipperMailContainsFold(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldContainsFold(FieldShipperMail, v))
+}
+
+// ConsigneeIDEQ applies the EQ predicate on the "consignee_id" field.
+func ConsigneeIDEQ(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldConsigneeID, v))
+}
+
+// ConsigneeIDNEQ applies the NEQ predicate on the "consignee_id" field.
+func ConsigneeIDNEQ(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldNEQ(FieldConsigneeID, v))
+}
+
+// ConsigneeIDIn applies the In predicate on the "consignee_id" field.
+func ConsigneeIDIn(vs ...uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldIn(FieldConsigneeID, vs...))
+}
+
+// ConsigneeIDNotIn applies the NotIn predicate on the "consignee_id" field.
+func ConsigneeIDNotIn(vs ...uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldNotIn(FieldConsigneeID, vs...))
+}
+
+// ConsigneeIDGT applies the GT predicate on the "consignee_id" field.
+func ConsigneeIDGT(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldGT(FieldConsigneeID, v))
+}
+
+// ConsigneeIDGTE applies the GTE predicate on the "consignee_id" field.
+func ConsigneeIDGTE(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldGTE(FieldConsigneeID, v))
+}
+
+// ConsigneeIDLT applies the LT predicate on the "consignee_id" field.
+func ConsigneeIDLT(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldLT(FieldConsigneeID, v))
+}
+
+// ConsigneeIDLTE applies the LTE predicate on the "consignee_id" field.
+func ConsigneeIDLTE(v uuid.UUID) predicate.Bids {
+	return predicate.Bids(sql.FieldLTE(FieldConsigneeID, v))
+}
+
+// ConsigneePhoneEQ applies the EQ predicate on the "consignee_phone" field.
+func ConsigneePhoneEQ(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldConsigneePhone, v))
+}
+
+// ConsigneePhoneNEQ applies the NEQ predicate on the "consignee_phone" field.
+func ConsigneePhoneNEQ(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldNEQ(FieldConsigneePhone, v))
+}
+
+// ConsigneePhoneIn applies the In predicate on the "consignee_phone" field.
+func ConsigneePhoneIn(vs ...string) predicate.Bids {
+	return predicate.Bids(sql.FieldIn(FieldConsigneePhone, vs...))
+}
+
+// ConsigneePhoneNotIn applies the NotIn predicate on the "consignee_phone" field.
+func ConsigneePhoneNotIn(vs ...string) predicate.Bids {
+	return predicate.Bids(sql.FieldNotIn(FieldConsigneePhone, vs...))
+}
+
+// ConsigneePhoneGT applies the GT predicate on the "consignee_phone" field.
+func ConsigneePhoneGT(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldGT(FieldConsigneePhone, v))
+}
+
+// ConsigneePhoneGTE applies the GTE predicate on the "consignee_phone" field.
+func ConsigneePhoneGTE(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldGTE(FieldConsigneePhone, v))
+}
+
+// ConsigneePhoneLT applies the LT predicate on the "consignee_phone" field.
+func ConsigneePhoneLT(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldLT(FieldConsigneePhone, v))
+}
+
+// ConsigneePhoneLTE applies the LTE predicate on the "consignee_phone" field.
+func ConsigneePhoneLTE(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldLTE(FieldConsigneePhone, v))
+}
+
+// ConsigneePhoneContains applies the Contains predicate on the "consignee_phone" field.
+func ConsigneePhoneContains(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldContains(FieldConsigneePhone, v))
+}
+
+// ConsigneePhoneHasPrefix applies the HasPrefix predicate on the "consignee_phone" field.
+func ConsigneePhoneHasPrefix(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldHasPrefix(FieldConsigneePhone, v))
+}
+
+// ConsigneePhoneHasSuffix applies the HasSuffix predicate on the "consignee_phone" field.
+func ConsigneePhoneHasSuffix(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldHasSuffix(FieldConsigneePhone, v))
+}
+
+// ConsigneePhoneEqualFold applies the EqualFold predicate on the "consignee_phone" field.
+func ConsigneePhoneEqualFold(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEqualFold(FieldConsigneePhone, v))
+}
+
+// ConsigneePhoneContainsFold applies the ContainsFold predicate on the "consignee_phone" field.
+func ConsigneePhoneContainsFold(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldContainsFold(FieldConsigneePhone, v))
+}
+
+// ConsigneeMailEQ applies the EQ predicate on the "consignee_mail" field.
+func ConsigneeMailEQ(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldConsigneeMail, v))
+}
+
+// ConsigneeMailNEQ applies the NEQ predicate on the "consignee_mail" field.
+func ConsigneeMailNEQ(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldNEQ(FieldConsigneeMail, v))
+}
+
+// ConsigneeMailIn applies the In predicate on the "consignee_mail" field.
+func ConsigneeMailIn(vs ...string) predicate.Bids {
+	return predicate.Bids(sql.FieldIn(FieldConsigneeMail, vs...))
+}
+
+// ConsigneeMailNotIn applies the NotIn predicate on the "consignee_mail" field.
+func ConsigneeMailNotIn(vs ...string) predicate.Bids {
+	return predicate.Bids(sql.FieldNotIn(FieldConsigneeMail, vs...))
+}
+
+// ConsigneeMailGT applies the GT predicate on the "consignee_mail" field.
+func ConsigneeMailGT(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldGT(FieldConsigneeMail, v))
+}
+
+// ConsigneeMailGTE applies the GTE predicate on the "consignee_mail" field.
+func ConsigneeMailGTE(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldGTE(FieldConsigneeMail, v))
+}
+
+// ConsigneeMailLT applies the LT predicate on the "consignee_mail" field.
+func ConsigneeMailLT(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldLT(FieldConsigneeMail, v))
+}
+
+// ConsigneeMailLTE applies the LTE predicate on the "consignee_mail" field.
+func ConsigneeMailLTE(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldLTE(FieldConsigneeMail, v))
+}
+
+// ConsigneeMailContains applies the Contains predicate on the "consignee_mail" field.
+func ConsigneeMailContains(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldContains(FieldConsigneeMail, v))
+}
+
+// ConsigneeMailHasPrefix applies the HasPrefix predicate on the "consignee_mail" field.
+func ConsigneeMailHasPrefix(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldHasPrefix(FieldConsigneeMail, v))
+}
+
+// ConsigneeMailHasSuffix applies the HasSuffix predicate on the "consignee_mail" field.
+func ConsigneeMailHasSuffix(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldHasSuffix(FieldConsigneeMail, v))
+}
+
+// ConsigneeMailEqualFold applies the EqualFold predicate on the "consignee_mail" field.
+func ConsigneeMailEqualFold(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldEqualFold(FieldConsigneeMail, v))
+}
+
+// ConsigneeMailContainsFold applies the ContainsFold predicate on the "consignee_mail" field.
+func ConsigneeMailContainsFold(v string) predicate.Bids {
+	return predicate.Bids(sql.FieldContainsFold(FieldConsigneeMail, v))
 }
 
 // VolumeM3EQ applies the EQ predicate on the "volume_m3" field.
@@ -529,6 +869,126 @@ func MaxPriceIsNil() predicate.Bids {
 // MaxPriceNotNil applies the NotNil predicate on the "max_price" field.
 func MaxPriceNotNil() predicate.Bids {
 	return predicate.Bids(sql.FieldNotNull(FieldMaxPrice))
+}
+
+// CargoValueEQ applies the EQ predicate on the "cargo_value" field.
+func CargoValueEQ(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldCargoValue, v))
+}
+
+// CargoValueNEQ applies the NEQ predicate on the "cargo_value" field.
+func CargoValueNEQ(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldNEQ(FieldCargoValue, v))
+}
+
+// CargoValueIn applies the In predicate on the "cargo_value" field.
+func CargoValueIn(vs ...float64) predicate.Bids {
+	return predicate.Bids(sql.FieldIn(FieldCargoValue, vs...))
+}
+
+// CargoValueNotIn applies the NotIn predicate on the "cargo_value" field.
+func CargoValueNotIn(vs ...float64) predicate.Bids {
+	return predicate.Bids(sql.FieldNotIn(FieldCargoValue, vs...))
+}
+
+// CargoValueGT applies the GT predicate on the "cargo_value" field.
+func CargoValueGT(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldGT(FieldCargoValue, v))
+}
+
+// CargoValueGTE applies the GTE predicate on the "cargo_value" field.
+func CargoValueGTE(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldGTE(FieldCargoValue, v))
+}
+
+// CargoValueLT applies the LT predicate on the "cargo_value" field.
+func CargoValueLT(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldLT(FieldCargoValue, v))
+}
+
+// CargoValueLTE applies the LTE predicate on the "cargo_value" field.
+func CargoValueLTE(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldLTE(FieldCargoValue, v))
+}
+
+// RequiredDepositEQ applies the EQ predicate on the "required_deposit" field.
+func RequiredDepositEQ(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldRequiredDeposit, v))
+}
+
+// RequiredDepositNEQ applies the NEQ predicate on the "required_deposit" field.
+func RequiredDepositNEQ(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldNEQ(FieldRequiredDeposit, v))
+}
+
+// RequiredDepositIn applies the In predicate on the "required_deposit" field.
+func RequiredDepositIn(vs ...float64) predicate.Bids {
+	return predicate.Bids(sql.FieldIn(FieldRequiredDeposit, vs...))
+}
+
+// RequiredDepositNotIn applies the NotIn predicate on the "required_deposit" field.
+func RequiredDepositNotIn(vs ...float64) predicate.Bids {
+	return predicate.Bids(sql.FieldNotIn(FieldRequiredDeposit, vs...))
+}
+
+// RequiredDepositGT applies the GT predicate on the "required_deposit" field.
+func RequiredDepositGT(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldGT(FieldRequiredDeposit, v))
+}
+
+// RequiredDepositGTE applies the GTE predicate on the "required_deposit" field.
+func RequiredDepositGTE(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldGTE(FieldRequiredDeposit, v))
+}
+
+// RequiredDepositLT applies the LT predicate on the "required_deposit" field.
+func RequiredDepositLT(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldLT(FieldRequiredDeposit, v))
+}
+
+// RequiredDepositLTE applies the LTE predicate on the "required_deposit" field.
+func RequiredDepositLTE(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldLTE(FieldRequiredDeposit, v))
+}
+
+// DesiredDepositEQ applies the EQ predicate on the "desired_deposit" field.
+func DesiredDepositEQ(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldDesiredDeposit, v))
+}
+
+// DesiredDepositNEQ applies the NEQ predicate on the "desired_deposit" field.
+func DesiredDepositNEQ(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldNEQ(FieldDesiredDeposit, v))
+}
+
+// DesiredDepositIn applies the In predicate on the "desired_deposit" field.
+func DesiredDepositIn(vs ...float64) predicate.Bids {
+	return predicate.Bids(sql.FieldIn(FieldDesiredDeposit, vs...))
+}
+
+// DesiredDepositNotIn applies the NotIn predicate on the "desired_deposit" field.
+func DesiredDepositNotIn(vs ...float64) predicate.Bids {
+	return predicate.Bids(sql.FieldNotIn(FieldDesiredDeposit, vs...))
+}
+
+// DesiredDepositGT applies the GT predicate on the "desired_deposit" field.
+func DesiredDepositGT(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldGT(FieldDesiredDeposit, v))
+}
+
+// DesiredDepositGTE applies the GTE predicate on the "desired_deposit" field.
+func DesiredDepositGTE(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldGTE(FieldDesiredDeposit, v))
+}
+
+// DesiredDepositLT applies the LT predicate on the "desired_deposit" field.
+func DesiredDepositLT(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldLT(FieldDesiredDeposit, v))
+}
+
+// DesiredDepositLTE applies the LTE predicate on the "desired_deposit" field.
+func DesiredDepositLTE(v float64) predicate.Bids {
+	return predicate.Bids(sql.FieldLTE(FieldDesiredDeposit, v))
 }
 
 // ZoneIDEQ applies the EQ predicate on the "zone_id" field.
@@ -756,46 +1216,6 @@ func DestinationLngLTE(v float64) predicate.Bids {
 	return predicate.Bids(sql.FieldLTE(FieldDestinationLng, v))
 }
 
-// RouteIDEQ applies the EQ predicate on the "route_id" field.
-func RouteIDEQ(v []byte) predicate.Bids {
-	return predicate.Bids(sql.FieldEQ(FieldRouteID, v))
-}
-
-// RouteIDNEQ applies the NEQ predicate on the "route_id" field.
-func RouteIDNEQ(v []byte) predicate.Bids {
-	return predicate.Bids(sql.FieldNEQ(FieldRouteID, v))
-}
-
-// RouteIDIn applies the In predicate on the "route_id" field.
-func RouteIDIn(vs ...[]byte) predicate.Bids {
-	return predicate.Bids(sql.FieldIn(FieldRouteID, vs...))
-}
-
-// RouteIDNotIn applies the NotIn predicate on the "route_id" field.
-func RouteIDNotIn(vs ...[]byte) predicate.Bids {
-	return predicate.Bids(sql.FieldNotIn(FieldRouteID, vs...))
-}
-
-// RouteIDGT applies the GT predicate on the "route_id" field.
-func RouteIDGT(v []byte) predicate.Bids {
-	return predicate.Bids(sql.FieldGT(FieldRouteID, v))
-}
-
-// RouteIDGTE applies the GTE predicate on the "route_id" field.
-func RouteIDGTE(v []byte) predicate.Bids {
-	return predicate.Bids(sql.FieldGTE(FieldRouteID, v))
-}
-
-// RouteIDLT applies the LT predicate on the "route_id" field.
-func RouteIDLT(v []byte) predicate.Bids {
-	return predicate.Bids(sql.FieldLT(FieldRouteID, v))
-}
-
-// RouteIDLTE applies the LTE predicate on the "route_id" field.
-func RouteIDLTE(v []byte) predicate.Bids {
-	return predicate.Bids(sql.FieldLTE(FieldRouteID, v))
-}
-
 // StatusEQ applies the EQ predicate on the "status" field.
 func StatusEQ(v int8) predicate.Bids {
 	return predicate.Bids(sql.FieldEQ(FieldStatus, v))
@@ -834,6 +1254,46 @@ func StatusLT(v int8) predicate.Bids {
 // StatusLTE applies the LTE predicate on the "status" field.
 func StatusLTE(v int8) predicate.Bids {
 	return predicate.Bids(sql.FieldLTE(FieldStatus, v))
+}
+
+// ExpiresAtEQ applies the EQ predicate on the "expires_at" field.
+func ExpiresAtEQ(v time.Time) predicate.Bids {
+	return predicate.Bids(sql.FieldEQ(FieldExpiresAt, v))
+}
+
+// ExpiresAtNEQ applies the NEQ predicate on the "expires_at" field.
+func ExpiresAtNEQ(v time.Time) predicate.Bids {
+	return predicate.Bids(sql.FieldNEQ(FieldExpiresAt, v))
+}
+
+// ExpiresAtIn applies the In predicate on the "expires_at" field.
+func ExpiresAtIn(vs ...time.Time) predicate.Bids {
+	return predicate.Bids(sql.FieldIn(FieldExpiresAt, vs...))
+}
+
+// ExpiresAtNotIn applies the NotIn predicate on the "expires_at" field.
+func ExpiresAtNotIn(vs ...time.Time) predicate.Bids {
+	return predicate.Bids(sql.FieldNotIn(FieldExpiresAt, vs...))
+}
+
+// ExpiresAtGT applies the GT predicate on the "expires_at" field.
+func ExpiresAtGT(v time.Time) predicate.Bids {
+	return predicate.Bids(sql.FieldGT(FieldExpiresAt, v))
+}
+
+// ExpiresAtGTE applies the GTE predicate on the "expires_at" field.
+func ExpiresAtGTE(v time.Time) predicate.Bids {
+	return predicate.Bids(sql.FieldGTE(FieldExpiresAt, v))
+}
+
+// ExpiresAtLT applies the LT predicate on the "expires_at" field.
+func ExpiresAtLT(v time.Time) predicate.Bids {
+	return predicate.Bids(sql.FieldLT(FieldExpiresAt, v))
+}
+
+// ExpiresAtLTE applies the LTE predicate on the "expires_at" field.
+func ExpiresAtLTE(v time.Time) predicate.Bids {
+	return predicate.Bids(sql.FieldLTE(FieldExpiresAt, v))
 }
 
 // HasMatches applies the HasEdge predicate on the "matches" edge.

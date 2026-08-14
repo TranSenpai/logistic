@@ -19,7 +19,7 @@ import (
 type Match struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
@@ -40,6 +40,18 @@ type Match struct {
 	AgreedPrice float64 `json:"agreed_price,omitempty"`
 	// Status holds the value of the "status" field.
 	Status int `json:"status,omitempty"`
+	// ConsensusPrice holds the value of the "consensus_price" field.
+	ConsensusPrice float64 `json:"consensus_price,omitempty"`
+	// ConsensusDeposit holds the value of the "consensus_deposit" field.
+	ConsensusDeposit float64 `json:"consensus_deposit,omitempty"`
+	// ShipperSignature holds the value of the "shipper_signature" field.
+	ShipperSignature string `json:"shipper_signature,omitempty"`
+	// DriverSignature holds the value of the "driver_signature" field.
+	DriverSignature string `json:"driver_signature,omitempty"`
+	// SystemSignature holds the value of the "system_signature" field.
+	SystemSignature string `json:"system_signature,omitempty"`
+	// AgreedAt holds the value of the "agreed_at" field.
+	AgreedAt time.Time `json:"agreed_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MatchQuery when eager-loading is set.
 	Edges        MatchEdges `json:"edges"`
@@ -86,13 +98,15 @@ func (*Match) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case match.FieldIsDeleted:
 			values[i] = new(sql.NullBool)
-		case match.FieldAgreedPrice:
+		case match.FieldAgreedPrice, match.FieldConsensusPrice, match.FieldConsensusDeposit:
 			values[i] = new(sql.NullFloat64)
-		case match.FieldID, match.FieldStatus:
+		case match.FieldStatus:
 			values[i] = new(sql.NullInt64)
-		case match.FieldCreatedAt, match.FieldUpdatedAt, match.FieldDeletedAt:
+		case match.FieldShipperSignature, match.FieldDriverSignature, match.FieldSystemSignature:
+			values[i] = new(sql.NullString)
+		case match.FieldCreatedAt, match.FieldUpdatedAt, match.FieldDeletedAt, match.FieldAgreedAt:
 			values[i] = new(sql.NullTime)
-		case match.FieldCreatedBy, match.FieldUpdatedBy, match.FieldBidID, match.FieldAskID:
+		case match.FieldID, match.FieldCreatedBy, match.FieldUpdatedBy, match.FieldBidID, match.FieldAskID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -110,11 +124,11 @@ func (_m *Match) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case match.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				_m.ID = *value
 			}
-			_m.ID = int(value.Int64)
 		case match.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
@@ -174,6 +188,42 @@ func (_m *Match) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = int(value.Int64)
+			}
+		case match.FieldConsensusPrice:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field consensus_price", values[i])
+			} else if value.Valid {
+				_m.ConsensusPrice = value.Float64
+			}
+		case match.FieldConsensusDeposit:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field consensus_deposit", values[i])
+			} else if value.Valid {
+				_m.ConsensusDeposit = value.Float64
+			}
+		case match.FieldShipperSignature:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field shipper_signature", values[i])
+			} else if value.Valid {
+				_m.ShipperSignature = value.String
+			}
+		case match.FieldDriverSignature:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field driver_signature", values[i])
+			} else if value.Valid {
+				_m.DriverSignature = value.String
+			}
+		case match.FieldSystemSignature:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field system_signature", values[i])
+			} else if value.Valid {
+				_m.SystemSignature = value.String
+			}
+		case match.FieldAgreedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field agreed_at", values[i])
+			} else if value.Valid {
+				_m.AgreedAt = value.Time
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -250,6 +300,24 @@ func (_m *Match) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))
+	builder.WriteString(", ")
+	builder.WriteString("consensus_price=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ConsensusPrice))
+	builder.WriteString(", ")
+	builder.WriteString("consensus_deposit=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ConsensusDeposit))
+	builder.WriteString(", ")
+	builder.WriteString("shipper_signature=")
+	builder.WriteString(_m.ShipperSignature)
+	builder.WriteString(", ")
+	builder.WriteString("driver_signature=")
+	builder.WriteString(_m.DriverSignature)
+	builder.WriteString(", ")
+	builder.WriteString("system_signature=")
+	builder.WriteString(_m.SystemSignature)
+	builder.WriteString(", ")
+	builder.WriteString("agreed_at=")
+	builder.WriteString(_m.AgreedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

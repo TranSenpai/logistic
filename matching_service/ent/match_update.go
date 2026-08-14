@@ -169,6 +169,104 @@ func (_u *MatchUpdate) AddStatus(v int) *MatchUpdate {
 	return _u
 }
 
+// SetConsensusPrice sets the "consensus_price" field.
+func (_u *MatchUpdate) SetConsensusPrice(v float64) *MatchUpdate {
+	_u.mutation.ResetConsensusPrice()
+	_u.mutation.SetConsensusPrice(v)
+	return _u
+}
+
+// SetNillableConsensusPrice sets the "consensus_price" field if the given value is not nil.
+func (_u *MatchUpdate) SetNillableConsensusPrice(v *float64) *MatchUpdate {
+	if v != nil {
+		_u.SetConsensusPrice(*v)
+	}
+	return _u
+}
+
+// AddConsensusPrice adds value to the "consensus_price" field.
+func (_u *MatchUpdate) AddConsensusPrice(v float64) *MatchUpdate {
+	_u.mutation.AddConsensusPrice(v)
+	return _u
+}
+
+// SetConsensusDeposit sets the "consensus_deposit" field.
+func (_u *MatchUpdate) SetConsensusDeposit(v float64) *MatchUpdate {
+	_u.mutation.ResetConsensusDeposit()
+	_u.mutation.SetConsensusDeposit(v)
+	return _u
+}
+
+// SetNillableConsensusDeposit sets the "consensus_deposit" field if the given value is not nil.
+func (_u *MatchUpdate) SetNillableConsensusDeposit(v *float64) *MatchUpdate {
+	if v != nil {
+		_u.SetConsensusDeposit(*v)
+	}
+	return _u
+}
+
+// AddConsensusDeposit adds value to the "consensus_deposit" field.
+func (_u *MatchUpdate) AddConsensusDeposit(v float64) *MatchUpdate {
+	_u.mutation.AddConsensusDeposit(v)
+	return _u
+}
+
+// SetShipperSignature sets the "shipper_signature" field.
+func (_u *MatchUpdate) SetShipperSignature(v string) *MatchUpdate {
+	_u.mutation.SetShipperSignature(v)
+	return _u
+}
+
+// SetNillableShipperSignature sets the "shipper_signature" field if the given value is not nil.
+func (_u *MatchUpdate) SetNillableShipperSignature(v *string) *MatchUpdate {
+	if v != nil {
+		_u.SetShipperSignature(*v)
+	}
+	return _u
+}
+
+// SetDriverSignature sets the "driver_signature" field.
+func (_u *MatchUpdate) SetDriverSignature(v string) *MatchUpdate {
+	_u.mutation.SetDriverSignature(v)
+	return _u
+}
+
+// SetNillableDriverSignature sets the "driver_signature" field if the given value is not nil.
+func (_u *MatchUpdate) SetNillableDriverSignature(v *string) *MatchUpdate {
+	if v != nil {
+		_u.SetDriverSignature(*v)
+	}
+	return _u
+}
+
+// SetSystemSignature sets the "system_signature" field.
+func (_u *MatchUpdate) SetSystemSignature(v string) *MatchUpdate {
+	_u.mutation.SetSystemSignature(v)
+	return _u
+}
+
+// SetNillableSystemSignature sets the "system_signature" field if the given value is not nil.
+func (_u *MatchUpdate) SetNillableSystemSignature(v *string) *MatchUpdate {
+	if v != nil {
+		_u.SetSystemSignature(*v)
+	}
+	return _u
+}
+
+// SetAgreedAt sets the "agreed_at" field.
+func (_u *MatchUpdate) SetAgreedAt(v time.Time) *MatchUpdate {
+	_u.mutation.SetAgreedAt(v)
+	return _u
+}
+
+// SetNillableAgreedAt sets the "agreed_at" field if the given value is not nil.
+func (_u *MatchUpdate) SetNillableAgreedAt(v *time.Time) *MatchUpdate {
+	if v != nil {
+		_u.SetAgreedAt(*v)
+	}
+	return _u
+}
+
 // SetAsksID sets the "asks" edge to the Asks entity by ID.
 func (_u *MatchUpdate) SetAsksID(id uuid.UUID) *MatchUpdate {
 	_u.mutation.SetAsksID(id)
@@ -265,7 +363,7 @@ func (_u *MatchUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(match.Table, match.Columns, sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(match.Table, match.Columns, sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -302,6 +400,30 @@ func (_u *MatchUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedStatus(); ok {
 		_spec.AddField(match.FieldStatus, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ConsensusPrice(); ok {
+		_spec.SetField(match.FieldConsensusPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedConsensusPrice(); ok {
+		_spec.AddField(match.FieldConsensusPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.ConsensusDeposit(); ok {
+		_spec.SetField(match.FieldConsensusDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedConsensusDeposit(); ok {
+		_spec.AddField(match.FieldConsensusDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.ShipperSignature(); ok {
+		_spec.SetField(match.FieldShipperSignature, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DriverSignature(); ok {
+		_spec.SetField(match.FieldDriverSignature, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SystemSignature(); ok {
+		_spec.SetField(match.FieldSystemSignature, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AgreedAt(); ok {
+		_spec.SetField(match.FieldAgreedAt, field.TypeTime, value)
 	}
 	if _u.mutation.AsksCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -519,6 +641,104 @@ func (_u *MatchUpdateOne) AddStatus(v int) *MatchUpdateOne {
 	return _u
 }
 
+// SetConsensusPrice sets the "consensus_price" field.
+func (_u *MatchUpdateOne) SetConsensusPrice(v float64) *MatchUpdateOne {
+	_u.mutation.ResetConsensusPrice()
+	_u.mutation.SetConsensusPrice(v)
+	return _u
+}
+
+// SetNillableConsensusPrice sets the "consensus_price" field if the given value is not nil.
+func (_u *MatchUpdateOne) SetNillableConsensusPrice(v *float64) *MatchUpdateOne {
+	if v != nil {
+		_u.SetConsensusPrice(*v)
+	}
+	return _u
+}
+
+// AddConsensusPrice adds value to the "consensus_price" field.
+func (_u *MatchUpdateOne) AddConsensusPrice(v float64) *MatchUpdateOne {
+	_u.mutation.AddConsensusPrice(v)
+	return _u
+}
+
+// SetConsensusDeposit sets the "consensus_deposit" field.
+func (_u *MatchUpdateOne) SetConsensusDeposit(v float64) *MatchUpdateOne {
+	_u.mutation.ResetConsensusDeposit()
+	_u.mutation.SetConsensusDeposit(v)
+	return _u
+}
+
+// SetNillableConsensusDeposit sets the "consensus_deposit" field if the given value is not nil.
+func (_u *MatchUpdateOne) SetNillableConsensusDeposit(v *float64) *MatchUpdateOne {
+	if v != nil {
+		_u.SetConsensusDeposit(*v)
+	}
+	return _u
+}
+
+// AddConsensusDeposit adds value to the "consensus_deposit" field.
+func (_u *MatchUpdateOne) AddConsensusDeposit(v float64) *MatchUpdateOne {
+	_u.mutation.AddConsensusDeposit(v)
+	return _u
+}
+
+// SetShipperSignature sets the "shipper_signature" field.
+func (_u *MatchUpdateOne) SetShipperSignature(v string) *MatchUpdateOne {
+	_u.mutation.SetShipperSignature(v)
+	return _u
+}
+
+// SetNillableShipperSignature sets the "shipper_signature" field if the given value is not nil.
+func (_u *MatchUpdateOne) SetNillableShipperSignature(v *string) *MatchUpdateOne {
+	if v != nil {
+		_u.SetShipperSignature(*v)
+	}
+	return _u
+}
+
+// SetDriverSignature sets the "driver_signature" field.
+func (_u *MatchUpdateOne) SetDriverSignature(v string) *MatchUpdateOne {
+	_u.mutation.SetDriverSignature(v)
+	return _u
+}
+
+// SetNillableDriverSignature sets the "driver_signature" field if the given value is not nil.
+func (_u *MatchUpdateOne) SetNillableDriverSignature(v *string) *MatchUpdateOne {
+	if v != nil {
+		_u.SetDriverSignature(*v)
+	}
+	return _u
+}
+
+// SetSystemSignature sets the "system_signature" field.
+func (_u *MatchUpdateOne) SetSystemSignature(v string) *MatchUpdateOne {
+	_u.mutation.SetSystemSignature(v)
+	return _u
+}
+
+// SetNillableSystemSignature sets the "system_signature" field if the given value is not nil.
+func (_u *MatchUpdateOne) SetNillableSystemSignature(v *string) *MatchUpdateOne {
+	if v != nil {
+		_u.SetSystemSignature(*v)
+	}
+	return _u
+}
+
+// SetAgreedAt sets the "agreed_at" field.
+func (_u *MatchUpdateOne) SetAgreedAt(v time.Time) *MatchUpdateOne {
+	_u.mutation.SetAgreedAt(v)
+	return _u
+}
+
+// SetNillableAgreedAt sets the "agreed_at" field if the given value is not nil.
+func (_u *MatchUpdateOne) SetNillableAgreedAt(v *time.Time) *MatchUpdateOne {
+	if v != nil {
+		_u.SetAgreedAt(*v)
+	}
+	return _u
+}
+
 // SetAsksID sets the "asks" edge to the Asks entity by ID.
 func (_u *MatchUpdateOne) SetAsksID(id uuid.UUID) *MatchUpdateOne {
 	_u.mutation.SetAsksID(id)
@@ -628,7 +848,7 @@ func (_u *MatchUpdateOne) sqlSave(ctx context.Context) (_node *Match, err error)
 	if err := _u.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(match.Table, match.Columns, sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(match.Table, match.Columns, sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID))
 	id, ok := _u.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Match.id" for update`)}
@@ -682,6 +902,30 @@ func (_u *MatchUpdateOne) sqlSave(ctx context.Context) (_node *Match, err error)
 	}
 	if value, ok := _u.mutation.AddedStatus(); ok {
 		_spec.AddField(match.FieldStatus, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ConsensusPrice(); ok {
+		_spec.SetField(match.FieldConsensusPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedConsensusPrice(); ok {
+		_spec.AddField(match.FieldConsensusPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.ConsensusDeposit(); ok {
+		_spec.SetField(match.FieldConsensusDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedConsensusDeposit(); ok {
+		_spec.AddField(match.FieldConsensusDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.ShipperSignature(); ok {
+		_spec.SetField(match.FieldShipperSignature, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DriverSignature(); ok {
+		_spec.SetField(match.FieldDriverSignature, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SystemSignature(); ok {
+		_spec.SetField(match.FieldSystemSignature, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.AgreedAt(); ok {
+		_spec.SetField(match.FieldAgreedAt, field.TypeTime, value)
 	}
 	if _u.mutation.AsksCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -38,15 +38,14 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) error {
 	natsCtx, err := natsConec.JetStream()
 	natsPub := nats_jetstream.InitPublisher(natsCtx, appMapper)
 
-	brokers := make([]string, 3, 3)
-	brokers = append(brokers, cfg.KafkaConfig.Port1, cfg.KafkaConfig.Port2, cfg.KafkaConfig.Port3)
+	brokers := []string{cfg.KafkaConfig.Port1, cfg.KafkaConfig.Port2, cfg.KafkaConfig.Port3}
 	kafkaPub, err := kafka.NewKafkaPublisher(brokers, appMapper)
 	if err != nil {
 		return err
 	}
 
-	// Tạm thời truyền nil cho pub
-	biz := biz.NewMatchingEngine(repo, engine, natsPub, kafkaPub)
+	walletClient := biz.NewMockWalletClient()
+	biz := biz.NewMatchingEngine(repo, engine, walletClient, kafkaPub, natsPub)
 
 	controller := controller.NewMatchingController(biz)
 	pb.RegisterMatchingEngineServiceServer(grpcServer, controller)

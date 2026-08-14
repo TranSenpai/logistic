@@ -51,10 +51,6 @@ func init() {
 	asksDescIsDeleted := asksMixinFields0[4].Descriptor()
 	// asks.DefaultIsDeleted holds the default value on creation for the is_deleted field.
 	asks.DefaultIsDeleted = asksDescIsDeleted.Default.(bool)
-	// asksDescStatus is the schema descriptor for status field.
-	asksDescStatus := asksFields[15].Descriptor()
-	// asks.DefaultStatus holds the default value on creation for the status field.
-	asks.DefaultStatus = asksDescStatus.Default.(int8)
 	// asksDescID is the schema descriptor for id field.
 	asksDescID := asksFields[0].Descriptor()
 	// asks.DefaultID holds the default value on creation for the id field.
@@ -92,10 +88,6 @@ func init() {
 	bidsDescIsDeleted := bidsMixinFields0[4].Descriptor()
 	// bids.DefaultIsDeleted holds the default value on creation for the is_deleted field.
 	bids.DefaultIsDeleted = bidsDescIsDeleted.Default.(bool)
-	// bidsDescStatus is the schema descriptor for status field.
-	bidsDescStatus := bidsFields[11].Descriptor()
-	// bids.DefaultStatus holds the default value on creation for the status field.
-	bids.DefaultStatus = bidsDescStatus.Default.(int8)
 	// bidsDescID is the schema descriptor for id field.
 	bidsDescID := bidsFields[0].Descriptor()
 	// bids.DefaultID holds the default value on creation for the id field.
@@ -171,9 +163,13 @@ func init() {
 	// match.DefaultIsDeleted holds the default value on creation for the is_deleted field.
 	match.DefaultIsDeleted = matchDescIsDeleted.Default.(bool)
 	// matchDescStatus is the schema descriptor for status field.
-	matchDescStatus := matchFields[3].Descriptor()
+	matchDescStatus := matchFields[4].Descriptor()
 	// match.DefaultStatus holds the default value on creation for the status field.
 	match.DefaultStatus = matchDescStatus.Default.(int)
+	// matchDescID is the schema descriptor for id field.
+	matchDescID := matchFields[0].Descriptor()
+	// match.DefaultID holds the default value on creation for the id field.
+	match.DefaultID = matchDescID.Default.(func() uuid.UUID)
 	requirementsMixin := schema.Requirements{}.Mixin()
 	requirementsMixinHooks0 := requirementsMixin[0].Hooks()
 	requirementsMixinHooks1 := requirementsMixin[1].Hooks()

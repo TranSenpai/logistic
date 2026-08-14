@@ -112,6 +112,34 @@ func (_u *AsksUpdate) SetNillableDriverID(v *uuid.UUID) *AsksUpdate {
 	return _u
 }
 
+// SetDriverPhone sets the "driver_phone" field.
+func (_u *AsksUpdate) SetDriverPhone(v string) *AsksUpdate {
+	_u.mutation.SetDriverPhone(v)
+	return _u
+}
+
+// SetNillableDriverPhone sets the "driver_phone" field if the given value is not nil.
+func (_u *AsksUpdate) SetNillableDriverPhone(v *string) *AsksUpdate {
+	if v != nil {
+		_u.SetDriverPhone(*v)
+	}
+	return _u
+}
+
+// SetDriverMail sets the "driver_mail" field.
+func (_u *AsksUpdate) SetDriverMail(v string) *AsksUpdate {
+	_u.mutation.SetDriverMail(v)
+	return _u
+}
+
+// SetNillableDriverMail sets the "driver_mail" field if the given value is not nil.
+func (_u *AsksUpdate) SetNillableDriverMail(v *string) *AsksUpdate {
+	if v != nil {
+		_u.SetDriverMail(*v)
+	}
+	return _u
+}
+
 // SetVehicleID sets the "vehicle_id" field.
 func (_u *AsksUpdate) SetVehicleID(v uuid.UUID) *AsksUpdate {
 	_u.mutation.SetVehicleID(v)
@@ -258,6 +286,27 @@ func (_u *AsksUpdate) ClearMinPrice() *AsksUpdate {
 	return _u
 }
 
+// SetDesiredDeposit sets the "desired_deposit" field.
+func (_u *AsksUpdate) SetDesiredDeposit(v float64) *AsksUpdate {
+	_u.mutation.ResetDesiredDeposit()
+	_u.mutation.SetDesiredDeposit(v)
+	return _u
+}
+
+// SetNillableDesiredDeposit sets the "desired_deposit" field if the given value is not nil.
+func (_u *AsksUpdate) SetNillableDesiredDeposit(v *float64) *AsksUpdate {
+	if v != nil {
+		_u.SetDesiredDeposit(*v)
+	}
+	return _u
+}
+
+// AddDesiredDeposit adds value to the "desired_deposit" field.
+func (_u *AsksUpdate) AddDesiredDeposit(v float64) *AsksUpdate {
+	_u.mutation.AddDesiredDeposit(v)
+	return _u
+}
+
 // SetZoneID sets the "zone_id" field.
 func (_u *AsksUpdate) SetZoneID(v string) *AsksUpdate {
 	_u.mutation.SetZoneID(v)
@@ -383,15 +432,29 @@ func (_u *AsksUpdate) AddStatus(v int8) *AsksUpdate {
 	return _u
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (_u *AsksUpdate) SetExpiresAt(v time.Time) *AsksUpdate {
+	_u.mutation.SetExpiresAt(v)
+	return _u
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (_u *AsksUpdate) SetNillableExpiresAt(v *time.Time) *AsksUpdate {
+	if v != nil {
+		_u.SetExpiresAt(*v)
+	}
+	return _u
+}
+
 // AddMatchIDs adds the "matches" edge to the Match entity by IDs.
-func (_u *AsksUpdate) AddMatchIDs(ids ...int) *AsksUpdate {
+func (_u *AsksUpdate) AddMatchIDs(ids ...uuid.UUID) *AsksUpdate {
 	_u.mutation.AddMatchIDs(ids...)
 	return _u
 }
 
 // AddMatches adds the "matches" edges to the Match entity.
 func (_u *AsksUpdate) AddMatches(v ...*Match) *AsksUpdate {
-	ids := make([]int, len(v))
+	ids := make([]uuid.UUID, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
@@ -410,14 +473,14 @@ func (_u *AsksUpdate) ClearMatches() *AsksUpdate {
 }
 
 // RemoveMatchIDs removes the "matches" edge to Match entities by IDs.
-func (_u *AsksUpdate) RemoveMatchIDs(ids ...int) *AsksUpdate {
+func (_u *AsksUpdate) RemoveMatchIDs(ids ...uuid.UUID) *AsksUpdate {
 	_u.mutation.RemoveMatchIDs(ids...)
 	return _u
 }
 
 // RemoveMatches removes "matches" edges to Match entities.
 func (_u *AsksUpdate) RemoveMatches(v ...*Match) *AsksUpdate {
-	ids := make([]int, len(v))
+	ids := make([]uuid.UUID, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
@@ -496,6 +559,12 @@ func (_u *AsksUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DriverID(); ok {
 		_spec.SetField(asks.FieldDriverID, field.TypeUUID, value)
 	}
+	if value, ok := _u.mutation.DriverPhone(); ok {
+		_spec.SetField(asks.FieldDriverPhone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DriverMail(); ok {
+		_spec.SetField(asks.FieldDriverMail, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.VehicleID(); ok {
 		_spec.SetField(asks.FieldVehicleID, field.TypeUUID, value)
 	}
@@ -538,6 +607,12 @@ func (_u *AsksUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.MinPriceCleared() {
 		_spec.ClearField(asks.FieldMinPrice, field.TypeFloat64)
 	}
+	if value, ok := _u.mutation.DesiredDeposit(); ok {
+		_spec.SetField(asks.FieldDesiredDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDesiredDeposit(); ok {
+		_spec.AddField(asks.FieldDesiredDeposit, field.TypeFloat64, value)
+	}
 	if value, ok := _u.mutation.ZoneID(); ok {
 		_spec.SetField(asks.FieldZoneID, field.TypeString, value)
 	}
@@ -574,6 +649,9 @@ func (_u *AsksUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AddedStatus(); ok {
 		_spec.AddField(asks.FieldStatus, field.TypeInt8, value)
 	}
+	if value, ok := _u.mutation.ExpiresAt(); ok {
+		_spec.SetField(asks.FieldExpiresAt, field.TypeTime, value)
+	}
 	if _u.mutation.MatchesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -582,7 +660,7 @@ func (_u *AsksUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{asks.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -595,7 +673,7 @@ func (_u *AsksUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{asks.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -611,7 +689,7 @@ func (_u *AsksUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Columns: []string{asks.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -717,6 +795,34 @@ func (_u *AsksUpdateOne) SetDriverID(v uuid.UUID) *AsksUpdateOne {
 func (_u *AsksUpdateOne) SetNillableDriverID(v *uuid.UUID) *AsksUpdateOne {
 	if v != nil {
 		_u.SetDriverID(*v)
+	}
+	return _u
+}
+
+// SetDriverPhone sets the "driver_phone" field.
+func (_u *AsksUpdateOne) SetDriverPhone(v string) *AsksUpdateOne {
+	_u.mutation.SetDriverPhone(v)
+	return _u
+}
+
+// SetNillableDriverPhone sets the "driver_phone" field if the given value is not nil.
+func (_u *AsksUpdateOne) SetNillableDriverPhone(v *string) *AsksUpdateOne {
+	if v != nil {
+		_u.SetDriverPhone(*v)
+	}
+	return _u
+}
+
+// SetDriverMail sets the "driver_mail" field.
+func (_u *AsksUpdateOne) SetDriverMail(v string) *AsksUpdateOne {
+	_u.mutation.SetDriverMail(v)
+	return _u
+}
+
+// SetNillableDriverMail sets the "driver_mail" field if the given value is not nil.
+func (_u *AsksUpdateOne) SetNillableDriverMail(v *string) *AsksUpdateOne {
+	if v != nil {
+		_u.SetDriverMail(*v)
 	}
 	return _u
 }
@@ -867,6 +973,27 @@ func (_u *AsksUpdateOne) ClearMinPrice() *AsksUpdateOne {
 	return _u
 }
 
+// SetDesiredDeposit sets the "desired_deposit" field.
+func (_u *AsksUpdateOne) SetDesiredDeposit(v float64) *AsksUpdateOne {
+	_u.mutation.ResetDesiredDeposit()
+	_u.mutation.SetDesiredDeposit(v)
+	return _u
+}
+
+// SetNillableDesiredDeposit sets the "desired_deposit" field if the given value is not nil.
+func (_u *AsksUpdateOne) SetNillableDesiredDeposit(v *float64) *AsksUpdateOne {
+	if v != nil {
+		_u.SetDesiredDeposit(*v)
+	}
+	return _u
+}
+
+// AddDesiredDeposit adds value to the "desired_deposit" field.
+func (_u *AsksUpdateOne) AddDesiredDeposit(v float64) *AsksUpdateOne {
+	_u.mutation.AddDesiredDeposit(v)
+	return _u
+}
+
 // SetZoneID sets the "zone_id" field.
 func (_u *AsksUpdateOne) SetZoneID(v string) *AsksUpdateOne {
 	_u.mutation.SetZoneID(v)
@@ -992,15 +1119,29 @@ func (_u *AsksUpdateOne) AddStatus(v int8) *AsksUpdateOne {
 	return _u
 }
 
+// SetExpiresAt sets the "expires_at" field.
+func (_u *AsksUpdateOne) SetExpiresAt(v time.Time) *AsksUpdateOne {
+	_u.mutation.SetExpiresAt(v)
+	return _u
+}
+
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (_u *AsksUpdateOne) SetNillableExpiresAt(v *time.Time) *AsksUpdateOne {
+	if v != nil {
+		_u.SetExpiresAt(*v)
+	}
+	return _u
+}
+
 // AddMatchIDs adds the "matches" edge to the Match entity by IDs.
-func (_u *AsksUpdateOne) AddMatchIDs(ids ...int) *AsksUpdateOne {
+func (_u *AsksUpdateOne) AddMatchIDs(ids ...uuid.UUID) *AsksUpdateOne {
 	_u.mutation.AddMatchIDs(ids...)
 	return _u
 }
 
 // AddMatches adds the "matches" edges to the Match entity.
 func (_u *AsksUpdateOne) AddMatches(v ...*Match) *AsksUpdateOne {
-	ids := make([]int, len(v))
+	ids := make([]uuid.UUID, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
@@ -1019,14 +1160,14 @@ func (_u *AsksUpdateOne) ClearMatches() *AsksUpdateOne {
 }
 
 // RemoveMatchIDs removes the "matches" edge to Match entities by IDs.
-func (_u *AsksUpdateOne) RemoveMatchIDs(ids ...int) *AsksUpdateOne {
+func (_u *AsksUpdateOne) RemoveMatchIDs(ids ...uuid.UUID) *AsksUpdateOne {
 	_u.mutation.RemoveMatchIDs(ids...)
 	return _u
 }
 
 // RemoveMatches removes "matches" edges to Match entities.
 func (_u *AsksUpdateOne) RemoveMatches(v ...*Match) *AsksUpdateOne {
-	ids := make([]int, len(v))
+	ids := make([]uuid.UUID, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
 	}
@@ -1135,6 +1276,12 @@ func (_u *AsksUpdateOne) sqlSave(ctx context.Context) (_node *Asks, err error) {
 	if value, ok := _u.mutation.DriverID(); ok {
 		_spec.SetField(asks.FieldDriverID, field.TypeUUID, value)
 	}
+	if value, ok := _u.mutation.DriverPhone(); ok {
+		_spec.SetField(asks.FieldDriverPhone, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DriverMail(); ok {
+		_spec.SetField(asks.FieldDriverMail, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.VehicleID(); ok {
 		_spec.SetField(asks.FieldVehicleID, field.TypeUUID, value)
 	}
@@ -1177,6 +1324,12 @@ func (_u *AsksUpdateOne) sqlSave(ctx context.Context) (_node *Asks, err error) {
 	if _u.mutation.MinPriceCleared() {
 		_spec.ClearField(asks.FieldMinPrice, field.TypeFloat64)
 	}
+	if value, ok := _u.mutation.DesiredDeposit(); ok {
+		_spec.SetField(asks.FieldDesiredDeposit, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDesiredDeposit(); ok {
+		_spec.AddField(asks.FieldDesiredDeposit, field.TypeFloat64, value)
+	}
 	if value, ok := _u.mutation.ZoneID(); ok {
 		_spec.SetField(asks.FieldZoneID, field.TypeString, value)
 	}
@@ -1213,6 +1366,9 @@ func (_u *AsksUpdateOne) sqlSave(ctx context.Context) (_node *Asks, err error) {
 	if value, ok := _u.mutation.AddedStatus(); ok {
 		_spec.AddField(asks.FieldStatus, field.TypeInt8, value)
 	}
+	if value, ok := _u.mutation.ExpiresAt(); ok {
+		_spec.SetField(asks.FieldExpiresAt, field.TypeTime, value)
+	}
 	if _u.mutation.MatchesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -1221,7 +1377,7 @@ func (_u *AsksUpdateOne) sqlSave(ctx context.Context) (_node *Asks, err error) {
 			Columns: []string{asks.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1234,7 +1390,7 @@ func (_u *AsksUpdateOne) sqlSave(ctx context.Context) (_node *Asks, err error) {
 			Columns: []string{asks.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1250,7 +1406,7 @@ func (_u *AsksUpdateOne) sqlSave(ctx context.Context) (_node *Asks, err error) {
 			Columns: []string{asks.MatchesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
