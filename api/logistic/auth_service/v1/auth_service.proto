@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package logistic.auth_service.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/logistic/api/logistic/auth_service/v1;auth_servicev1";
+
+service AuthService {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc GetGoogleLoginURL(GetGoogleLoginURLRequest) returns (GetGoogleLoginURLResponse);
+  rpc GoogleCallback(GoogleCallbackRequest) returns (GoogleCallbackResponse);
+  rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+}
+
+message UserProfile {
+  int64 id = 1;
+  string email = 2;
+  optional string full_name = 3;
+  optional string avatar = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message AuthTokenPair {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+}
+
+message RegisterRequest {
+  string email = 1;
+  string full_name = 2;
+  string password = 3;
+  string google_id = 4;
+}
+
+message RegisterResponse {
+  UserProfile profile = 1;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  AuthTokenPair token_pair = 1;
+}
+
+message GetGoogleLoginURLRequest {
+  string state = 1;
+}
+
+message GetGoogleLoginURLResponse {
+  string url = 1;
+}
+
+message GoogleCallbackRequest {
+  string code = 1;
+}
+
+message GoogleCallbackResponse {
+  AuthTokenPair token_pair = 1;
+}
+
+message VerifyTokenRequest {
+  string token = 1;
+}
+
+message VerifyTokenResponse {
+  UserProfile profile = 1;
+}

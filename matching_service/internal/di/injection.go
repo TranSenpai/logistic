@@ -1,26 +1,54 @@
 package di
 
 import (
-	logisticsv1 "goBackend/api/logistics/v1/gen/go/logistics/v1"
+	"log"
 	"matching_service/internal/biz"
-	entclient "matching_service/internal/common/ent_client"
-	"matching_service/internal/delivery"
+	"matching_service/internal/broker/kafka"
+	"matching_service/internal/broker/nats_jetstream"
+	"matching_service/internal/conf"
+	"matching_service/internal/controller"
+	"matching_service/internal/mapper/generated"
 	"matching_service/internal/repo"
 
 	"google.golang.org/grpc"
+
+	entclient "matching_service/internal/common/ent_client"
+
+	pb "github.com/logistic/api/logistic/matching_service/v1"
+	"github.com/nats-io/nats.go"
 )
 
-func Injection(grpcServer *grpc.Server) error {
-	client, err := entclient.NewConnection()
+func Injection(grpcServer *grpc.Server, cfg *conf.Config) error {
+	if cfg == nil {
+		log.Fatalf("[SYSTEM] failed to read config")
+	}
+
+	masterClient, salveClient, err := entclient.NewConnection(&cfg.MasterDatabase, &cfg.SlaveDatabase)
 	if err != nil {
 		return err
 	}
 
-	repo := repo.NewMatchingRepo(client)
+	// Khởi tạo Mapper tập trung
+	appMapper := &generated.AppMapperImpl{}
+
+	repo := repo.NewMatchingRepo(masterClient, salveClient, appMapper)
 	engine := biz.NewGeoHashEngine()
-	biz := biz.NewMatchingEngine(repo, engine)
-	delivery := delivery.NewLogisticsDelivery(biz)
-	logisticsv1.RegisterMatchingEngineServiceServer(grpcServer, delivery)
+
+	natsConec, err := nats.Connect("nats://" + cfg.NatConfig.Host + ":" + cfg.NatConfig.Port)
+	natsCtx, err := natsConec.JetStream()
+	natsPub := nats_jetstream.InitPublisher(natsCtx, appMapper)
+
+	brokers := []string{cfg.KafkaConfig.Port1, cfg.KafkaConfig.Port2, cfg.KafkaConfig.Port3}
+	kafkaPub, err := kafka.NewKafkaPublisher(brokers, appMapper)
+	if err != nil {
+		return err
+	}
+
+	walletClient := biz.NewMockWalletClient()
+	biz := biz.NewMatchingEngine(repo, engine, walletClient, kafkaPub, natsPub)
+
+	controller := controller.NewMatchingController(biz)
+	pb.RegisterMatchingEngineServiceServer(grpcServer, controller)
 
 	return nil
 }

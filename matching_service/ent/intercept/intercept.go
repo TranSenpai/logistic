@@ -7,10 +7,12 @@ import (
 	"fmt"
 
 	"matching_service/ent"
-	"matching_service/ent/ask"
-	"matching_service/ent/bid"
+	"matching_service/ent/asks"
+	"matching_service/ent/bids"
+	"matching_service/ent/bids_requirements"
 	"matching_service/ent/match"
 	"matching_service/ent/predicate"
+	"matching_service/ent/requirements"
 
 	"entgo.io/ent/dialect/sql"
 )
@@ -71,58 +73,85 @@ func (f TraverseFunc) Traverse(ctx context.Context, q ent.Query) error {
 	return f(ctx, query)
 }
 
-// The AskFunc type is an adapter to allow the use of ordinary function as a Querier.
-type AskFunc func(context.Context, *ent.AskQuery) (ent.Value, error)
+// The AsksFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AsksFunc func(context.Context, *ent.AsksQuery) (ent.Value, error)
 
 // Query calls f(ctx, q).
-func (f AskFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
-	if q, ok := q.(*ent.AskQuery); ok {
+func (f AsksFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AsksQuery); ok {
 		return f(ctx, q)
 	}
-	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AskQuery", q)
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AsksQuery", q)
 }
 
-// The TraverseAsk type is an adapter to allow the use of ordinary function as Traverser.
-type TraverseAsk func(context.Context, *ent.AskQuery) error
+// The TraverseAsks type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAsks func(context.Context, *ent.AsksQuery) error
 
 // Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
-func (f TraverseAsk) Intercept(next ent.Querier) ent.Querier {
+func (f TraverseAsks) Intercept(next ent.Querier) ent.Querier {
 	return next
 }
 
 // Traverse calls f(ctx, q).
-func (f TraverseAsk) Traverse(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.AskQuery); ok {
+func (f TraverseAsks) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AsksQuery); ok {
 		return f(ctx, q)
 	}
-	return fmt.Errorf("unexpected query type %T. expect *ent.AskQuery", q)
+	return fmt.Errorf("unexpected query type %T. expect *ent.AsksQuery", q)
 }
 
-// The BidFunc type is an adapter to allow the use of ordinary function as a Querier.
-type BidFunc func(context.Context, *ent.BidQuery) (ent.Value, error)
+// The BidsFunc type is an adapter to allow the use of ordinary function as a Querier.
+type BidsFunc func(context.Context, *ent.BidsQuery) (ent.Value, error)
 
 // Query calls f(ctx, q).
-func (f BidFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
-	if q, ok := q.(*ent.BidQuery); ok {
+func (f BidsFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.BidsQuery); ok {
 		return f(ctx, q)
 	}
-	return nil, fmt.Errorf("unexpected query type %T. expect *ent.BidQuery", q)
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.BidsQuery", q)
 }
 
-// The TraverseBid type is an adapter to allow the use of ordinary function as Traverser.
-type TraverseBid func(context.Context, *ent.BidQuery) error
+// The TraverseBids type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseBids func(context.Context, *ent.BidsQuery) error
 
 // Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
-func (f TraverseBid) Intercept(next ent.Querier) ent.Querier {
+func (f TraverseBids) Intercept(next ent.Querier) ent.Querier {
 	return next
 }
 
 // Traverse calls f(ctx, q).
-func (f TraverseBid) Traverse(ctx context.Context, q ent.Query) error {
-	if q, ok := q.(*ent.BidQuery); ok {
+func (f TraverseBids) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BidsQuery); ok {
 		return f(ctx, q)
 	}
-	return fmt.Errorf("unexpected query type %T. expect *ent.BidQuery", q)
+	return fmt.Errorf("unexpected query type %T. expect *ent.BidsQuery", q)
+}
+
+// The Bids_RequirementsFunc type is an adapter to allow the use of ordinary function as a Querier.
+type Bids_RequirementsFunc func(context.Context, *ent.BidsRequirementsQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f Bids_RequirementsFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.BidsRequirementsQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.BidsRequirementsQuery", q)
+}
+
+// The TraverseBids_Requirements type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseBids_Requirements func(context.Context, *ent.BidsRequirementsQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseBids_Requirements) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseBids_Requirements) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BidsRequirementsQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.BidsRequirementsQuery", q)
 }
 
 // The MatchFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -152,15 +181,46 @@ func (f TraverseMatch) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.MatchQuery", q)
 }
 
+// The RequirementsFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RequirementsFunc func(context.Context, *ent.RequirementsQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RequirementsFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RequirementsQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RequirementsQuery", q)
+}
+
+// The TraverseRequirements type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRequirements func(context.Context, *ent.RequirementsQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRequirements) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRequirements) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RequirementsQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RequirementsQuery", q)
+}
+
 // NewQuery returns the generic Query interface for the given typed query.
 func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
-	case *ent.AskQuery:
-		return &query[*ent.AskQuery, predicate.Ask, ask.OrderOption]{typ: ent.TypeAsk, tq: q}, nil
-	case *ent.BidQuery:
-		return &query[*ent.BidQuery, predicate.Bid, bid.OrderOption]{typ: ent.TypeBid, tq: q}, nil
+	case *ent.AsksQuery:
+		return &query[*ent.AsksQuery, predicate.Asks, asks.OrderOption]{typ: ent.TypeAsks, tq: q}, nil
+	case *ent.BidsQuery:
+		return &query[*ent.BidsQuery, predicate.Bids, bids.OrderOption]{typ: ent.TypeBids, tq: q}, nil
+	case *ent.BidsRequirementsQuery:
+		return &query[*ent.BidsRequirementsQuery, predicate.Bids_Requirements, bids_requirements.OrderOption]{typ: ent.TypeBidsRequirements, tq: q}, nil
 	case *ent.MatchQuery:
 		return &query[*ent.MatchQuery, predicate.Match, match.OrderOption]{typ: ent.TypeMatch, tq: q}, nil
+	case *ent.RequirementsQuery:
+		return &query[*ent.RequirementsQuery, predicate.Requirements, requirements.OrderOption]{typ: ent.TypeRequirements, tq: q}, nil
 	default:
 		return nil, fmt.Errorf("unknown query type %T", q)
 	}

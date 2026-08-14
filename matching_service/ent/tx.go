@@ -14,12 +14,16 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
-	// Ask is the client for interacting with the Ask builders.
-	Ask *AskClient
-	// Bid is the client for interacting with the Bid builders.
-	Bid *BidClient
+	// Asks is the client for interacting with the Asks builders.
+	Asks *AsksClient
+	// Bids is the client for interacting with the Bids builders.
+	Bids *BidsClient
+	// Bids_Requirements is the client for interacting with the Bids_Requirements builders.
+	Bids_Requirements *BidsRequirementsClient
 	// Match is the client for interacting with the Match builders.
 	Match *MatchClient
+	// Requirements is the client for interacting with the Requirements builders.
+	Requirements *RequirementsClient
 
 	// lazily loaded.
 	client     *Client
@@ -151,9 +155,11 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
-	tx.Ask = NewAskClient(tx.config)
-	tx.Bid = NewBidClient(tx.config)
+	tx.Asks = NewAsksClient(tx.config)
+	tx.Bids = NewBidsClient(tx.config)
+	tx.Bids_Requirements = NewBidsRequirementsClient(tx.config)
 	tx.Match = NewMatchClient(tx.config)
+	tx.Requirements = NewRequirementsClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.
@@ -163,7 +169,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Ask.QueryXXX(), the query will be executed
+// applies a query, for example: Asks.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

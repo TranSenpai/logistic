@@ -2,98 +2,112 @@ package repo
 
 import (
 	"context"
-	"fmt"
-	"strconv"
+	"log"
 
 	"matching_service/ent"
-	"matching_service/ent/ask"
-	"matching_service/ent/bid"
+	"matching_service/ent/asks"
+	"matching_service/ent/bids"
 	"matching_service/internal/biz"
 	"matching_service/internal/entity"
 	"matching_service/internal/mapper"
 	"matching_service/internal/mapper/generated"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 )
 
 type matchingRepoImpl struct {
-	client *ent.Client
-	mapper mapper.Converter
+	masterClient *ent.Client
+	slaveClient  *ent.Client
+	mapper       mapper.AppMapper
 }
 
-func NewMatchingRepo(client *ent.Client) biz.MatchingRepo {
+var _ biz.MatchingRepo = (*matchingRepoImpl)(nil)
+
+func NewMatchingRepo(masterClient *ent.Client, slaveClient *ent.Client, mapper *generated.AppMapperImpl) biz.MatchingRepo {
+	if masterClient == nil || slaveClient == nil {
+		log.Fatalf("[SYSTEM] failed to create master and slave client")
+	}
+
 	return &matchingRepoImpl{
-		client: client,
-		mapper: &generated.ConverterImpl{},
+		masterClient: masterClient,
+		slaveClient:  slaveClient,
+		mapper:       mapper,
 	}
 }
 
 func (r *matchingRepoImpl) CreateBid(ctx context.Context, bid *entity.Bid) error {
-	userID, _ := strconv.Atoi(bid.UserID)
-	pickupPoint := fmt.Sprintf("POINT(%f %f)", bid.Origin.Longitude, bid.Origin.Latitude)
-	deliveryPoint := fmt.Sprintf("POINT(%f %f)", bid.Destination.Longitude, bid.Destination.Latitude)
-
-	statusInt := mapper.BidStatusToInt(bid.Status)
-
-	_, err := r.client.Bid.Create().
-		SetUserID(userID).
-		SetPickupCoordinates(pickupPoint).
-		SetDeliveryCoordinates(deliveryPoint).
+	dao, err := r.masterClient.Bids.Create().
+		SetShipperID(bid.ShipperID).
+		SetShipperPhone(bid.ShipperPhone).
+		SetShipperMail(bid.ShipperMail).
+		SetConsigneeID(bid.ConsigneeID).
+		SetConsigneePhone(bid.ConsigneePhone).
+		SetConsigneeMail(bid.ConsigneeMail).
+		SetOriginLat(bid.Origin.Latitude).
+		SetOriginLng(bid.Origin.Longitude).
+		SetDestinationLat(bid.Destination.Latitude).
+		SetDestinationLng(bid.Destination.Longitude).
+		SetZoneID(bid.Origin.ZoneID).
 		SetVolumeM3(bid.VolumeM3).
 		SetWeightKg(bid.WeightKg).
-		SetMaxPrice(bid.MaxPrice).
-		SetStatus(statusInt).
+		SetNillableMaxPrice(&bid.MaxPrice).
+		SetCargoValue(bid.CargoValue).
+		SetRequiredDeposit(bid.RequiredDeposit).
+		SetDesiredDeposit(bid.DesiredDeposit).
+		SetStatus(bid.Status).
+		SetExpiresAt(bid.ExpiresAt).
 		Save(ctx)
 
-	return err
+	if err != nil {
+		return wrapError(err)
+	}
+	entity := r.mapper.EntBidToEntityBid(dao)
+	*bid = entity
+
+	return nil
 }
 
 func (r *matchingRepoImpl) CreateAsk(ctx context.Context, ask *entity.Ask) error {
-	driverID, _ := strconv.Atoi(ask.DriverID)
-	currentPoint := fmt.Sprintf("POINT(%f %f)", ask.CurrentLocation.Longitude, ask.CurrentLocation.Latitude)
-
-	_, err := r.client.Ask.Create().
-		SetDriverID(driverID).
-		SetCurrentCoordinates(currentPoint).
+	dao, err := r.masterClient.Asks.Create().
+		SetID(ask.ID).
+		SetDriverID(ask.DriverID).
+		SetDriverPhone(ask.DriverPhone).
+		SetDriverMail(ask.DriverMail).
+		SetVehicleID(ask.VehicleID).
+		SetVehicleType(ask.VehicleType).
+		SetOriginLat(ask.CurrentLocation.Latitude).
+		SetOriginLng(ask.CurrentLocation.Longitude).
+		SetDestinationLat(ask.Destination.Latitude).
+		SetDestinationLng(ask.Destination.Longitude).
+		SetZoneID(ask.CurrentLocation.ZoneID).
+		SetRouteID(ask.RouteID).
+		SetCapacityVolumeCbm(ask.CapacityVolumeCbm).
 		SetAvailableVolumeM3(ask.AvailableVolumeM3).
+		SetCapacityWeightKg(ask.CapacityWeightKg).
 		SetAvailableWeightKg(ask.AvailableWeightKg).
-		SetMinPrice(ask.MinPrice).
-		SetStatus(mapper.AskStatusToInt(ask.Status)).
+		SetNillableMinPrice(&ask.MinPrice).
+		SetDesiredDeposit(ask.DesiredDeposit).
+		SetStatus(ask.Status).
+		SetExpiresAt(ask.ExpiresAt).
 		Save(ctx)
 
-	return err
-}
-
-func (r *matchingRepoImpl) GetPendingBids(ctx context.Context, zone string) ([]entity.Bid, error) {
-	daoList, err := r.client.Bid.Query().
-		Where(bid.ZoneID(zone)).
-		Where(bid.Status(mapper.BidStatusToInt(entity.BidStatusPending))).
-		All(ctx)
 	if err != nil {
-		return nil, err
+		return wrapError(err)
 	}
-	return r.mapper.EntBidListToEntityBidList(daoList), nil
-}
+	entity := r.mapper.EntAskToEntityAsk(dao)
+	*ask = entity
 
-func (r *matchingRepoImpl) GetPendingAsks(ctx context.Context, zone string) ([]entity.Ask, error) {
-	daoList, err := r.client.Ask.Query().
-		Where(ask.ZoneID(zone)).
-		Where(ask.Status(mapper.AskStatusToInt(entity.AskStatusPending))).
-		All(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return r.mapper.EntAskListToEntityAskList(daoList), nil
+	return nil
 }
 
 func (r *matchingRepoImpl) FindAskForBid(ctx context.Context, bid *entity.Bid) ([]entity.Ask, error) {
-	query := r.client.Ask.Query()
-
-	daoList, err := query.Where(ask.ZoneID(bid.Origin.ZoneID)).
-		Where(ask.Status(mapper.AskStatusToInt(entity.AskStatusPending))).
-		Where(ask.AvailableVolumeM3GT(bid.VolumeM3)).
-		Where(ask.AvailableWeightKgGT(bid.WeightKg)).
-		Where(ask.MinPriceLTE(bid.MaxPrice)).
+	daoList, err := r.slaveClient.Asks.Query().
+		Where(asks.ZoneID(bid.Origin.ZoneID)).
+		Where(asks.Status(entity.AskStatusPending)).
+		Where(asks.AvailableVolumeM3GT(bid.VolumeM3)).
+		Where(asks.AvailableWeightKgGT(bid.WeightKg)).
+		Where(asks.MinPriceLTE(bid.MaxPrice)).
 		Where(func(s *sql.Selector) {
 			s.Where(sql.ExprP(
 				"ST_DWithin(current_coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326), $3)",
@@ -102,7 +116,7 @@ func (r *matchingRepoImpl) FindAskForBid(ctx context.Context, bid *entity.Bid) (
 				5000,
 			))
 		}).
-		Order(ask.ByMinPrice()).
+		Order(asks.ByMinPrice()).
 		All(ctx)
 
 	if err != nil {
@@ -113,10 +127,9 @@ func (r *matchingRepoImpl) FindAskForBid(ctx context.Context, bid *entity.Bid) (
 }
 
 func (r *matchingRepoImpl) FindBidForAsk(ctx context.Context, ask *entity.Ask) ([]entity.Bid, error) {
-	query := r.client.Bid.Query()
-
-	daoList, err := query.Where(bid.ZoneID(ask.CurrentLocation.ZoneID)).
-		Where(bid.Status(mapper.BidStatusToInt(entity.BidStatusPending))).
+	daoList, err := r.slaveClient.Bids.Query().
+		Where(bids.ZoneID(ask.CurrentLocation.ZoneID)).
+		Where(bids.Status(entity.BidStatusPending)).
 		Where(func(s *sql.Selector) {
 			s.Where(sql.ExprP(
 				"ST_DWithin(pickup_coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326), $3)",
@@ -130,7 +143,8 @@ func (r *matchingRepoImpl) FindBidForAsk(ctx context.Context, ask *entity.Ask) (
 				ask.Destination.Latitude,
 				5000,
 			))
-		}).Order(bid.ByMaxPrice()).All(ctx)
+		}).
+		Order(bids.ByMaxPrice()).All(ctx)
 
 	if err != nil {
 		return nil, err
@@ -140,54 +154,109 @@ func (r *matchingRepoImpl) FindBidForAsk(ctx context.Context, ask *entity.Ask) (
 }
 
 func (r *matchingRepoImpl) UpdateAsk(ctx context.Context, ask *entity.Ask) error {
-	askID, err := strconv.Atoi(ask.ID)
-	if err != nil {
-		return fmt.Errorf("invalid ask ID: %w", err)
-	}
-
-	currentPoint := fmt.Sprintf("POINT(%f %f)", ask.CurrentLocation.Longitude, ask.CurrentLocation.Latitude)
-	_, err = r.client.Ask.UpdateOneID(askID).
-		SetCurrentCoordinates(currentPoint).
+	dao, err := r.masterClient.Asks.
+		UpdateOneID(ask.ID).
+		SetDriverID(ask.DriverID).
+		SetDriverPhone(ask.DriverPhone).
+		SetDriverMail(ask.DriverMail).
+		SetVehicleID(ask.VehicleID).
+		SetVehicleType(ask.VehicleType).
+		SetOriginLat(ask.CurrentLocation.Latitude).
+		SetOriginLng(ask.CurrentLocation.Longitude).
+		SetDestinationLat(ask.Destination.Latitude).
+		SetDestinationLng(ask.Destination.Longitude).
+		SetZoneID(ask.CurrentLocation.ZoneID).
+		SetRouteID(ask.RouteID).
+		SetCapacityVolumeCbm(ask.CapacityVolumeCbm).
 		SetAvailableVolumeM3(ask.AvailableVolumeM3).
+		SetCapacityWeightKg(ask.CapacityWeightKg).
 		SetAvailableWeightKg(ask.AvailableWeightKg).
-		SetMinPrice(ask.MinPrice).
-		SetStatus(mapper.AskStatusToInt(ask.Status)).
+		SetNillableMinPrice(&ask.MinPrice).
+		SetDesiredDeposit(ask.DesiredDeposit).
+		SetStatus(ask.Status).
+		SetExpiresAt(ask.ExpiresAt).
 		Save(ctx)
-	return err
+
+	if err != nil {
+		return wrapError(err)
+	}
+	entity := r.mapper.EntAskToEntityAsk(dao)
+	*ask = entity
+
+	return nil
 }
 
 func (r *matchingRepoImpl) UpdateBid(ctx context.Context, bid *entity.Bid) error {
-	bidID, err := strconv.Atoi(bid.ID)
-	if err != nil {
-		return fmt.Errorf("invalid bid ID: %w", err)
-	}
-
-	pickupPoint := fmt.Sprintf("POINT(%f %f)", bid.Origin.Longitude, bid.Origin.Latitude)
-	deliveryPoint := fmt.Sprintf("POINT(%f %f)", bid.Destination.Longitude, bid.Destination.Latitude)
-
-	_, err = r.client.Bid.UpdateOneID(bidID).
-		SetPickupCoordinates(pickupPoint).
-		SetDeliveryCoordinates(deliveryPoint).
+	dao, err := r.masterClient.Bids.
+		UpdateOneID(bid.ID).
+		SetShipperID(bid.ShipperID).
+		SetShipperPhone(bid.ShipperPhone).
+		SetShipperMail(bid.ShipperMail).
+		SetConsigneeID(bid.ConsigneeID).
+		SetConsigneePhone(bid.ConsigneePhone).
+		SetConsigneeMail(bid.ConsigneeMail).
+		SetOriginLat(bid.Origin.Latitude).
+		SetOriginLng(bid.Origin.Longitude).
+		SetDestinationLat(bid.Destination.Latitude).
+		SetDestinationLng(bid.Destination.Longitude).
+		SetZoneID(bid.Origin.ZoneID).
 		SetVolumeM3(bid.VolumeM3).
 		SetWeightKg(bid.WeightKg).
-		SetMaxPrice(bid.MaxPrice).
-		SetStatus(mapper.BidStatusToInt(bid.Status)).
+		SetNillableMaxPrice(&bid.MaxPrice).
+		SetCargoValue(bid.CargoValue).
+		SetRequiredDeposit(bid.RequiredDeposit).
+		SetDesiredDeposit(bid.DesiredDeposit).
+		SetStatus(bid.Status).
+		SetExpiresAt(bid.ExpiresAt).
 		Save(ctx)
-	return err
+
+	if err != nil {
+		return wrapError(err)
+	}
+	entity := r.mapper.EntBidToEntityBid(dao)
+	*bid = entity
+
+	return nil
 }
 
-func (r *matchingRepoImpl) DeleteBid(ctx context.Context, bidID string) error {
-	id, err := strconv.Atoi(bidID)
-	if err != nil {
-		return fmt.Errorf("invalid bid ID: %w", err)
-	}
-	return r.client.Bid.DeleteOneID(id).Exec(ctx)
+func (r *matchingRepoImpl) DeleteBid(ctx context.Context, id uuid.UUID) error {
+	return r.masterClient.Bids.DeleteOneID(id).Exec(ctx)
 }
 
-func (r *matchingRepoImpl) DeleteAsk(ctx context.Context, askID string) error {
-	id, err := strconv.Atoi(askID)
+func (r *matchingRepoImpl) DeleteAsk(ctx context.Context, id uuid.UUID) error {
+	return r.masterClient.Asks.DeleteOneID(id).Exec(ctx)
+}
+
+func (r *matchingRepoImpl) GetBid(ctx context.Context, id uuid.UUID) (*entity.Bid, error) {
+	dao, err := r.slaveClient.Bids.Get(ctx, id)
 	if err != nil {
-		return fmt.Errorf("invalid ask ID: %w", err)
+		return nil, wrapError(err)
 	}
-	return r.client.Ask.DeleteOneID(id).Exec(ctx)
+	ent := r.mapper.EntBidToEntityBid(dao)
+	return &ent, nil
+}
+
+func (r *matchingRepoImpl) GetAsk(ctx context.Context, id uuid.UUID) (*entity.Ask, error) {
+	dao, err := r.slaveClient.Asks.Get(ctx, id)
+	if err != nil {
+		return nil, wrapError(err)
+	}
+	ent := r.mapper.EntAskToEntityAsk(dao)
+	return &ent, nil
+}
+
+func (r *matchingRepoImpl) CreateMatchContract(ctx context.Context, contract *entity.MatchContract) error {
+	_, err := r.masterClient.Match.Create().
+		SetID(contract.ID).
+		SetBidID(contract.BidID).
+		SetAskID(contract.AskID).
+		SetConsensusPrice(contract.ConsensusPrice).
+		SetConsensusDeposit(contract.ConsensusDeposit).
+		SetStatus(int(contract.Status)).
+		Save(ctx)
+
+	if err != nil {
+		return wrapError(err)
+	}
+	return nil
 }

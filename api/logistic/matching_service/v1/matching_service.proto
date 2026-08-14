@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package logistic.matching_service.v1;
+
+import "logistic/matching_service/v1/matching_messages.proto";
+
+option go_package = "logistic_project/api/logistic/matching/v1";
+
+// MatchingEngineService handles Real-time Freight Bidding
+// This is the core protocol for matching empty vehicle space with cargo
+service MatchingEngineService {
+  // SubmitBid is called by Customers who have cargo that needs to be moved
+  rpc SubmitBid(SubmitBidRequest) returns (SubmitBidResponse);
+
+  // SubmitAsk is called by Drivers who have empty space on their vehicles
+  rpc SubmitAsk(SubmitAskRequest) returns (SubmitAskResponse);
+
+  // AcceptMatch is called by Customers who agree the trip
+  rpc AcceptMatch(AcceptMatchRequest) returns (AcceptMatchResponse);
+}

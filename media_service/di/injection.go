@@ -11,7 +11,7 @@ import (
 )
 
 func Injection(r *gin.Engine) error {
-	url := os.Getenv("CLOUDINARY_URL")
+	url := os.Getenv("MEDIA_SERVICE_CLOUDINARY_URL")
 	if url == "" {
 		return fmt.Errorf("missing CLOUDINARY_URL in environment")
 	}

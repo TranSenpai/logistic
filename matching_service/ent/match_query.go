@@ -5,6 +5,8 @@ package ent
 import (
 	"context"
 	"fmt"
+	"matching_service/ent/asks"
+	"matching_service/ent/bids"
 	"matching_service/ent/match"
 	"matching_service/ent/predicate"
 	"math"
@@ -13,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 )
 
 // MatchQuery is the builder for querying Match entities.
@@ -22,6 +25,8 @@ type MatchQuery struct {
 	order      []match.OrderOption
 	inters     []Interceptor
 	predicates []predicate.Match
+	withAsks   *AsksQuery
+	withBids   *BidsQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +63,50 @@ func (_q *MatchQuery) Order(o ...match.OrderOption) *MatchQuery {
 	return _q
 }
 
+// QueryAsks chains the current query on the "asks" edge.
+func (_q *MatchQuery) QueryAsks() *AsksQuery {
+	query := (&AsksClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(match.Table, match.FieldID, selector),
+			sqlgraph.To(asks.Table, asks.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, match.AsksTable, match.AsksColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryBids chains the current query on the "bids" edge.
+func (_q *MatchQuery) QueryBids() *BidsQuery {
+	query := (&BidsClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(match.Table, match.FieldID, selector),
+			sqlgraph.To(bids.Table, bids.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, match.BidsTable, match.BidsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first Match entity from the query.
 // Returns a *NotFoundError when no Match was found.
 func (_q *MatchQuery) First(ctx context.Context) (*Match, error) {
@@ -82,8 +131,8 @@ func (_q *MatchQuery) FirstX(ctx context.Context) *Match {
 
 // FirstID returns the first Match ID from the query.
 // Returns a *NotFoundError when no Match ID was found.
-func (_q *MatchQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (_q *MatchQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -95,7 +144,7 @@ func (_q *MatchQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *MatchQuery) FirstIDX(ctx context.Context) int {
+func (_q *MatchQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -133,8 +182,8 @@ func (_q *MatchQuery) OnlyX(ctx context.Context) *Match {
 // OnlyID is like Only, but returns the only Match ID in the query.
 // Returns a *NotSingularError when more than one Match ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *MatchQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (_q *MatchQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -150,7 +199,7 @@ func (_q *MatchQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *MatchQuery) OnlyIDX(ctx context.Context) int {
+func (_q *MatchQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -178,7 +227,7 @@ func (_q *MatchQuery) AllX(ctx context.Context) []*Match {
 }
 
 // IDs executes the query and returns a list of Match IDs.
-func (_q *MatchQuery) IDs(ctx context.Context) (ids []int, err error) {
+func (_q *MatchQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
@@ -190,7 +239,7 @@ func (_q *MatchQuery) IDs(ctx context.Context) (ids []int, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *MatchQuery) IDsX(ctx context.Context) []int {
+func (_q *MatchQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -250,10 +299,34 @@ func (_q *MatchQuery) Clone() *MatchQuery {
 		order:      append([]match.OrderOption{}, _q.order...),
 		inters:     append([]Interceptor{}, _q.inters...),
 		predicates: append([]predicate.Match{}, _q.predicates...),
+		withAsks:   _q.withAsks.Clone(),
+		withBids:   _q.withBids.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithAsks tells the query-builder to eager-load the nodes that are connected to
+// the "asks" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MatchQuery) WithAsks(opts ...func(*AsksQuery)) *MatchQuery {
+	query := (&AsksClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAsks = query
+	return _q
+}
+
+// WithBids tells the query-builder to eager-load the nodes that are connected to
+// the "bids" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MatchQuery) WithBids(opts ...func(*BidsQuery)) *MatchQuery {
+	query := (&BidsClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withBids = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -262,12 +335,12 @@ func (_q *MatchQuery) Clone() *MatchQuery {
 // Example:
 //
 //	var v []struct {
-//		DeletedAt time.Time `json:"deleted_at,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Match.Query().
-//		GroupBy(match.FieldDeletedAt).
+//		GroupBy(match.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *MatchQuery) GroupBy(field string, fields ...string) *MatchGroupBy {
@@ -285,11 +358,11 @@ func (_q *MatchQuery) GroupBy(field string, fields ...string) *MatchGroupBy {
 // Example:
 //
 //	var v []struct {
-//		DeletedAt time.Time `json:"deleted_at,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.Match.Query().
-//		Select(match.FieldDeletedAt).
+//		Select(match.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (_q *MatchQuery) Select(fields ...string) *MatchSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
@@ -332,8 +405,12 @@ func (_q *MatchQuery) prepareQuery(ctx context.Context) error {
 
 func (_q *MatchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Match, error) {
 	var (
-		nodes = []*Match{}
-		_spec = _q.querySpec()
+		nodes       = []*Match{}
+		_spec       = _q.querySpec()
+		loadedTypes = [2]bool{
+			_q.withAsks != nil,
+			_q.withBids != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Match).scanValues(nil, columns)
@@ -341,6 +418,7 @@ func (_q *MatchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Match,
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Match{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -352,7 +430,78 @@ func (_q *MatchQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Match,
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withAsks; query != nil {
+		if err := _q.loadAsks(ctx, query, nodes, nil,
+			func(n *Match, e *Asks) { n.Edges.Asks = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withBids; query != nil {
+		if err := _q.loadBids(ctx, query, nodes, nil,
+			func(n *Match, e *Bids) { n.Edges.Bids = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (_q *MatchQuery) loadAsks(ctx context.Context, query *AsksQuery, nodes []*Match, init func(*Match), assign func(*Match, *Asks)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Match)
+	for i := range nodes {
+		fk := nodes[i].AskID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(asks.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "ask_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *MatchQuery) loadBids(ctx context.Context, query *BidsQuery, nodes []*Match, init func(*Match), assign func(*Match, *Bids)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Match)
+	for i := range nodes {
+		fk := nodes[i].BidID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(bids.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "bid_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
 }
 
 func (_q *MatchQuery) sqlCount(ctx context.Context) (int, error) {
@@ -365,7 +514,7 @@ func (_q *MatchQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (_q *MatchQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(match.Table, match.Columns, sqlgraph.NewFieldSpec(match.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewQuerySpec(match.Table, match.Columns, sqlgraph.NewFieldSpec(match.FieldID, field.TypeUUID))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -379,6 +528,12 @@ func (_q *MatchQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != match.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withAsks != nil {
+			_spec.Node.AddColumnOnce(match.FieldAskID)
+		}
+		if _q.withBids != nil {
+			_spec.Node.AddColumnOnce(match.FieldBidID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

@@ -1,11 +1,14 @@
 package mapper
 
 import (
+	"time"
+
+	"github.com/google/uuid"
+	pb "github.com/logistic/api/logistic/matching_service/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"matching_service/ent"
 	"matching_service/internal/entity"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // goverter:converter
@@ -14,31 +17,73 @@ import (
 // goverter:extend IdentityTime
 //
 //go:generate go run github.com/jmattheis/goverter/cmd/goverter@latest gen ./
-type Converter interface {
-	// goverter:map ID | IntToString
-	// goverter:map DriverID | IntToString
-	// goverter:map CurrentCoordinates CurrentLocation | ParseLocation
-	// goverter:map Status | AskStatusToString
+type AppMapper interface {
+	// ==================== REPO MAPPER ====================
+
+	// goverter:map . CurrentLocation | MapAskCurrentLocation
+	// goverter:map . Destination | MapAskDestination
 	// goverter:map MinPrice | Float64PtrToFloat64
-	// goverter:ignore VehicleID
-	// goverter:ignore Destination
 	// goverter:ignore ExpiresAt
-	EntAskToEntityAsk(source *ent.Ask) entity.Ask
-	EntAskListToEntityAskList(source []*ent.Ask) []entity.Ask
-	// goverter:map ID | IntToString
-	// goverter:map UserID | IntToString
-	// goverter:map PickupCoordinates Origin | ParseLocation
-	// goverter:map DeliveryCoordinates Destination | ParseLocation
-	// goverter:map Status | BidStatusToString
+	EntAskToEntityAsk(source *ent.Asks) entity.Ask
+	EntAskListToEntityAskList(source []*ent.Asks) []entity.Ask
+
+	// goverter:map . Origin | MapBidOrigin
+	// goverter:map . Destination | MapBidDestination
 	// goverter:map MaxPrice | Float64PtrToFloat64
 	// goverter:ignore ExpiresAt
-	EntBidToEntityBid(source *ent.Bid) entity.Bid
-	EntBidListToEntityBidList(source []*ent.Bid) []entity.Bid
+	EntBidToEntityBid(source *ent.Bids) entity.Bid
+	EntBidListToEntityBidList(source []*ent.Bids) []entity.Bid
+
+	// ==================== CONTROLLER MAPPER ====================
+
+	// goverter:ignore ID
+	// goverter:ignore CreatedAt
+	// goverter:ignore Status
+	// goverter:map ShipperId ShipperID | BytesToUUID
+	// goverter:map ConsigneeId ConsigneeID | BytesToUUID
+	// goverter:map ExpiresAt ExpiresAt | TimestampToTime
+	PbBidToEntity(req *pb.Bid) (entity.Bid, error)
+
+	// goverter:ignore ID
+	// goverter:ignore CreatedAt
+	// goverter:ignore Status
+	// goverter:ignore VehicleType
+	// goverter:ignore CapacityWeightKg
+	// goverter:ignore CapacityVolumeCbm
+	// goverter:ignore RouteID
+	// goverter:map VehicleId VehicleID | BytesToUUID
+	// goverter:map DriverId DriverID | BytesToUUID
+	// goverter:map ExpiresAt ExpiresAt | TimestampToTime
+	PbAskToEntity(req *pb.Ask) (entity.Ask, error)
+
+	// goverter:map ZoneId ZoneID
+	MapLocation(loc *pb.Location) entity.Location
+
+	// goverter:map ZoneID ZoneId
+	MapEntityLocationToPb(loc entity.Location) *pb.Location
+
+	// ==================== BROKER MAPPER ====================
+
+	// goverter:map ID Id | UUIDToBytes
+	// goverter:map ShipperID ShipperId | UUIDToBytes
+	// goverter:map ConsigneeID ConsigneeId | UUIDToBytes
+	// goverter:map Status Status | Int8ToInt32
+	// goverter:map ExpiresAt ExpiresAt | TimeToTimestamp
+	// goverter:map CreatedAt CreatedAt | TimeToTimestamp
+	EntityBidToPbBid(source entity.Bid) *pb.Bid
+	EntityBidListToPbBidList(source []entity.Bid) []*pb.Bid
+
+	// goverter:map ID Id | UUIDToBytes
+	// goverter:map VehicleID VehicleId | UUIDToBytes
+	// goverter:map DriverID DriverId | UUIDToBytes
+	// goverter:map Status Status | Int8ToInt32
+	// goverter:map ExpiresAt ExpiresAt | TimeToTimestamp
+	// goverter:map CreatedAt CreatedAt | TimeToTimestamp
+	EntityAskToPbAsk(source entity.Ask) *pb.Ask
+	EntityAskListToPbAskList(source []entity.Ask) []*pb.Ask
 }
 
-func IntToString(i int) string {
-	return strconv.Itoa(i)
-}
+// ==================== HELPERS ====================
 
 func Float64PtrToFloat64(f *float64) float64 {
 	if f == nil {
@@ -51,69 +96,73 @@ func IdentityTime(t time.Time) time.Time {
 	return t
 }
 
-func ParseLocation(pointStr string) entity.Location {
-	pointStr = strings.TrimPrefix(pointStr, "POINT(")
-	pointStr = strings.TrimSuffix(pointStr, ")")
-	parts := strings.Split(pointStr, " ")
-	if len(parts) != 2 {
+func MapAskCurrentLocation(source *ent.Asks) entity.Location {
+	if source == nil {
 		return entity.Location{}
 	}
-	lng, _ := strconv.ParseFloat(parts[0], 64)
-	lat, _ := strconv.ParseFloat(parts[1], 64)
 	return entity.Location{
-		Longitude: lng,
-		Latitude:  lat,
+		Latitude:  source.OriginLat,
+		Longitude: source.OriginLng,
+		ZoneID:    source.ZoneID,
 	}
 }
 
-func AskStatusToString(status int) string {
-	switch status {
-	case 1:
-		return entity.AskStatusPending
-	case 2:
-		return entity.AskStatusMatched
-	case 3:
-		return entity.AskStatusCancelled
-	default:
-		return "UNKNOWN"
+func MapAskDestination(source *ent.Asks) entity.Location {
+	if source == nil {
+		return entity.Location{}
+	}
+	return entity.Location{
+		Latitude:  source.DestinationLat,
+		Longitude: source.DestinationLng,
 	}
 }
 
-func BidStatusToString(status int) string {
-	switch status {
-	case 1:
-		return entity.BidStatusPending
-	case 2:
-		return entity.BidStatusMatched
-	case 3:
-		return entity.BidStatusCancelled
-	default:
-		return "UNKNOWN"
+func MapBidOrigin(source *ent.Bids) entity.Location {
+	if source == nil {
+		return entity.Location{}
+	}
+	return entity.Location{
+		Latitude:  source.OriginLat,
+		Longitude: source.OriginLng,
+		ZoneID:    source.ZoneID,
 	}
 }
 
-func BidStatusToInt(status string) int {
-	switch status {
-	case entity.BidStatusPending:
-		return 1
-	case entity.BidStatusMatched:
-		return 2
-	case entity.BidStatusCancelled:
-		return 3
-	default:
-		return -1
+func MapBidDestination(source *ent.Bids) entity.Location {
+	if source == nil {
+		return entity.Location{}
+	}
+	return entity.Location{
+		Latitude:  source.DestinationLat,
+		Longitude: source.DestinationLng,
 	}
 }
 
-func AskStatusToInt(status string) int {
-	switch status {
-	case entity.AskStatusPending:
-		return 1
-	case entity.AskStatusMatched:
-		return 2
-	case entity.AskStatusCancelled:
-		return 3
-	default:
-		return -1
+func BytesToUUID(b []byte) (uuid.UUID, error) {
+	if len(b) == 0 {
+		return uuid.Nil, nil
 	}
+	return uuid.FromBytes(b)
+}
+
+func UUIDToBytes(u uuid.UUID) []byte {
+	return u[:]
+}
+
+func Int8ToInt32(i int8) int32 {
+	return int32(i)
+}
+
+func TimestampToTime(ts *timestamppb.Timestamp) time.Time {
+	if ts != nil && ts.IsValid() {
+		return ts.AsTime()
+	}
+	return time.Time{}
+}
+
+func TimeToTimestamp(t time.Time) *timestamppb.Timestamp {
+	if t.IsZero() {
+		return nil
+	}
+	return timestamppb.New(t)
 }

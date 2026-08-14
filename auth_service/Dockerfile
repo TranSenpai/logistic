@@ -7,14 +7,12 @@ WORKDIR /workspace
 COPY go.work go.work.sum ./
 COPY go.mod go.sum ./
 
-# MẸO: Xóa các service không copy khỏi file go.work để Go không báo lỗi "no such file"
-RUN go work edit -dropuse=./matching_service && \
-    go work edit -dropuse=./media_service
-
-# CHỈ copy những thư mục thật sự cần thiết cho auth_service
+# MẸO: Phải COPY source code vào trước thì lệnh 'go work init' mới không bị lỗi "not found"
 COPY api/ ./api/
 COPY pkg/ ./pkg/
 COPY auth_service/ ./auth_service/
+
+RUN rm -f go.work go.work.sum && go work init . ./auth_service
 
 # Di chuyển vào thư mục của auth_service để build
 WORKDIR /workspace/auth_service

@@ -6,11 +6,17 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
-// Ask is the predicate function for ask builders.
-type Ask func(*sql.Selector)
+// Asks is the predicate function for asks builders.
+type Asks func(*sql.Selector)
 
-// Bid is the predicate function for bid builders.
-type Bid func(*sql.Selector)
+// Bids is the predicate function for bids builders.
+type Bids func(*sql.Selector)
+
+// Bids_Requirements is the predicate function for bids_requirements builders.
+type Bids_Requirements func(*sql.Selector)
 
 // Match is the predicate function for match builders.
 type Match func(*sql.Selector)
+
+// Requirements is the predicate function for requirements builders.
+type Requirements func(*sql.Selector)

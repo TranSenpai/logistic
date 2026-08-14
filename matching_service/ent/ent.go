@@ -6,9 +6,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"matching_service/ent/ask"
-	"matching_service/ent/bid"
+	"matching_service/ent/asks"
+	"matching_service/ent/bids"
+	"matching_service/ent/bids_requirements"
 	"matching_service/ent/match"
+	"matching_service/ent/requirements"
 	"reflect"
 	"sync"
 
@@ -75,9 +77,11 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			ask.Table:   ask.ValidColumn,
-			bid.Table:   bid.ValidColumn,
-			match.Table: match.ValidColumn,
+			asks.Table:              asks.ValidColumn,
+			bids.Table:              bids.ValidColumn,
+			bids_requirements.Table: bids_requirements.ValidColumn,
+			match.Table:             match.ValidColumn,
+			requirements.Table:      requirements.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

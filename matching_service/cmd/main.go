@@ -2,16 +2,42 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"matching_service/internal/conf"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	app, err := NewApp()
+	if err := godotenv.Load("../.env"); err != nil {
+		log.Println("No .env file found or failed to load, falling back to system environment variables")
+	}
+
+	cfg, err := conf.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	app, err := NewApp(cfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize Matching App: %v", err)
 	}
 
-	log.Println("Starting Matching Service on :8081...")
-	if err := app.Start(); err != nil {
-		log.Fatalf("Matching Service crashed: %v", err)
-	}
+	go func() {
+		log.Printf("Starting Matching Service on :%s...", cfg.Server.GrpcPort)
+		if err := app.Start(); err != nil {
+			log.Fatalf("Matching Service crashed: %v", err)
+		}
+	}()
+
+	// Graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Stopping Matching Service...")
+	app.Stop()
 }

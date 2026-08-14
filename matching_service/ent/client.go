@@ -11,13 +11,17 @@ import (
 
 	"matching_service/ent/migrate"
 
-	"matching_service/ent/ask"
-	"matching_service/ent/bid"
+	"matching_service/ent/asks"
+	"matching_service/ent/bids"
+	"matching_service/ent/bids_requirements"
 	"matching_service/ent/match"
+	"matching_service/ent/requirements"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 
 	stdsql "database/sql"
 )
@@ -27,12 +31,16 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
-	// Ask is the client for interacting with the Ask builders.
-	Ask *AskClient
-	// Bid is the client for interacting with the Bid builders.
-	Bid *BidClient
+	// Asks is the client for interacting with the Asks builders.
+	Asks *AsksClient
+	// Bids is the client for interacting with the Bids builders.
+	Bids *BidsClient
+	// Bids_Requirements is the client for interacting with the Bids_Requirements builders.
+	Bids_Requirements *BidsRequirementsClient
 	// Match is the client for interacting with the Match builders.
 	Match *MatchClient
+	// Requirements is the client for interacting with the Requirements builders.
+	Requirements *RequirementsClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -44,9 +52,11 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
-	c.Ask = NewAskClient(c.config)
-	c.Bid = NewBidClient(c.config)
+	c.Asks = NewAsksClient(c.config)
+	c.Bids = NewBidsClient(c.config)
+	c.Bids_Requirements = NewBidsRequirementsClient(c.config)
 	c.Match = NewMatchClient(c.config)
+	c.Requirements = NewRequirementsClient(c.config)
 }
 
 type (
@@ -137,11 +147,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Ask:    NewAskClient(cfg),
-		Bid:    NewBidClient(cfg),
-		Match:  NewMatchClient(cfg),
+		ctx:               ctx,
+		config:            cfg,
+		Asks:              NewAsksClient(cfg),
+		Bids:              NewBidsClient(cfg),
+		Bids_Requirements: NewBidsRequirementsClient(cfg),
+		Match:             NewMatchClient(cfg),
+		Requirements:      NewRequirementsClient(cfg),
 	}, nil
 }
 
@@ -159,18 +171,20 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Ask:    NewAskClient(cfg),
-		Bid:    NewBidClient(cfg),
-		Match:  NewMatchClient(cfg),
+		ctx:               ctx,
+		config:            cfg,
+		Asks:              NewAsksClient(cfg),
+		Bids:              NewBidsClient(cfg),
+		Bids_Requirements: NewBidsRequirementsClient(cfg),
+		Match:             NewMatchClient(cfg),
+		Requirements:      NewRequirementsClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Ask.
+//		Asks.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -192,134 +206,142 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Ask.Use(hooks...)
-	c.Bid.Use(hooks...)
+	c.Asks.Use(hooks...)
+	c.Bids.Use(hooks...)
+	c.Bids_Requirements.Use(hooks...)
 	c.Match.Use(hooks...)
+	c.Requirements.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Ask.Intercept(interceptors...)
-	c.Bid.Intercept(interceptors...)
+	c.Asks.Intercept(interceptors...)
+	c.Bids.Intercept(interceptors...)
+	c.Bids_Requirements.Intercept(interceptors...)
 	c.Match.Intercept(interceptors...)
+	c.Requirements.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
-	case *AskMutation:
-		return c.Ask.mutate(ctx, m)
-	case *BidMutation:
-		return c.Bid.mutate(ctx, m)
+	case *AsksMutation:
+		return c.Asks.mutate(ctx, m)
+	case *BidsMutation:
+		return c.Bids.mutate(ctx, m)
+	case *BidsRequirementsMutation:
+		return c.Bids_Requirements.mutate(ctx, m)
 	case *MatchMutation:
 		return c.Match.mutate(ctx, m)
+	case *RequirementsMutation:
+		return c.Requirements.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
 }
 
-// AskClient is a client for the Ask schema.
-type AskClient struct {
+// AsksClient is a client for the Asks schema.
+type AsksClient struct {
 	config
 }
 
-// NewAskClient returns a client for the Ask from the given config.
-func NewAskClient(c config) *AskClient {
-	return &AskClient{config: c}
+// NewAsksClient returns a client for the Asks from the given config.
+func NewAsksClient(c config) *AsksClient {
+	return &AsksClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `ask.Hooks(f(g(h())))`.
-func (c *AskClient) Use(hooks ...Hook) {
-	c.hooks.Ask = append(c.hooks.Ask, hooks...)
+// A call to `Use(f, g, h)` equals to `asks.Hooks(f(g(h())))`.
+func (c *AsksClient) Use(hooks ...Hook) {
+	c.hooks.Asks = append(c.hooks.Asks, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `ask.Intercept(f(g(h())))`.
-func (c *AskClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Ask = append(c.inters.Ask, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `asks.Intercept(f(g(h())))`.
+func (c *AsksClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Asks = append(c.inters.Asks, interceptors...)
 }
 
-// Create returns a builder for creating a Ask entity.
-func (c *AskClient) Create() *AskCreate {
-	mutation := newAskMutation(c.config, OpCreate)
-	return &AskCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a Asks entity.
+func (c *AsksClient) Create() *AsksCreate {
+	mutation := newAsksMutation(c.config, OpCreate)
+	return &AsksCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of Ask entities.
-func (c *AskClient) CreateBulk(builders ...*AskCreate) *AskCreateBulk {
-	return &AskCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Asks entities.
+func (c *AsksClient) CreateBulk(builders ...*AsksCreate) *AsksCreateBulk {
+	return &AsksCreateBulk{config: c.config, builders: builders}
 }
 
 // MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
 // a builder and applies setFunc on it.
-func (c *AskClient) MapCreateBulk(slice any, setFunc func(*AskCreate, int)) *AskCreateBulk {
+func (c *AsksClient) MapCreateBulk(slice any, setFunc func(*AsksCreate, int)) *AsksCreateBulk {
 	rv := reflect.ValueOf(slice)
 	if rv.Kind() != reflect.Slice {
-		return &AskCreateBulk{err: fmt.Errorf("calling to AskClient.MapCreateBulk with wrong type %T, need slice", slice)}
+		return &AsksCreateBulk{err: fmt.Errorf("calling to AsksClient.MapCreateBulk with wrong type %T, need slice", slice)}
 	}
-	builders := make([]*AskCreate, rv.Len())
+	builders := make([]*AsksCreate, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		builders[i] = c.Create()
 		setFunc(builders[i], i)
 	}
-	return &AskCreateBulk{config: c.config, builders: builders}
+	return &AsksCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for Ask.
-func (c *AskClient) Update() *AskUpdate {
-	mutation := newAskMutation(c.config, OpUpdate)
-	return &AskUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Asks.
+func (c *AsksClient) Update() *AsksUpdate {
+	mutation := newAsksMutation(c.config, OpUpdate)
+	return &AsksUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *AskClient) UpdateOne(_m *Ask) *AskUpdateOne {
-	mutation := newAskMutation(c.config, OpUpdateOne, withAsk(_m))
-	return &AskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *AsksClient) UpdateOne(_m *Asks) *AsksUpdateOne {
+	mutation := newAsksMutation(c.config, OpUpdateOne, withAsks(_m))
+	return &AsksUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *AskClient) UpdateOneID(id int) *AskUpdateOne {
-	mutation := newAskMutation(c.config, OpUpdateOne, withAskID(id))
-	return &AskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *AsksClient) UpdateOneID(id uuid.UUID) *AsksUpdateOne {
+	mutation := newAsksMutation(c.config, OpUpdateOne, withAsksID(id))
+	return &AsksUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for Ask.
-func (c *AskClient) Delete() *AskDelete {
-	mutation := newAskMutation(c.config, OpDelete)
-	return &AskDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Asks.
+func (c *AsksClient) Delete() *AsksDelete {
+	mutation := newAsksMutation(c.config, OpDelete)
+	return &AsksDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *AskClient) DeleteOne(_m *Ask) *AskDeleteOne {
+func (c *AsksClient) DeleteOne(_m *Asks) *AsksDeleteOne {
 	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *AskClient) DeleteOneID(id int) *AskDeleteOne {
-	builder := c.Delete().Where(ask.ID(id))
+func (c *AsksClient) DeleteOneID(id uuid.UUID) *AsksDeleteOne {
+	builder := c.Delete().Where(asks.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &AskDeleteOne{builder}
+	return &AsksDeleteOne{builder}
 }
 
-// Query returns a query builder for Ask.
-func (c *AskClient) Query() *AskQuery {
-	return &AskQuery{
+// Query returns a query builder for Asks.
+func (c *AsksClient) Query() *AsksQuery {
+	return &AsksQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeAsk},
+		ctx:    &QueryContext{Type: TypeAsks},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a Ask entity by its id.
-func (c *AskClient) Get(ctx context.Context, id int) (*Ask, error) {
-	return c.Query().Where(ask.ID(id)).Only(ctx)
+// Get returns a Asks entity by its id.
+func (c *AsksClient) Get(ctx context.Context, id uuid.UUID) (*Asks, error) {
+	return c.Query().Where(asks.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *AskClient) GetX(ctx context.Context, id int) *Ask {
+func (c *AsksClient) GetX(ctx context.Context, id uuid.UUID) *Asks {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -327,134 +349,150 @@ func (c *AskClient) GetX(ctx context.Context, id int) *Ask {
 	return obj
 }
 
+// QueryMatches queries the matches edge of a Asks.
+func (c *AsksClient) QueryMatches(_m *Asks) *MatchQuery {
+	query := (&MatchClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(asks.Table, asks.FieldID, id),
+			sqlgraph.To(match.Table, match.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, asks.MatchesTable, asks.MatchesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
-func (c *AskClient) Hooks() []Hook {
-	hooks := c.hooks.Ask
-	return append(hooks[:len(hooks):len(hooks)], ask.Hooks[:]...)
+func (c *AsksClient) Hooks() []Hook {
+	hooks := c.hooks.Asks
+	return append(hooks[:len(hooks):len(hooks)], asks.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
-func (c *AskClient) Interceptors() []Interceptor {
-	inters := c.inters.Ask
-	return append(inters[:len(inters):len(inters)], ask.Interceptors[:]...)
+func (c *AsksClient) Interceptors() []Interceptor {
+	inters := c.inters.Asks
+	return append(inters[:len(inters):len(inters)], asks.Interceptors[:]...)
 }
 
-func (c *AskClient) mutate(ctx context.Context, m *AskMutation) (Value, error) {
+func (c *AsksClient) mutate(ctx context.Context, m *AsksMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&AskCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&AsksCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&AskUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&AsksUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&AskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&AsksUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&AskDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&AsksDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown Ask mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown Asks mutation op: %q", m.Op())
 	}
 }
 
-// BidClient is a client for the Bid schema.
-type BidClient struct {
+// BidsClient is a client for the Bids schema.
+type BidsClient struct {
 	config
 }
 
-// NewBidClient returns a client for the Bid from the given config.
-func NewBidClient(c config) *BidClient {
-	return &BidClient{config: c}
+// NewBidsClient returns a client for the Bids from the given config.
+func NewBidsClient(c config) *BidsClient {
+	return &BidsClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `bid.Hooks(f(g(h())))`.
-func (c *BidClient) Use(hooks ...Hook) {
-	c.hooks.Bid = append(c.hooks.Bid, hooks...)
+// A call to `Use(f, g, h)` equals to `bids.Hooks(f(g(h())))`.
+func (c *BidsClient) Use(hooks ...Hook) {
+	c.hooks.Bids = append(c.hooks.Bids, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `bid.Intercept(f(g(h())))`.
-func (c *BidClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Bid = append(c.inters.Bid, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `bids.Intercept(f(g(h())))`.
+func (c *BidsClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Bids = append(c.inters.Bids, interceptors...)
 }
 
-// Create returns a builder for creating a Bid entity.
-func (c *BidClient) Create() *BidCreate {
-	mutation := newBidMutation(c.config, OpCreate)
-	return &BidCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a Bids entity.
+func (c *BidsClient) Create() *BidsCreate {
+	mutation := newBidsMutation(c.config, OpCreate)
+	return &BidsCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of Bid entities.
-func (c *BidClient) CreateBulk(builders ...*BidCreate) *BidCreateBulk {
-	return &BidCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Bids entities.
+func (c *BidsClient) CreateBulk(builders ...*BidsCreate) *BidsCreateBulk {
+	return &BidsCreateBulk{config: c.config, builders: builders}
 }
 
 // MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
 // a builder and applies setFunc on it.
-func (c *BidClient) MapCreateBulk(slice any, setFunc func(*BidCreate, int)) *BidCreateBulk {
+func (c *BidsClient) MapCreateBulk(slice any, setFunc func(*BidsCreate, int)) *BidsCreateBulk {
 	rv := reflect.ValueOf(slice)
 	if rv.Kind() != reflect.Slice {
-		return &BidCreateBulk{err: fmt.Errorf("calling to BidClient.MapCreateBulk with wrong type %T, need slice", slice)}
+		return &BidsCreateBulk{err: fmt.Errorf("calling to BidsClient.MapCreateBulk with wrong type %T, need slice", slice)}
 	}
-	builders := make([]*BidCreate, rv.Len())
+	builders := make([]*BidsCreate, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		builders[i] = c.Create()
 		setFunc(builders[i], i)
 	}
-	return &BidCreateBulk{config: c.config, builders: builders}
+	return &BidsCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for Bid.
-func (c *BidClient) Update() *BidUpdate {
-	mutation := newBidMutation(c.config, OpUpdate)
-	return &BidUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Bids.
+func (c *BidsClient) Update() *BidsUpdate {
+	mutation := newBidsMutation(c.config, OpUpdate)
+	return &BidsUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *BidClient) UpdateOne(_m *Bid) *BidUpdateOne {
-	mutation := newBidMutation(c.config, OpUpdateOne, withBid(_m))
-	return &BidUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *BidsClient) UpdateOne(_m *Bids) *BidsUpdateOne {
+	mutation := newBidsMutation(c.config, OpUpdateOne, withBids(_m))
+	return &BidsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *BidClient) UpdateOneID(id int) *BidUpdateOne {
-	mutation := newBidMutation(c.config, OpUpdateOne, withBidID(id))
-	return &BidUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *BidsClient) UpdateOneID(id uuid.UUID) *BidsUpdateOne {
+	mutation := newBidsMutation(c.config, OpUpdateOne, withBidsID(id))
+	return &BidsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for Bid.
-func (c *BidClient) Delete() *BidDelete {
-	mutation := newBidMutation(c.config, OpDelete)
-	return &BidDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Bids.
+func (c *BidsClient) Delete() *BidsDelete {
+	mutation := newBidsMutation(c.config, OpDelete)
+	return &BidsDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *BidClient) DeleteOne(_m *Bid) *BidDeleteOne {
+func (c *BidsClient) DeleteOne(_m *Bids) *BidsDeleteOne {
 	return c.DeleteOneID(_m.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *BidClient) DeleteOneID(id int) *BidDeleteOne {
-	builder := c.Delete().Where(bid.ID(id))
+func (c *BidsClient) DeleteOneID(id uuid.UUID) *BidsDeleteOne {
+	builder := c.Delete().Where(bids.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &BidDeleteOne{builder}
+	return &BidsDeleteOne{builder}
 }
 
-// Query returns a query builder for Bid.
-func (c *BidClient) Query() *BidQuery {
-	return &BidQuery{
+// Query returns a query builder for Bids.
+func (c *BidsClient) Query() *BidsQuery {
+	return &BidsQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeBid},
+		ctx:    &QueryContext{Type: TypeBids},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a Bid entity by its id.
-func (c *BidClient) Get(ctx context.Context, id int) (*Bid, error) {
-	return c.Query().Where(bid.ID(id)).Only(ctx)
+// Get returns a Bids entity by its id.
+func (c *BidsClient) Get(ctx context.Context, id uuid.UUID) (*Bids, error) {
+	return c.Query().Where(bids.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *BidClient) GetX(ctx context.Context, id int) *Bid {
+func (c *BidsClient) GetX(ctx context.Context, id uuid.UUID) *Bids {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -462,30 +500,229 @@ func (c *BidClient) GetX(ctx context.Context, id int) *Bid {
 	return obj
 }
 
+// QueryMatches queries the matches edge of a Bids.
+func (c *BidsClient) QueryMatches(_m *Bids) *MatchQuery {
+	query := (&MatchClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(bids.Table, bids.FieldID, id),
+			sqlgraph.To(match.Table, match.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, bids.MatchesTable, bids.MatchesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBidsRequirements queries the bids_requirements edge of a Bids.
+func (c *BidsClient) QueryBidsRequirements(_m *Bids) *BidsRequirementsQuery {
+	query := (&BidsRequirementsClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(bids.Table, bids.FieldID, id),
+			sqlgraph.To(bids_requirements.Table, bids_requirements.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, bids.BidsRequirementsTable, bids.BidsRequirementsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
-func (c *BidClient) Hooks() []Hook {
-	hooks := c.hooks.Bid
-	return append(hooks[:len(hooks):len(hooks)], bid.Hooks[:]...)
+func (c *BidsClient) Hooks() []Hook {
+	hooks := c.hooks.Bids
+	return append(hooks[:len(hooks):len(hooks)], bids.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
-func (c *BidClient) Interceptors() []Interceptor {
-	inters := c.inters.Bid
-	return append(inters[:len(inters):len(inters)], bid.Interceptors[:]...)
+func (c *BidsClient) Interceptors() []Interceptor {
+	inters := c.inters.Bids
+	return append(inters[:len(inters):len(inters)], bids.Interceptors[:]...)
 }
 
-func (c *BidClient) mutate(ctx context.Context, m *BidMutation) (Value, error) {
+func (c *BidsClient) mutate(ctx context.Context, m *BidsMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&BidCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&BidsCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&BidUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&BidsUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&BidUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&BidsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&BidDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&BidsDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown Bid mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown Bids mutation op: %q", m.Op())
+	}
+}
+
+// BidsRequirementsClient is a client for the Bids_Requirements schema.
+type BidsRequirementsClient struct {
+	config
+}
+
+// NewBidsRequirementsClient returns a client for the Bids_Requirements from the given config.
+func NewBidsRequirementsClient(c config) *BidsRequirementsClient {
+	return &BidsRequirementsClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `bids_requirements.Hooks(f(g(h())))`.
+func (c *BidsRequirementsClient) Use(hooks ...Hook) {
+	c.hooks.Bids_Requirements = append(c.hooks.Bids_Requirements, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `bids_requirements.Intercept(f(g(h())))`.
+func (c *BidsRequirementsClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Bids_Requirements = append(c.inters.Bids_Requirements, interceptors...)
+}
+
+// Create returns a builder for creating a Bids_Requirements entity.
+func (c *BidsRequirementsClient) Create() *BidsRequirementsCreate {
+	mutation := newBidsRequirementsMutation(c.config, OpCreate)
+	return &BidsRequirementsCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Bids_Requirements entities.
+func (c *BidsRequirementsClient) CreateBulk(builders ...*BidsRequirementsCreate) *BidsRequirementsCreateBulk {
+	return &BidsRequirementsCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BidsRequirementsClient) MapCreateBulk(slice any, setFunc func(*BidsRequirementsCreate, int)) *BidsRequirementsCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BidsRequirementsCreateBulk{err: fmt.Errorf("calling to BidsRequirementsClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BidsRequirementsCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BidsRequirementsCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Bids_Requirements.
+func (c *BidsRequirementsClient) Update() *BidsRequirementsUpdate {
+	mutation := newBidsRequirementsMutation(c.config, OpUpdate)
+	return &BidsRequirementsUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BidsRequirementsClient) UpdateOne(_m *Bids_Requirements) *BidsRequirementsUpdateOne {
+	mutation := newBidsRequirementsMutation(c.config, OpUpdateOne, withBids_Requirements(_m))
+	return &BidsRequirementsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BidsRequirementsClient) UpdateOneID(id uuid.UUID) *BidsRequirementsUpdateOne {
+	mutation := newBidsRequirementsMutation(c.config, OpUpdateOne, withBids_RequirementsID(id))
+	return &BidsRequirementsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Bids_Requirements.
+func (c *BidsRequirementsClient) Delete() *BidsRequirementsDelete {
+	mutation := newBidsRequirementsMutation(c.config, OpDelete)
+	return &BidsRequirementsDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BidsRequirementsClient) DeleteOne(_m *Bids_Requirements) *BidsRequirementsDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BidsRequirementsClient) DeleteOneID(id uuid.UUID) *BidsRequirementsDeleteOne {
+	builder := c.Delete().Where(bids_requirements.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BidsRequirementsDeleteOne{builder}
+}
+
+// Query returns a query builder for Bids_Requirements.
+func (c *BidsRequirementsClient) Query() *BidsRequirementsQuery {
+	return &BidsRequirementsQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBidsRequirements},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Bids_Requirements entity by its id.
+func (c *BidsRequirementsClient) Get(ctx context.Context, id uuid.UUID) (*Bids_Requirements, error) {
+	return c.Query().Where(bids_requirements.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BidsRequirementsClient) GetX(ctx context.Context, id uuid.UUID) *Bids_Requirements {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBids queries the bids edge of a Bids_Requirements.
+func (c *BidsRequirementsClient) QueryBids(_m *Bids_Requirements) *BidsQuery {
+	query := (&BidsClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(bids_requirements.Table, bids_requirements.FieldID, id),
+			sqlgraph.To(bids.Table, bids.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, bids_requirements.BidsTable, bids_requirements.BidsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRequirements queries the requirements edge of a Bids_Requirements.
+func (c *BidsRequirementsClient) QueryRequirements(_m *Bids_Requirements) *RequirementsQuery {
+	query := (&RequirementsClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(bids_requirements.Table, bids_requirements.FieldID, id),
+			sqlgraph.To(requirements.Table, requirements.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, bids_requirements.RequirementsTable, bids_requirements.RequirementsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *BidsRequirementsClient) Hooks() []Hook {
+	hooks := c.hooks.Bids_Requirements
+	return append(hooks[:len(hooks):len(hooks)], bids_requirements.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *BidsRequirementsClient) Interceptors() []Interceptor {
+	inters := c.inters.Bids_Requirements
+	return append(inters[:len(inters):len(inters)], bids_requirements.Interceptors[:]...)
+}
+
+func (c *BidsRequirementsClient) mutate(ctx context.Context, m *BidsRequirementsMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BidsRequirementsCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BidsRequirementsUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BidsRequirementsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BidsRequirementsDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Bids_Requirements mutation op: %q", m.Op())
 	}
 }
 
@@ -550,7 +787,7 @@ func (c *MatchClient) UpdateOne(_m *Match) *MatchUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *MatchClient) UpdateOneID(id int) *MatchUpdateOne {
+func (c *MatchClient) UpdateOneID(id uuid.UUID) *MatchUpdateOne {
 	mutation := newMatchMutation(c.config, OpUpdateOne, withMatchID(id))
 	return &MatchUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -567,7 +804,7 @@ func (c *MatchClient) DeleteOne(_m *Match) *MatchDeleteOne {
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *MatchClient) DeleteOneID(id int) *MatchDeleteOne {
+func (c *MatchClient) DeleteOneID(id uuid.UUID) *MatchDeleteOne {
 	builder := c.Delete().Where(match.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -584,17 +821,49 @@ func (c *MatchClient) Query() *MatchQuery {
 }
 
 // Get returns a Match entity by its id.
-func (c *MatchClient) Get(ctx context.Context, id int) (*Match, error) {
+func (c *MatchClient) Get(ctx context.Context, id uuid.UUID) (*Match, error) {
 	return c.Query().Where(match.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *MatchClient) GetX(ctx context.Context, id int) *Match {
+func (c *MatchClient) GetX(ctx context.Context, id uuid.UUID) *Match {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryAsks queries the asks edge of a Match.
+func (c *MatchClient) QueryAsks(_m *Match) *AsksQuery {
+	query := (&AsksClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(match.Table, match.FieldID, id),
+			sqlgraph.To(asks.Table, asks.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, match.AsksTable, match.AsksColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryBids queries the bids edge of a Match.
+func (c *MatchClient) QueryBids(_m *Match) *BidsQuery {
+	query := (&BidsClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(match.Table, match.FieldID, id),
+			sqlgraph.To(bids.Table, bids.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, match.BidsTable, match.BidsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.
@@ -624,13 +893,164 @@ func (c *MatchClient) mutate(ctx context.Context, m *MatchMutation) (Value, erro
 	}
 }
 
+// RequirementsClient is a client for the Requirements schema.
+type RequirementsClient struct {
+	config
+}
+
+// NewRequirementsClient returns a client for the Requirements from the given config.
+func NewRequirementsClient(c config) *RequirementsClient {
+	return &RequirementsClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `requirements.Hooks(f(g(h())))`.
+func (c *RequirementsClient) Use(hooks ...Hook) {
+	c.hooks.Requirements = append(c.hooks.Requirements, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `requirements.Intercept(f(g(h())))`.
+func (c *RequirementsClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Requirements = append(c.inters.Requirements, interceptors...)
+}
+
+// Create returns a builder for creating a Requirements entity.
+func (c *RequirementsClient) Create() *RequirementsCreate {
+	mutation := newRequirementsMutation(c.config, OpCreate)
+	return &RequirementsCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Requirements entities.
+func (c *RequirementsClient) CreateBulk(builders ...*RequirementsCreate) *RequirementsCreateBulk {
+	return &RequirementsCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RequirementsClient) MapCreateBulk(slice any, setFunc func(*RequirementsCreate, int)) *RequirementsCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RequirementsCreateBulk{err: fmt.Errorf("calling to RequirementsClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RequirementsCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RequirementsCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Requirements.
+func (c *RequirementsClient) Update() *RequirementsUpdate {
+	mutation := newRequirementsMutation(c.config, OpUpdate)
+	return &RequirementsUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RequirementsClient) UpdateOne(_m *Requirements) *RequirementsUpdateOne {
+	mutation := newRequirementsMutation(c.config, OpUpdateOne, withRequirements(_m))
+	return &RequirementsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RequirementsClient) UpdateOneID(id uuid.UUID) *RequirementsUpdateOne {
+	mutation := newRequirementsMutation(c.config, OpUpdateOne, withRequirementsID(id))
+	return &RequirementsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Requirements.
+func (c *RequirementsClient) Delete() *RequirementsDelete {
+	mutation := newRequirementsMutation(c.config, OpDelete)
+	return &RequirementsDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RequirementsClient) DeleteOne(_m *Requirements) *RequirementsDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RequirementsClient) DeleteOneID(id uuid.UUID) *RequirementsDeleteOne {
+	builder := c.Delete().Where(requirements.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RequirementsDeleteOne{builder}
+}
+
+// Query returns a query builder for Requirements.
+func (c *RequirementsClient) Query() *RequirementsQuery {
+	return &RequirementsQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRequirements},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Requirements entity by its id.
+func (c *RequirementsClient) Get(ctx context.Context, id uuid.UUID) (*Requirements, error) {
+	return c.Query().Where(requirements.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RequirementsClient) GetX(ctx context.Context, id uuid.UUID) *Requirements {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryBidsRequirements queries the bids_requirements edge of a Requirements.
+func (c *RequirementsClient) QueryBidsRequirements(_m *Requirements) *BidsRequirementsQuery {
+	query := (&BidsRequirementsClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(requirements.Table, requirements.FieldID, id),
+			sqlgraph.To(bids_requirements.Table, bids_requirements.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, requirements.BidsRequirementsTable, requirements.BidsRequirementsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RequirementsClient) Hooks() []Hook {
+	hooks := c.hooks.Requirements
+	return append(hooks[:len(hooks):len(hooks)], requirements.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *RequirementsClient) Interceptors() []Interceptor {
+	inters := c.inters.Requirements
+	return append(inters[:len(inters):len(inters)], requirements.Interceptors[:]...)
+}
+
+func (c *RequirementsClient) mutate(ctx context.Context, m *RequirementsMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RequirementsCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RequirementsUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RequirementsUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RequirementsDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Requirements mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Ask, Bid, Match []ent.Hook
+		Asks, Bids, Bids_Requirements, Match, Requirements []ent.Hook
 	}
 	inters struct {
-		Ask, Bid, Match []ent.Interceptor
+		Asks, Bids, Bids_Requirements, Match, Requirements []ent.Interceptor
 	}
 )
 

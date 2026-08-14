@@ -3,80 +3,210 @@
 package runtime
 
 import (
-	"matching_service/ent/ask"
-	"matching_service/ent/bid"
+	"matching_service/ent/asks"
+	"matching_service/ent/bids"
+	"matching_service/ent/bids_requirements"
 	"matching_service/ent/match"
+	"matching_service/ent/requirements"
 	"matching_service/ent/schema"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
-	askMixin := schema.Ask{}.Mixin()
-	askMixinHooks0 := askMixin[0].Hooks()
-	ask.Hooks[0] = askMixinHooks0[0]
-	askMixinInters0 := askMixin[0].Interceptors()
-	ask.Interceptors[0] = askMixinInters0[0]
-	askFields := schema.Ask{}.Fields()
-	_ = askFields
-	// askDescStatus is the schema descriptor for status field.
-	askDescStatus := askFields[6].Descriptor()
-	// ask.DefaultStatus holds the default value on creation for the status field.
-	ask.DefaultStatus = askDescStatus.Default.(int)
-	// askDescCreatedAt is the schema descriptor for created_at field.
-	askDescCreatedAt := askFields[7].Descriptor()
-	// ask.DefaultCreatedAt holds the default value on creation for the created_at field.
-	ask.DefaultCreatedAt = askDescCreatedAt.Default.(func() time.Time)
-	// askDescUpdatedAt is the schema descriptor for updated_at field.
-	askDescUpdatedAt := askFields[8].Descriptor()
-	// ask.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	ask.DefaultUpdatedAt = askDescUpdatedAt.Default.(func() time.Time)
-	// ask.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	ask.UpdateDefaultUpdatedAt = askDescUpdatedAt.UpdateDefault.(func() time.Time)
-	bidMixin := schema.Bid{}.Mixin()
-	bidMixinHooks0 := bidMixin[0].Hooks()
-	bid.Hooks[0] = bidMixinHooks0[0]
-	bidMixinInters0 := bidMixin[0].Interceptors()
-	bid.Interceptors[0] = bidMixinInters0[0]
-	bidFields := schema.Bid{}.Fields()
-	_ = bidFields
-	// bidDescStatus is the schema descriptor for status field.
-	bidDescStatus := bidFields[9].Descriptor()
-	// bid.DefaultStatus holds the default value on creation for the status field.
-	bid.DefaultStatus = bidDescStatus.Default.(int)
-	// bidDescCreatedAt is the schema descriptor for created_at field.
-	bidDescCreatedAt := bidFields[10].Descriptor()
-	// bid.DefaultCreatedAt holds the default value on creation for the created_at field.
-	bid.DefaultCreatedAt = bidDescCreatedAt.Default.(func() time.Time)
-	// bidDescUpdatedAt is the schema descriptor for updated_at field.
-	bidDescUpdatedAt := bidFields[11].Descriptor()
-	// bid.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	bid.DefaultUpdatedAt = bidDescUpdatedAt.Default.(func() time.Time)
-	// bid.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	bid.UpdateDefaultUpdatedAt = bidDescUpdatedAt.UpdateDefault.(func() time.Time)
+	asksMixin := schema.Asks{}.Mixin()
+	asksMixinHooks0 := asksMixin[0].Hooks()
+	asksMixinHooks1 := asksMixin[1].Hooks()
+	asks.Hooks[0] = asksMixinHooks0[0]
+	asks.Hooks[1] = asksMixinHooks1[0]
+	asksMixinInters1 := asksMixin[1].Interceptors()
+	asks.Interceptors[0] = asksMixinInters1[0]
+	asksMixinFields0 := asksMixin[0].Fields()
+	_ = asksMixinFields0
+	asksFields := schema.Asks{}.Fields()
+	_ = asksFields
+	// asksDescCreatedAt is the schema descriptor for created_at field.
+	asksDescCreatedAt := asksMixinFields0[0].Descriptor()
+	// asks.DefaultCreatedAt holds the default value on creation for the created_at field.
+	asks.DefaultCreatedAt = asksDescCreatedAt.Default.(func() time.Time)
+	// asksDescCreatedBy is the schema descriptor for created_by field.
+	asksDescCreatedBy := asksMixinFields0[1].Descriptor()
+	// asks.DefaultCreatedBy holds the default value on creation for the created_by field.
+	asks.DefaultCreatedBy = asksDescCreatedBy.Default.(func() uuid.UUID)
+	// asksDescUpdatedAt is the schema descriptor for updated_at field.
+	asksDescUpdatedAt := asksMixinFields0[2].Descriptor()
+	// asks.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	asks.DefaultUpdatedAt = asksDescUpdatedAt.Default.(func() time.Time)
+	// asks.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	asks.UpdateDefaultUpdatedAt = asksDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// asksDescUpdatedBy is the schema descriptor for updated_by field.
+	asksDescUpdatedBy := asksMixinFields0[3].Descriptor()
+	// asks.DefaultUpdatedBy holds the default value on creation for the updated_by field.
+	asks.DefaultUpdatedBy = asksDescUpdatedBy.Default.(func() uuid.UUID)
+	// asksDescIsDeleted is the schema descriptor for is_deleted field.
+	asksDescIsDeleted := asksMixinFields0[4].Descriptor()
+	// asks.DefaultIsDeleted holds the default value on creation for the is_deleted field.
+	asks.DefaultIsDeleted = asksDescIsDeleted.Default.(bool)
+	// asksDescID is the schema descriptor for id field.
+	asksDescID := asksFields[0].Descriptor()
+	// asks.DefaultID holds the default value on creation for the id field.
+	asks.DefaultID = asksDescID.Default.(func() uuid.UUID)
+	bidsMixin := schema.Bids{}.Mixin()
+	bidsMixinHooks0 := bidsMixin[0].Hooks()
+	bidsMixinHooks1 := bidsMixin[1].Hooks()
+	bids.Hooks[0] = bidsMixinHooks0[0]
+	bids.Hooks[1] = bidsMixinHooks1[0]
+	bidsMixinInters1 := bidsMixin[1].Interceptors()
+	bids.Interceptors[0] = bidsMixinInters1[0]
+	bidsMixinFields0 := bidsMixin[0].Fields()
+	_ = bidsMixinFields0
+	bidsFields := schema.Bids{}.Fields()
+	_ = bidsFields
+	// bidsDescCreatedAt is the schema descriptor for created_at field.
+	bidsDescCreatedAt := bidsMixinFields0[0].Descriptor()
+	// bids.DefaultCreatedAt holds the default value on creation for the created_at field.
+	bids.DefaultCreatedAt = bidsDescCreatedAt.Default.(func() time.Time)
+	// bidsDescCreatedBy is the schema descriptor for created_by field.
+	bidsDescCreatedBy := bidsMixinFields0[1].Descriptor()
+	// bids.DefaultCreatedBy holds the default value on creation for the created_by field.
+	bids.DefaultCreatedBy = bidsDescCreatedBy.Default.(func() uuid.UUID)
+	// bidsDescUpdatedAt is the schema descriptor for updated_at field.
+	bidsDescUpdatedAt := bidsMixinFields0[2].Descriptor()
+	// bids.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	bids.DefaultUpdatedAt = bidsDescUpdatedAt.Default.(func() time.Time)
+	// bids.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	bids.UpdateDefaultUpdatedAt = bidsDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// bidsDescUpdatedBy is the schema descriptor for updated_by field.
+	bidsDescUpdatedBy := bidsMixinFields0[3].Descriptor()
+	// bids.DefaultUpdatedBy holds the default value on creation for the updated_by field.
+	bids.DefaultUpdatedBy = bidsDescUpdatedBy.Default.(func() uuid.UUID)
+	// bidsDescIsDeleted is the schema descriptor for is_deleted field.
+	bidsDescIsDeleted := bidsMixinFields0[4].Descriptor()
+	// bids.DefaultIsDeleted holds the default value on creation for the is_deleted field.
+	bids.DefaultIsDeleted = bidsDescIsDeleted.Default.(bool)
+	// bidsDescID is the schema descriptor for id field.
+	bidsDescID := bidsFields[0].Descriptor()
+	// bids.DefaultID holds the default value on creation for the id field.
+	bids.DefaultID = bidsDescID.Default.(func() uuid.UUID)
+	bids_requirementsMixin := schema.Bids_Requirements{}.Mixin()
+	bids_requirementsMixinHooks0 := bids_requirementsMixin[0].Hooks()
+	bids_requirementsMixinHooks1 := bids_requirementsMixin[1].Hooks()
+	bids_requirements.Hooks[0] = bids_requirementsMixinHooks0[0]
+	bids_requirements.Hooks[1] = bids_requirementsMixinHooks1[0]
+	bids_requirementsMixinInters1 := bids_requirementsMixin[1].Interceptors()
+	bids_requirements.Interceptors[0] = bids_requirementsMixinInters1[0]
+	bids_requirementsMixinFields0 := bids_requirementsMixin[0].Fields()
+	_ = bids_requirementsMixinFields0
+	bids_requirementsFields := schema.Bids_Requirements{}.Fields()
+	_ = bids_requirementsFields
+	// bids_requirementsDescCreatedAt is the schema descriptor for created_at field.
+	bids_requirementsDescCreatedAt := bids_requirementsMixinFields0[0].Descriptor()
+	// bids_requirements.DefaultCreatedAt holds the default value on creation for the created_at field.
+	bids_requirements.DefaultCreatedAt = bids_requirementsDescCreatedAt.Default.(func() time.Time)
+	// bids_requirementsDescCreatedBy is the schema descriptor for created_by field.
+	bids_requirementsDescCreatedBy := bids_requirementsMixinFields0[1].Descriptor()
+	// bids_requirements.DefaultCreatedBy holds the default value on creation for the created_by field.
+	bids_requirements.DefaultCreatedBy = bids_requirementsDescCreatedBy.Default.(func() uuid.UUID)
+	// bids_requirementsDescUpdatedAt is the schema descriptor for updated_at field.
+	bids_requirementsDescUpdatedAt := bids_requirementsMixinFields0[2].Descriptor()
+	// bids_requirements.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	bids_requirements.DefaultUpdatedAt = bids_requirementsDescUpdatedAt.Default.(func() time.Time)
+	// bids_requirements.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	bids_requirements.UpdateDefaultUpdatedAt = bids_requirementsDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// bids_requirementsDescUpdatedBy is the schema descriptor for updated_by field.
+	bids_requirementsDescUpdatedBy := bids_requirementsMixinFields0[3].Descriptor()
+	// bids_requirements.DefaultUpdatedBy holds the default value on creation for the updated_by field.
+	bids_requirements.DefaultUpdatedBy = bids_requirementsDescUpdatedBy.Default.(func() uuid.UUID)
+	// bids_requirementsDescIsDeleted is the schema descriptor for is_deleted field.
+	bids_requirementsDescIsDeleted := bids_requirementsMixinFields0[4].Descriptor()
+	// bids_requirements.DefaultIsDeleted holds the default value on creation for the is_deleted field.
+	bids_requirements.DefaultIsDeleted = bids_requirementsDescIsDeleted.Default.(bool)
+	// bids_requirementsDescID is the schema descriptor for id field.
+	bids_requirementsDescID := bids_requirementsFields[0].Descriptor()
+	// bids_requirements.DefaultID holds the default value on creation for the id field.
+	bids_requirements.DefaultID = bids_requirementsDescID.Default.(func() uuid.UUID)
 	matchMixin := schema.Match{}.Mixin()
 	matchMixinHooks0 := matchMixin[0].Hooks()
+	matchMixinHooks1 := matchMixin[1].Hooks()
 	match.Hooks[0] = matchMixinHooks0[0]
-	matchMixinInters0 := matchMixin[0].Interceptors()
-	match.Interceptors[0] = matchMixinInters0[0]
+	match.Hooks[1] = matchMixinHooks1[0]
+	matchMixinInters1 := matchMixin[1].Interceptors()
+	match.Interceptors[0] = matchMixinInters1[0]
+	matchMixinFields0 := matchMixin[0].Fields()
+	_ = matchMixinFields0
 	matchFields := schema.Match{}.Fields()
 	_ = matchFields
-	// matchDescStatus is the schema descriptor for status field.
-	matchDescStatus := matchFields[3].Descriptor()
-	// match.DefaultStatus holds the default value on creation for the status field.
-	match.DefaultStatus = matchDescStatus.Default.(int)
 	// matchDescCreatedAt is the schema descriptor for created_at field.
-	matchDescCreatedAt := matchFields[4].Descriptor()
+	matchDescCreatedAt := matchMixinFields0[0].Descriptor()
 	// match.DefaultCreatedAt holds the default value on creation for the created_at field.
 	match.DefaultCreatedAt = matchDescCreatedAt.Default.(func() time.Time)
+	// matchDescCreatedBy is the schema descriptor for created_by field.
+	matchDescCreatedBy := matchMixinFields0[1].Descriptor()
+	// match.DefaultCreatedBy holds the default value on creation for the created_by field.
+	match.DefaultCreatedBy = matchDescCreatedBy.Default.(func() uuid.UUID)
 	// matchDescUpdatedAt is the schema descriptor for updated_at field.
-	matchDescUpdatedAt := matchFields[5].Descriptor()
+	matchDescUpdatedAt := matchMixinFields0[2].Descriptor()
 	// match.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	match.DefaultUpdatedAt = matchDescUpdatedAt.Default.(func() time.Time)
 	// match.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	match.UpdateDefaultUpdatedAt = matchDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// matchDescUpdatedBy is the schema descriptor for updated_by field.
+	matchDescUpdatedBy := matchMixinFields0[3].Descriptor()
+	// match.DefaultUpdatedBy holds the default value on creation for the updated_by field.
+	match.DefaultUpdatedBy = matchDescUpdatedBy.Default.(func() uuid.UUID)
+	// matchDescIsDeleted is the schema descriptor for is_deleted field.
+	matchDescIsDeleted := matchMixinFields0[4].Descriptor()
+	// match.DefaultIsDeleted holds the default value on creation for the is_deleted field.
+	match.DefaultIsDeleted = matchDescIsDeleted.Default.(bool)
+	// matchDescStatus is the schema descriptor for status field.
+	matchDescStatus := matchFields[4].Descriptor()
+	// match.DefaultStatus holds the default value on creation for the status field.
+	match.DefaultStatus = matchDescStatus.Default.(int)
+	// matchDescID is the schema descriptor for id field.
+	matchDescID := matchFields[0].Descriptor()
+	// match.DefaultID holds the default value on creation for the id field.
+	match.DefaultID = matchDescID.Default.(func() uuid.UUID)
+	requirementsMixin := schema.Requirements{}.Mixin()
+	requirementsMixinHooks0 := requirementsMixin[0].Hooks()
+	requirementsMixinHooks1 := requirementsMixin[1].Hooks()
+	requirements.Hooks[0] = requirementsMixinHooks0[0]
+	requirements.Hooks[1] = requirementsMixinHooks1[0]
+	requirementsMixinInters1 := requirementsMixin[1].Interceptors()
+	requirements.Interceptors[0] = requirementsMixinInters1[0]
+	requirementsMixinFields0 := requirementsMixin[0].Fields()
+	_ = requirementsMixinFields0
+	requirementsFields := schema.Requirements{}.Fields()
+	_ = requirementsFields
+	// requirementsDescCreatedAt is the schema descriptor for created_at field.
+	requirementsDescCreatedAt := requirementsMixinFields0[0].Descriptor()
+	// requirements.DefaultCreatedAt holds the default value on creation for the created_at field.
+	requirements.DefaultCreatedAt = requirementsDescCreatedAt.Default.(func() time.Time)
+	// requirementsDescCreatedBy is the schema descriptor for created_by field.
+	requirementsDescCreatedBy := requirementsMixinFields0[1].Descriptor()
+	// requirements.DefaultCreatedBy holds the default value on creation for the created_by field.
+	requirements.DefaultCreatedBy = requirementsDescCreatedBy.Default.(func() uuid.UUID)
+	// requirementsDescUpdatedAt is the schema descriptor for updated_at field.
+	requirementsDescUpdatedAt := requirementsMixinFields0[2].Descriptor()
+	// requirements.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	requirements.DefaultUpdatedAt = requirementsDescUpdatedAt.Default.(func() time.Time)
+	// requirements.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	requirements.UpdateDefaultUpdatedAt = requirementsDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// requirementsDescUpdatedBy is the schema descriptor for updated_by field.
+	requirementsDescUpdatedBy := requirementsMixinFields0[3].Descriptor()
+	// requirements.DefaultUpdatedBy holds the default value on creation for the updated_by field.
+	requirements.DefaultUpdatedBy = requirementsDescUpdatedBy.Default.(func() uuid.UUID)
+	// requirementsDescIsDeleted is the schema descriptor for is_deleted field.
+	requirementsDescIsDeleted := requirementsMixinFields0[4].Descriptor()
+	// requirements.DefaultIsDeleted holds the default value on creation for the is_deleted field.
+	requirements.DefaultIsDeleted = requirementsDescIsDeleted.Default.(bool)
+	// requirementsDescID is the schema descriptor for id field.
+	requirementsDescID := requirementsFields[0].Descriptor()
+	// requirements.DefaultID holds the default value on creation for the id field.
+	requirements.DefaultID = requirementsDescID.Default.(func() uuid.UUID)
 }
 
 const (

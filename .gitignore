@@ -26,7 +26,7 @@ vendor/
 
 # Others
 techBook/
-
+docs/programmingBook/
 # Bỏ qua thư mục chứa core/plugins của Terraform (rất nặng và tải lại được)
 **/.terraform/*
 
