@@ -38,15 +38,25 @@ func NewMatchingRepo(masterClient *ent.Client, slaveClient *ent.Client, mapper *
 
 func (r *matchingRepoImpl) CreateBid(ctx context.Context, bid *entity.Bid) error {
 	dao, err := r.masterClient.Bids.Create().
-		SetUserID(bid.UserID).
+		SetShipperID(bid.ShipperID).
+		SetShipperPhone(bid.ShipperPhone).
+		SetShipperMail(bid.ShipperMail).
+		SetConsigneeID(bid.ConsigneeID).
+		SetConsigneePhone(bid.ConsigneePhone).
+		SetConsigneeMail(bid.ConsigneeMail).
 		SetOriginLat(bid.Origin.Latitude).
 		SetOriginLng(bid.Origin.Longitude).
 		SetDestinationLat(bid.Destination.Latitude).
 		SetDestinationLng(bid.Destination.Longitude).
+		SetZoneID(bid.Origin.ZoneID).
 		SetVolumeM3(bid.VolumeM3).
 		SetWeightKg(bid.WeightKg).
-		SetMaxPrice(bid.MaxPrice).
+		SetNillableMaxPrice(&bid.MaxPrice).
+		SetCargoValue(bid.CargoValue).
+		SetRequiredDeposit(bid.RequiredDeposit).
+		SetDesiredDeposit(bid.DesiredDeposit).
 		SetStatus(bid.Status).
+		SetExpiresAt(bid.ExpiresAt).
 		Save(ctx)
 
 	if err != nil {
@@ -62,16 +72,24 @@ func (r *matchingRepoImpl) CreateAsk(ctx context.Context, ask *entity.Ask) error
 	dao, err := r.masterClient.Asks.Create().
 		SetID(ask.ID).
 		SetDriverID(ask.DriverID).
+		SetDriverPhone(ask.DriverPhone).
+		SetDriverMail(ask.DriverMail).
 		SetVehicleID(ask.VehicleID).
+		SetVehicleType(ask.VehicleType).
 		SetOriginLat(ask.CurrentLocation.Latitude).
 		SetOriginLng(ask.CurrentLocation.Longitude).
 		SetDestinationLat(ask.Destination.Latitude).
 		SetDestinationLng(ask.Destination.Longitude).
 		SetZoneID(ask.CurrentLocation.ZoneID).
+		SetRouteID(ask.RouteID).
+		SetCapacityVolumeCbm(ask.CapacityVolumeCbm).
 		SetAvailableVolumeM3(ask.AvailableVolumeM3).
+		SetCapacityWeightKg(ask.CapacityWeightKg).
 		SetAvailableWeightKg(ask.AvailableWeightKg).
-		SetMinPrice(ask.MinPrice).
+		SetNillableMinPrice(&ask.MinPrice).
+		SetDesiredDeposit(ask.DesiredDeposit).
 		SetStatus(ask.Status).
+		SetExpiresAt(ask.ExpiresAt).
 		Save(ctx)
 
 	if err != nil {
@@ -81,30 +99,6 @@ func (r *matchingRepoImpl) CreateAsk(ctx context.Context, ask *entity.Ask) error
 	*ask = entity
 
 	return nil
-}
-
-func (r *matchingRepoImpl) GetPendingBids(ctx context.Context, zone string) ([]entity.Bid, error) {
-	daoList, err := r.slaveClient.Bids.Query().
-		Where(bids.ZoneID(zone)).
-		Where(bids.Status(entity.BidStatusPending)).
-		All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return r.mapper.EntBidListToEntityBidList(daoList), nil
-}
-
-func (r *matchingRepoImpl) GetPendingAsks(ctx context.Context, zone string) ([]entity.Ask, error) {
-	daoList, err := r.slaveClient.Asks.Query().
-		Where(asks.ZoneID(zone)).
-		Where(asks.Status(entity.AskStatusPending)).
-		All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return r.mapper.EntAskListToEntityAskList(daoList), nil
 }
 
 func (r *matchingRepoImpl) FindAskForBid(ctx context.Context, bid *entity.Bid) ([]entity.Ask, error) {
@@ -162,12 +156,25 @@ func (r *matchingRepoImpl) FindBidForAsk(ctx context.Context, ask *entity.Ask) (
 func (r *matchingRepoImpl) UpdateAsk(ctx context.Context, ask *entity.Ask) error {
 	dao, err := r.masterClient.Asks.
 		UpdateOneID(ask.ID).
+		SetDriverID(ask.DriverID).
+		SetDriverPhone(ask.DriverPhone).
+		SetDriverMail(ask.DriverMail).
+		SetVehicleID(ask.VehicleID).
+		SetVehicleType(ask.VehicleType).
 		SetOriginLat(ask.CurrentLocation.Latitude).
 		SetOriginLng(ask.CurrentLocation.Longitude).
+		SetDestinationLat(ask.Destination.Latitude).
+		SetDestinationLng(ask.Destination.Longitude).
+		SetZoneID(ask.CurrentLocation.ZoneID).
+		SetRouteID(ask.RouteID).
+		SetCapacityVolumeCbm(ask.CapacityVolumeCbm).
 		SetAvailableVolumeM3(ask.AvailableVolumeM3).
+		SetCapacityWeightKg(ask.CapacityWeightKg).
 		SetAvailableWeightKg(ask.AvailableWeightKg).
-		SetMinPrice(ask.MinPrice).
+		SetNillableMinPrice(&ask.MinPrice).
+		SetDesiredDeposit(ask.DesiredDeposit).
 		SetStatus(ask.Status).
+		SetExpiresAt(ask.ExpiresAt).
 		Save(ctx)
 
 	if err != nil {
@@ -182,14 +189,25 @@ func (r *matchingRepoImpl) UpdateAsk(ctx context.Context, ask *entity.Ask) error
 func (r *matchingRepoImpl) UpdateBid(ctx context.Context, bid *entity.Bid) error {
 	dao, err := r.masterClient.Bids.
 		UpdateOneID(bid.ID).
+		SetShipperID(bid.ShipperID).
+		SetShipperPhone(bid.ShipperPhone).
+		SetShipperMail(bid.ShipperMail).
+		SetConsigneeID(bid.ConsigneeID).
+		SetConsigneePhone(bid.ConsigneePhone).
+		SetConsigneeMail(bid.ConsigneeMail).
 		SetOriginLat(bid.Origin.Latitude).
 		SetOriginLng(bid.Origin.Longitude).
 		SetDestinationLat(bid.Destination.Latitude).
 		SetDestinationLng(bid.Destination.Longitude).
+		SetZoneID(bid.Origin.ZoneID).
 		SetVolumeM3(bid.VolumeM3).
 		SetWeightKg(bid.WeightKg).
-		SetMaxPrice(bid.MaxPrice).
+		SetNillableMaxPrice(&bid.MaxPrice).
+		SetCargoValue(bid.CargoValue).
+		SetRequiredDeposit(bid.RequiredDeposit).
+		SetDesiredDeposit(bid.DesiredDeposit).
 		SetStatus(bid.Status).
+		SetExpiresAt(bid.ExpiresAt).
 		Save(ctx)
 
 	if err != nil {
@@ -207,4 +225,38 @@ func (r *matchingRepoImpl) DeleteBid(ctx context.Context, id uuid.UUID) error {
 
 func (r *matchingRepoImpl) DeleteAsk(ctx context.Context, id uuid.UUID) error {
 	return r.masterClient.Asks.DeleteOneID(id).Exec(ctx)
+}
+
+func (r *matchingRepoImpl) GetBid(ctx context.Context, id uuid.UUID) (*entity.Bid, error) {
+	dao, err := r.slaveClient.Bids.Get(ctx, id)
+	if err != nil {
+		return nil, wrapError(err)
+	}
+	ent := r.mapper.EntBidToEntityBid(dao)
+	return &ent, nil
+}
+
+func (r *matchingRepoImpl) GetAsk(ctx context.Context, id uuid.UUID) (*entity.Ask, error) {
+	dao, err := r.slaveClient.Asks.Get(ctx, id)
+	if err != nil {
+		return nil, wrapError(err)
+	}
+	ent := r.mapper.EntAskToEntityAsk(dao)
+	return &ent, nil
+}
+
+func (r *matchingRepoImpl) CreateMatchContract(ctx context.Context, contract *entity.MatchContract) error {
+	_, err := r.masterClient.Match.Create().
+		SetID(contract.ID).
+		SetBidID(contract.BidID).
+		SetAskID(contract.AskID).
+		SetConsensusPrice(contract.ConsensusPrice).
+		SetConsensusDeposit(contract.ConsensusDeposit).
+		SetStatus(int(contract.Status)).
+		Save(ctx)
+
+	if err != nil {
+		return wrapError(err)
+	}
+	return nil
 }
