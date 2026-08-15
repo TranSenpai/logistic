@@ -15,104 +15,12 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/get-info": {
-            "get": {
-                "description": "Lấy thông tin profile của người dùng hiện tại dựa trên token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Lấy thông tin người dùng",
-                "responses": {
-                    "200": {
-                        "description": "Lấy thông tin thành công",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Token không hợp lệ hoặc không tìm thấy",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/login": {
+        "/api/v1/auth/register": {
             "post": {
-                "description": "Đăng nhập bằng email và mật khẩu",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Đăng nhập",
-                "parameters": [
-                    {
-                        "description": "Thông tin đăng nhập",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.LoginRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Đăng nhập thành công",
-                        "schema": {
-                            "$ref": "#/definitions/dto.AuthResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Lỗi dữ liệu đầu vào",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Sai email hoặc mật khẩu",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/register": {
-            "post": {
-                "description": "Tạo tài khoản mới bằng email và mật khẩu",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
+                "description": "Tạo tài khoản mới bằng email và mật khẩu. Gateway chuyển tiếp request tới auth_service qua gRPC.",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["Auth"],
                 "summary": "Đăng ký tài khoản",
                 "parameters": [
                     {
@@ -120,122 +28,353 @@ const docTemplate = `{
                         "name": "request",
                         "in": "body",
                         "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.RegisterRequest"
-                        }
+                        "schema": { "$ref": "#/definitions/handler.RegisterRequest" }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Tạo tài khoản thành công",
-                        "schema": {
-                            "$ref": "#/definitions/dto.AuthResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Lỗi xác thực dữ liệu",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "409": {
-                        "description": "Email đã tồn tại",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
+                    "201": { "description": "Tạo tài khoản thành công", "schema": { "type": "object", "additionalProperties": true } },
+                    "400": { "description": "Lỗi dữ liệu đầu vào", "schema": { "type": "object", "additionalProperties": true } },
+                    "409": { "description": "Email đã tồn tại", "schema": { "type": "object", "additionalProperties": true } },
+                    "500": { "description": "Lỗi server nội bộ", "schema": { "type": "object", "additionalProperties": true } }
+                }
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "description": "Đăng nhập bằng email và mật khẩu. Trả về access_token, refresh_token và expires_in.",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["Auth"],
+                "summary": "Đăng nhập",
+                "parameters": [
+                    {
+                        "description": "Thông tin đăng nhập",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": { "$ref": "#/definitions/handler.LoginRequest" }
                     }
+                ],
+                "responses": {
+                    "200": { "description": "Đăng nhập thành công, trả về token pair", "schema": { "type": "object", "additionalProperties": true } },
+                    "400": { "description": "Lỗi dữ liệu đầu vào", "schema": { "type": "object", "additionalProperties": true } },
+                    "401": { "description": "Sai email hoặc mật khẩu", "schema": { "type": "object", "additionalProperties": true } },
+                    "500": { "description": "Lỗi server nội bộ", "schema": { "type": "object", "additionalProperties": true } }
+                }
+            }
+        },
+        "/api/v1/auth/get-info": {
+            "get": {
+                "description": "Lấy thông tin profile của người dùng hiện tại. Token có thể truyền qua cookie access_token hoặc header Authorization Bearer.",
+                "produces": ["application/json"],
+                "tags": ["Auth"],
+                "summary": "Lấy thông tin người dùng",
+                "parameters": [
+                    {
+                        "description": "Bearer token (nếu không dùng cookie)",
+                        "in": "header",
+                        "name": "Authorization",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Lấy thông tin thành công", "schema": { "type": "object", "additionalProperties": true } },
+                    "401": { "description": "Token không hợp lệ hoặc không tìm thấy", "schema": { "type": "object", "additionalProperties": true } }
+                }
+            }
+        },
+        "/api/v1/auth/google/login": {
+            "get": {
+                "description": "Khởi tạo luồng OAuth2 với Google. Redirect người dùng đến trang đăng nhập Google. Tạo state cookie để chống CSRF.",
+                "produces": ["application/json"],
+                "tags": ["Auth - OAuth2"],
+                "summary": "Đăng nhập bằng Google OAuth2",
+                "responses": {
+                    "307": { "description": "Redirect đến Google OAuth consent screen", "schema": { "type": "string" } },
+                    "500": { "description": "Lỗi khi lấy Google Login URL", "schema": { "type": "object", "additionalProperties": true } }
+                }
+            }
+        },
+        "/api/v1/auth/google/callback": {
+            "get": {
+                "description": "Xử lý callback từ Google sau khi user đăng nhập. Xác thực state, đổi code lấy token, set cookie và redirect về frontend.",
+                "produces": ["application/json"],
+                "tags": ["Auth - OAuth2"],
+                "summary": "Google OAuth2 Callback",
+                "parameters": [
+                    { "description": "OAuth state parameter (CSRF protection)", "in": "query", "name": "state", "required": true, "type": "string" },
+                    { "description": "Authorization code từ Google", "in": "query", "name": "code", "required": true, "type": "string" }
+                ],
+                "responses": {
+                    "307": { "description": "Redirect về frontend với cookie đã set", "schema": { "type": "string" } },
+                    "400": { "description": "State không hợp lệ", "schema": { "type": "object", "additionalProperties": true } },
+                    "500": { "description": "Lỗi xử lý callback", "schema": { "type": "object", "additionalProperties": true } }
+                }
+            }
+        },
+        "/v1/users/register": {
+            "post": {
+                "description": "Đăng ký người dùng mới với role driver hoặc shipper. Proxied qua gRPC-Gateway tới user_service.",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["User"],
+                "summary": "Đăng ký người dùng (User Service)",
+                "parameters": [
+                    {
+                        "description": "Thông tin đăng ký user",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": { "$ref": "#/definitions/RegisterUserRequest" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Đăng ký thành công", "schema": { "$ref": "#/definitions/RegisterUserResponse" } },
+                    "400": { "description": "Lỗi dữ liệu đầu vào", "schema": { "type": "object", "additionalProperties": true } },
+                    "500": { "description": "Lỗi server", "schema": { "type": "object", "additionalProperties": true } }
+                }
+            }
+        },
+        "/v1/users/{id}": {
+            "get": {
+                "description": "Lấy thông tin chi tiết của user theo ID, bao gồm profile driver hoặc shipper nếu có. Proxied qua gRPC-Gateway.",
+                "produces": ["application/json"],
+                "tags": ["User"],
+                "summary": "Lấy thông tin user (User Service)",
+                "parameters": [
+                    { "description": "User ID (UUID)", "in": "path", "name": "id", "required": true, "type": "string" }
+                ],
+                "responses": {
+                    "200": { "description": "Thông tin user chi tiết", "schema": { "$ref": "#/definitions/GetUserResponse" } },
+                    "404": { "description": "User không tìm thấy", "schema": { "type": "object", "additionalProperties": true } }
+                }
+            }
+        },
+        "/v1/users/{user_id}/kyc": {
+            "put": {
+                "description": "Cập nhật trạng thái KYC cho driver (approved/rejected). Proxied qua gRPC-Gateway.",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["User"],
+                "summary": "Cập nhật KYC driver (User Service)",
+                "parameters": [
+                    { "description": "User ID của driver", "in": "path", "name": "user_id", "required": true, "type": "string" },
+                    {
+                        "description": "Trạng thái KYC mới",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": { "$ref": "#/definitions/UpdateDriverKYCRequest" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Cập nhật KYC thành công", "schema": { "type": "object", "properties": { "message": { "type": "string" } } } },
+                    "400": { "description": "Lỗi dữ liệu", "schema": { "type": "object", "additionalProperties": true } }
+                }
+            }
+        },
+        "/v1/vehicles": {
+            "get": {
+                "description": "Liệt kê tất cả phương tiện của một driver. Proxied qua gRPC-Gateway tới vehicle_service.",
+                "produces": ["application/json"],
+                "tags": ["Vehicle"],
+                "summary": "Liệt kê phương tiện (Vehicle Service)",
+                "parameters": [
+                    { "description": "Driver ID để lọc phương tiện", "in": "query", "name": "driver_id", "type": "string" }
+                ],
+                "responses": {
+                    "200": { "description": "Danh sách phương tiện", "schema": { "$ref": "#/definitions/ListVehiclesResponse" } }
+                }
+            },
+            "post": {
+                "description": "Đăng ký phương tiện mới cho driver. Proxied qua gRPC-Gateway tới vehicle_service.",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["Vehicle"],
+                "summary": "Đăng ký phương tiện (Vehicle Service)",
+                "parameters": [
+                    {
+                        "description": "Thông tin phương tiện",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": { "$ref": "#/definitions/RegisterVehicleRequest" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Đăng ký phương tiện thành công", "schema": { "$ref": "#/definitions/RegisterVehicleResponse" } },
+                    "400": { "description": "Lỗi dữ liệu", "schema": { "type": "object", "additionalProperties": true } }
+                }
+            }
+        },
+        "/v1/vehicles/{id}": {
+            "get": {
+                "description": "Lấy thông tin chi tiết của phương tiện theo ID. Proxied qua gRPC-Gateway.",
+                "produces": ["application/json"],
+                "tags": ["Vehicle"],
+                "summary": "Lấy thông tin phương tiện (Vehicle Service)",
+                "parameters": [
+                    { "description": "Vehicle ID", "in": "path", "name": "id", "required": true, "type": "string" }
+                ],
+                "responses": {
+                    "200": { "description": "Thông tin chi tiết phương tiện", "schema": { "$ref": "#/definitions/Vehicle" } },
+                    "404": { "description": "Phương tiện không tìm thấy", "schema": { "type": "object", "additionalProperties": true } }
+                }
+            }
+        },
+        "/v1/vehicles/{id}/status": {
+            "put": {
+                "description": "Cập nhật trạng thái phương tiện (active/inactive/maintenance). Proxied qua gRPC-Gateway.",
+                "consumes": ["application/json"],
+                "produces": ["application/json"],
+                "tags": ["Vehicle"],
+                "summary": "Cập nhật trạng thái phương tiện (Vehicle Service)",
+                "parameters": [
+                    { "description": "Vehicle ID", "in": "path", "name": "id", "required": true, "type": "string" },
+                    {
+                        "description": "Trạng thái mới",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": { "$ref": "#/definitions/UpdateVehicleStatusRequest" }
+                    }
+                ],
+                "responses": {
+                    "200": { "description": "Cập nhật trạng thái thành công", "schema": { "type": "object", "properties": { "message": { "type": "string" } } } },
+                    "400": { "description": "Lỗi dữ liệu", "schema": { "type": "object", "additionalProperties": true } }
                 }
             }
         }
     },
     "definitions": {
-        "dto.AuthResponse": {
+        "handler.LoginRequest": {
+            "type": "object",
+            "required": ["email", "password"],
+            "properties": {
+                "email": { "type": "string" },
+                "password": { "type": "string" }
+            }
+        },
+        "handler.RegisterRequest": {
+            "type": "object",
+            "required": ["email", "password"],
+            "properties": {
+                "email": { "type": "string" },
+                "full_name": { "type": "string" },
+                "password": { "type": "string" }
+            }
+        },
+        "RegisterUserRequest": {
+            "type": "object",
+            "required": ["phone", "email", "password", "role"],
+            "properties": {
+                "phone": { "type": "string" },
+                "email": { "type": "string" },
+                "password": { "type": "string" },
+                "role": { "type": "string", "description": "driver hoặc shipper" }
+            }
+        },
+        "RegisterUserResponse": {
             "type": "object",
             "properties": {
-                "accessToken": {
-                    "type": "string"
-                },
-                "expiresIn": {
-                    "description": "Unix timestamp — client biết khi nào cần refresh",
-                    "type": "integer"
-                },
-                "refreshToken": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/dto.UserProfileResponse"
+                "id": { "type": "string" },
+                "message": { "type": "string" }
+            }
+        },
+        "User": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string" },
+                "phone": { "type": "string" },
+                "email": { "type": "string" },
+                "role": { "type": "string" },
+                "status": { "type": "string" },
+                "created_at": { "type": "string" },
+                "updated_at": { "type": "string" }
+            }
+        },
+        "DriverProfile": {
+            "type": "object",
+            "properties": {
+                "user_id": { "type": "string" },
+                "license_number": { "type": "string" },
+                "id_card": { "type": "string" },
+                "rating": { "type": "number" },
+                "kyc_status": { "type": "string" }
+            }
+        },
+        "ShipperProfile": {
+            "type": "object",
+            "properties": {
+                "user_id": { "type": "string" },
+                "company_name": { "type": "string" },
+                "tax_code": { "type": "string" }
+            }
+        },
+        "GetUserResponse": {
+            "type": "object",
+            "properties": {
+                "user": { "$ref": "#/definitions/User" },
+                "driver_profile": { "$ref": "#/definitions/DriverProfile" },
+                "shipper_profile": { "$ref": "#/definitions/ShipperProfile" }
+            }
+        },
+        "UpdateDriverKYCRequest": {
+            "type": "object",
+            "required": ["kyc_status"],
+            "properties": {
+                "user_id": { "type": "string" },
+                "kyc_status": { "type": "string", "description": "approved hoặc rejected" }
+            }
+        },
+        "RegisterVehicleRequest": {
+            "type": "object",
+            "required": ["driver_id", "license_plate", "vehicle_type"],
+            "properties": {
+                "driver_id": { "type": "string" },
+                "license_plate": { "type": "string" },
+                "brand": { "type": "string" },
+                "model": { "type": "string" },
+                "vehicle_type": { "type": "string", "description": "Truck, Van, Bike" },
+                "capacity_weight_kg": { "type": "number" },
+                "capacity_volume_cbm": { "type": "number" }
+            }
+        },
+        "RegisterVehicleResponse": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string" },
+                "message": { "type": "string" }
+            }
+        },
+        "Vehicle": {
+            "type": "object",
+            "properties": {
+                "id": { "type": "string" },
+                "driver_id": { "type": "string" },
+                "license_plate": { "type": "string" },
+                "brand": { "type": "string" },
+                "model": { "type": "string" },
+                "vehicle_type": { "type": "string" },
+                "capacity_weight_kg": { "type": "number" },
+                "capacity_volume_cbm": { "type": "number" },
+                "status": { "type": "string" }
+            }
+        },
+        "ListVehiclesResponse": {
+            "type": "object",
+            "properties": {
+                "vehicles": {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/Vehicle" }
                 }
             }
         },
-        "dto.LoginRequest": {
+        "UpdateVehicleStatusRequest": {
             "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
+            "required": ["status"],
             "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.RegisterRequest": {
-            "type": "object",
-            "required": [
-                "confirmPassword",
-                "email",
-                "fullName",
-                "password"
-            ],
-            "properties": {
-                "confirmPassword": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "fullName": {
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 2
-                },
-                "password": {
-                    "type": "string",
-                    "minLength": 8
-                }
-            }
-        },
-        "dto.UserProfileResponse": {
-            "type": "object",
-            "properties": {
-                "avatar": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "description": "Unix timestamp (số nguyên) — dễ xử lý hơn ở frontend so với ISO string",
-                    "type": "integer"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "fullName": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                }
+                "status": { "type": "string" }
             }
         }
     }
@@ -245,10 +384,10 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/api/v1/auth",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Auth Service API",
-	Description:      "Microservice quản lý xác thực và người dùng cho Logistics OS.",
+	Title:            "Logistics OS — Gateway API",
+	Description:      "API Gateway trung tâm cho hệ thống Logistics OS. Nhận toàn bộ HTTP request từ client và phân luồng tới các microservice nội bộ qua gRPC.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
