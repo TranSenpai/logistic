@@ -8,7 +8,7 @@ COPY api/ ./api/
 COPY pkg/ ./pkg/
 COPY gateway_service/ ./gateway_service/
 
-RUN rm -f go.work go.work.sum && go work init . ./gateway_service
+RUN rm -f go.work go.work.sum && go work init . ./api ./pkg ./gateway_service
 
 WORKDIR /workspace/gateway_service
 RUN go build -o gateway_service ./cmd

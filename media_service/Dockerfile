@@ -5,7 +5,7 @@ COPY ./go.mod ./go.sum ./
 COPY api/ ./api/
 COPY pkg/ ./pkg/
 COPY media_service/ ./media_service/
-RUN rm -f go.work go.work.sum && go work init . ./media_service
+RUN rm -f go.work go.work.sum && go work init . ./api ./pkg ./media_service
 WORKDIR /workspace/media_service
 RUN go build -o media_service ./cmd
 

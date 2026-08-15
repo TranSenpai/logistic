@@ -12,7 +12,7 @@ COPY api/ ./api/
 COPY pkg/ ./pkg/
 COPY auth_service/ ./auth_service/
 
-RUN rm -f go.work go.work.sum && go work init . ./auth_service
+RUN rm -f go.work go.work.sum && go work init . ./api ./pkg ./auth_service
 
 # Di chuyển vào thư mục của auth_service để build
 WORKDIR /workspace/auth_service
