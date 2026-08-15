@@ -7,6 +7,13 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# CHỐNG ĐỤNG ĐỘ (RACE CONDITION) KHI CHẠY TERRAFORM
+# Nếu có nhiều sự kiện trigger cùng lúc (ví dụ vừa push vừa open PR), GitHub sẽ xếp hàng chúng chạy tuần tự từng cái một.
+# Không hủy (cancel-in-progress: false) để tránh việc Terraform bị ngắt giữa chừng làm hỏng State.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 # ---------------------------------------------------------
 # MỐI QUAN HỆ GIỮA TRIGGER (`on:`) VÀ CÁC `jobs:`
 # ---------------------------------------------------------
