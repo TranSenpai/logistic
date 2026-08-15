@@ -133,6 +133,8 @@ services:
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
       - controller-1-data:/var/lib/kafka/data
+    networks:
+      - logistic_net
 
   controller-2:
     image: docker.io/apache/kafka:4.3.1
@@ -149,6 +151,8 @@ services:
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
       - controller-2-data:/var/lib/kafka/data
+    networks:
+      - logistic_net
 
   controller-3:
     image: docker.io/apache/kafka:4.3.1
@@ -165,6 +169,8 @@ services:
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
       - controller-3-data:/var/lib/kafka/data
+    networks:
+      - logistic_net
 
   broker-1:
     image: docker.io/apache/kafka:4.3.1
@@ -189,6 +195,8 @@ services:
       - controller-3
     volumes:
       - broker-1-data:/var/lib/kafka/data
+    networks:
+      - logistic_net
 
   broker-2:
     image: docker.io/apache/kafka:4.3.1
@@ -213,6 +221,8 @@ services:
       - controller-3
     volumes:
       - broker-2-data:/var/lib/kafka/data
+    networks:
+      - logistic_net
 
   broker-3:
     image: docker.io/apache/kafka:4.3.1
@@ -237,6 +247,8 @@ services:
       - controller-3
     volumes:
       - broker-3-data:/var/lib/kafka/data
+    networks:
+      - logistic_net
 
   kafka-ui:
     image: docker.io/provectuslabs/kafka-ui:latest
