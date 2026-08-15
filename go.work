@@ -15,5 +15,9 @@ use (
 	./gateway_service
 	./matching_service
 	./media_service // Khai báo media_service là 1 module con
+	./notification_service
+	./pkg
+	./user_service
 	./vehicle_service
+	./wallet_service
 )

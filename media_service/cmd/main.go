@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"goBackend/pkg/i18n"
+	"github.com/logistic/pkg/i18n"
 
 	"github.com/joho/godotenv"
 )
