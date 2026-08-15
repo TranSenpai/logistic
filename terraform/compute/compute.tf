@@ -62,4 +62,12 @@ resource "aws_instance" "logistic_server" {
   tags = {
     Name = "Logistic-Production-Node"
   }
+
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update -y
+              apt-get install -y podman
+              # Cài thêm các package cần thiết khác ở đây
+              EOF
+
 }
