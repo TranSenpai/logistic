@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package logistic.user_service.v1;
+option go_package = "github.com/logistic/api/logistic/user_service/v1;userv1";
+
+message User {
+    string id = 1;
+    string phone = 2;
+    string email = 3;
+    string role = 4;
+    string status = 5;
+    string created_at = 6;
+    string updated_at = 7;
+}
+
+message DriverProfile {
+    string user_id = 1;
+    string license_number = 2;
+    string id_card = 3;
+    float rating = 4;
+    string kyc_status = 5;
+}
+
+message ShipperProfile {
+    string user_id = 1;
+    string company_name = 2;
+    string tax_code = 3;
+}
+
+message RegisterUserRequest {
+    string phone = 1;
+    string email = 2;
+    string password = 3;
+    string role = 4; // "driver" or "shipper"
+}
+
+message RegisterUserResponse {
+    string id = 1;
+    string message = 2;
+}
+
+message GetUserRequest {
+    string id = 1;
+}
+
+message GetUserResponse {
+    User user = 1;
+    DriverProfile driver_profile = 2; // only if role == driver
+    ShipperProfile shipper_profile = 3; // only if role == shipper
+}
+
+message UpdateDriverKYCRequest {
+    string user_id = 1;
+    string kyc_status = 2; // "approved" or "rejected"
+}
+
+message UpdateDriverKYCResponse {
+    string message = 1;
+}

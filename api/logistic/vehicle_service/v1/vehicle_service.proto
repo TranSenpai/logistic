@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package logistic.vehicle_service.v1;
+option go_package = "github.com/logistic/api/logistic/vehicle_service/v1;vehiclev1";
+
+import "logistic/vehicle_service/v1/vehicle_messages.proto";
+import "google/api/annotations.proto";
+
+service VehicleService {
+    rpc RegisterVehicle(RegisterVehicleRequest) returns (RegisterVehicleResponse) {
+        option (google.api.http) = {
+            post: "/v1/vehicles"
+            body: "*"
+        };
+    }
+
+    rpc GetVehicle(GetVehicleRequest) returns (GetVehicleResponse) {
+        option (google.api.http) = {
+            get: "/v1/vehicles/{id}"
+        };
+    }
+
+    rpc ListVehicles(ListVehiclesRequest) returns (ListVehiclesResponse) {
+        option (google.api.http) = {
+            get: "/v1/vehicles"
+        };
+    }
+
+    rpc UpdateVehicleStatus(UpdateVehicleStatusRequest) returns (UpdateVehicleStatusResponse) {
+        option (google.api.http) = {
+            put: "/v1/vehicles/{id}/status"
+            body: "*"
+        };
+    }
+}

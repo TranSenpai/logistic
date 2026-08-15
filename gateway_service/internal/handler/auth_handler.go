@@ -35,6 +35,18 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// Register godoc
+// @Summary      Đăng ký tài khoản
+// @Description  Tạo tài khoản mới bằng email và mật khẩu. Gateway chuyển tiếp request tới auth_service qua gRPC.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request body RegisterRequest true "Thông tin đăng ký"
+// @Success      201 {object} map[string]interface{} "Tạo tài khoản thành công"
+// @Failure      400 {object} map[string]interface{} "Lỗi dữ liệu đầu vào"
+// @Failure      409 {object} map[string]interface{} "Email đã tồn tại"
+// @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
+// @Router       /auth/register [post]
 func (h *AuthHandler) Register(ctx *gin.Context) {
 	var req RegisterRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -67,6 +79,18 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 	})
 }
 
+// Login godoc
+// @Summary      Đăng nhập
+// @Description  Đăng nhập bằng email và mật khẩu. Trả về access_token, refresh_token và expires_in.
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request body LoginRequest true "Thông tin đăng nhập"
+// @Success      200 {object} map[string]interface{} "Đăng nhập thành công, trả về token pair"
+// @Failure      400 {object} map[string]interface{} "Lỗi dữ liệu đầu vào"
+// @Failure      401 {object} map[string]interface{} "Sai email hoặc mật khẩu"
+// @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
+// @Router       /auth/login [post]
 func (h *AuthHandler) Login(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -95,6 +119,14 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 	})
 }
 
+// GoogleLogin godoc
+// @Summary      Đăng nhập bằng Google OAuth2
+// @Description  Khởi tạo luồng OAuth2 với Google. Redirect người dùng đến trang đăng nhập Google. Tạo state cookie để chống CSRF.
+// @Tags         Auth - OAuth2
+// @Produce      json
+// @Success      307 {string} string "Redirect đến Google OAuth consent screen"
+// @Failure      500 {object} map[string]interface{} "Lỗi khi lấy Google Login URL"
+// @Router       /auth/google/login [get]
 func (h *AuthHandler) GoogleLogin(ctx *gin.Context) {
 	b := make([]byte, 16)
 	rand.Read(b)
@@ -112,6 +144,17 @@ func (h *AuthHandler) GoogleLogin(ctx *gin.Context) {
 	ctx.Redirect(http.StatusTemporaryRedirect, resp.Url)
 }
 
+// GoogleCallback godoc
+// @Summary      Google OAuth2 Callback
+// @Description  Xử lý callback từ Google sau khi user đăng nhập. Xác thực state, đổi code lấy token, set cookie access_token và refresh_token, rồi redirect về frontend.
+// @Tags         Auth - OAuth2
+// @Produce      json
+// @Param        state query string true "OAuth state parameter (CSRF protection)"
+// @Param        code  query string true "Authorization code từ Google"
+// @Success      307 {string} string "Redirect về frontend với cookie đã set"
+// @Failure      400 {object} map[string]interface{} "State không hợp lệ"
+// @Failure      500 {object} map[string]interface{} "Lỗi xử lý callback"
+// @Router       /auth/google/callback [get]
 func (h *AuthHandler) GoogleCallback(ctx *gin.Context) {
 	urlState := ctx.Query("state")
 	cookieState, err := ctx.Cookie("oauth_state")
@@ -139,6 +182,15 @@ func (h *AuthHandler) GoogleCallback(ctx *gin.Context) {
 	ctx.Redirect(http.StatusTemporaryRedirect, "http://127.0.0.1:3000/")
 }
 
+// GetInfo godoc
+// @Summary      Lấy thông tin người dùng
+// @Description  Lấy thông tin profile của người dùng hiện tại. Token có thể truyền qua cookie access_token hoặc header Authorization Bearer.
+// @Tags         Auth
+// @Produce      json
+// @Param        Authorization header string false "Bearer token (nếu không dùng cookie)"
+// @Success      200 {object} map[string]interface{} "Lấy thông tin thành công"
+// @Failure      401 {object} map[string]interface{} "Token không hợp lệ hoặc không tìm thấy"
+// @Router       /auth/get-info [get]
 func (h *AuthHandler) GetInfo(ctx *gin.Context) {
 	token, err := ctx.Cookie("access_token")
 	if err != nil {

@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"log"
 	"matching_service/internal/conf"
 	"matching_service/internal/di"
 	"net"
+	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/logistic/pkg/tracer"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
 
@@ -14,15 +19,23 @@ type App struct {
 	grpcServer *grpc.Server
 	listener   net.Listener
 	cfg        *conf.Config
+	shutdown   func(context.Context) error
 }
 
 func NewApp(cfg *conf.Config) (*App, error) {
+	shutdownTracer, err := tracer.InitTracer("matching_service", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
+	if err != nil {
+		log.Printf("Failed to initialize tracer: %v", err)
+	}
+
 	lis, err := net.Listen("tcp", ":"+cfg.Server.GrpcPort)
 	if err != nil {
 		return nil, err
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
 
 	err = di.Injection(grpcServer, cfg)
 	if err != nil {
@@ -33,6 +46,7 @@ func NewApp(cfg *conf.Config) (*App, error) {
 		grpcServer: grpcServer,
 		listener:   lis,
 		cfg:        cfg,
+		shutdown:   shutdownTracer,
 	}, nil
 }
 
@@ -43,5 +57,14 @@ func (a *App) Start() error {
 func (a *App) Stop() {
 	log.Println("Stopping Matching Service (gRPC) gracefully...")
 	a.grpcServer.GracefulStop()
+
+	if a.shutdown != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := a.shutdown(ctx); err != nil {
+			log.Printf("Failed to shutdown tracer: %v", err)
+		}
+	}
+
 	log.Println("Matching Service (gRPC) stopped.")
 }
