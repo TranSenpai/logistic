@@ -255,6 +255,7 @@ services:
 
 volumes:
   nats-data:
+  gateway-data:
   auth-data:
   media-data:
   matching-data:
