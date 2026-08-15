@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package logistic.user_service.v1;
+option go_package = "github.com/logistic/api/logistic/user_service/v1;userv1";
+
+import "logistic/user_service/v1/user_messages.proto";
+import "google/api/annotations.proto";
+
+service UserService {
+    rpc RegisterUser(RegisterUserRequest) returns (RegisterUserResponse) {
+        option (google.api.http) = {
+            post: "/v1/users/register"
+            body: "*"
+        };
+    }
+
+    rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+        option (google.api.http) = {
+            get: "/v1/users/{id}"
+        };
+    }
+
+    rpc UpdateDriverKYC(UpdateDriverKYCRequest) returns (UpdateDriverKYCResponse) {
+        option (google.api.http) = {
+            put: "/v1/users/{user_id}/kyc"
+            body: "*"
+        };
+    }
+}

@@ -1,0 +1,288 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "logistic/vehicle_service/v1/vehicle_service.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "VehicleService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/vehicles": {
+      "get": {
+        "operationId": "VehicleService_ListVehicles",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListVehiclesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "driverId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "VehicleService"
+        ]
+      },
+      "post": {
+        "operationId": "VehicleService_RegisterVehicle",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RegisterVehicleResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1RegisterVehicleRequest"
+            }
+          }
+        ],
+        "tags": [
+          "VehicleService"
+        ]
+      }
+    },
+    "/v1/vehicles/{id}": {
+      "get": {
+        "operationId": "VehicleService_GetVehicle",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetVehicleResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "VehicleService"
+        ]
+      }
+    },
+    "/v1/vehicles/{id}/status": {
+      "put": {
+        "operationId": "VehicleService_UpdateVehicleStatus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateVehicleStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/VehicleServiceUpdateVehicleStatusBody"
+            }
+          }
+        ],
+        "tags": [
+          "VehicleService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "VehicleServiceUpdateVehicleStatusBody": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1GetVehicleResponse": {
+      "type": "object",
+      "properties": {
+        "vehicle": {
+          "$ref": "#/definitions/v1Vehicle"
+        }
+      }
+    },
+    "v1ListVehiclesResponse": {
+      "type": "object",
+      "properties": {
+        "vehicles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Vehicle"
+          }
+        }
+      }
+    },
+    "v1RegisterVehicleRequest": {
+      "type": "object",
+      "properties": {
+        "driverId": {
+          "type": "string"
+        },
+        "licensePlate": {
+          "type": "string"
+        },
+        "brand": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "vehicleType": {
+          "type": "string"
+        },
+        "capacityWeightKg": {
+          "type": "number",
+          "format": "float"
+        },
+        "capacityVolumeCbm": {
+          "type": "number",
+          "format": "float"
+        }
+      }
+    },
+    "v1RegisterVehicleResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "v1UpdateVehicleStatusResponse": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "v1Vehicle": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "driverId": {
+          "type": "string"
+        },
+        "licensePlate": {
+          "type": "string"
+        },
+        "brand": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "vehicleType": {
+          "type": "string",
+          "title": "Truck, Van, Bike"
+        },
+        "capacityWeightKg": {
+          "type": "number",
+          "format": "float"
+        },
+        "capacityVolumeCbm": {
+          "type": "number",
+          "format": "float"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

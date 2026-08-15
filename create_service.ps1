@@ -8,7 +8,7 @@ Write-Host "Creating new service: $ServiceName..." -ForegroundColor Cyan
 # 1. Create directories
 $dirs = @(
     "$ServiceName/cmd",
-    "$ServiceName/internal/delivery",
+    "$ServiceName/internal/controller",
     "$ServiceName/internal/biz",
     "$ServiceName/internal/repo",
     "$ServiceName/internal/entity",

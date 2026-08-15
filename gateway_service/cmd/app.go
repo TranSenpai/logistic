@@ -8,16 +8,24 @@ import (
 	"os"
 	"time"
 
+	"github.com/logistic/pkg/tracer"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 type App struct {
-	engine *gin.Engine
-	server *http.Server
+	engine   *gin.Engine
+	server   *http.Server
+	shutdown func(context.Context) error
 }
 
 func NewApp() (*App, error) {
+	shutdownTracer, err := tracer.InitTracer("gateway_service", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
+	if err != nil {
+		log.Printf("Failed to initialize tracer: %v", err)
+	}
+
 	ginEngine := gin.Default()
 
 	corsConfig := cors.DefaultConfig()
@@ -29,12 +37,15 @@ func NewApp() (*App, error) {
 	corsConfig.MaxAge = 12 * time.Hour
 	ginEngine.Use(cors.New(corsConfig))
 
-	err := di.Injection(ginEngine)
+	err = di.Injection(ginEngine)
 	if err != nil {
 		return nil, err
 	}
 
-	return &App{engine: ginEngine}, nil
+	return &App{
+		engine:   ginEngine,
+		shutdown: shutdownTracer,
+	}, nil
 }
 
 func (a *App) Start() error {
@@ -66,5 +77,12 @@ func (a *App) Stop() {
 	if err := a.server.Shutdown(ctx); err != nil {
 		log.Printf("Gateway Service forced to shutdown: %v", err)
 	}
+
+	if a.shutdown != nil {
+		if err := a.shutdown(ctx); err != nil {
+			log.Printf("Failed to shutdown tracer: %v", err)
+		}
+	}
+
 	log.Println("Gateway Service stopped.")
 }

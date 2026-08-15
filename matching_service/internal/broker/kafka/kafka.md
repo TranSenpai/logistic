@@ -1,8 +1,4 @@
-# Cẩm Nang Apache Kafka
-
-Tài liệu này ghi chép lại một cách sâu sắc và chi tiết nhất về các thành phần cốt lõi của Kafka, các edge cases (trường hợp góc) và các thông số cấu hình mang tính sống còn khi vận hành hệ thống phân tán.
-
----
+# Apache Kafka
 
 ## 1. Thành Phần Cấu Trúc (Architecture Components)
 
@@ -361,6 +357,23 @@ Mặc định Java Consumer tự động commit (Auto Commit), dẫn đến ng�
 3. **Exactly-once (Chính xác một lần - Chén thánh):**
    - Nếu luồng dữ liệu chỉ nằm gọn trong Kafka (Kafka to Kafka workflows): Sử dụng **Transactional API** (rất dễ làm nếu dùng Kafka Streams API).
    - Nếu luồng dữ liệu đẩy ra hệ thống ngoài (External System workflows như ghi vào Postgres, MySQL): Cực khó. Bắt buộc phải kết hợp *At-least-once* với một **Idempotent Consumer** (thường dùng khóa ngoại hoặc bảng lưu Transaction ID để chặn trùng lặp tuyệt đối).
+
+### 3.5 Hiện Tượng Zombie Consumer & Cơ Chế Generation ID
+Trong một Consumer Group, nếu cấu hình thời gian xử lý không hợp lý có thể dẫn đến hiện tượng **Zombie Consumer** và **Split-Brain** ở cấp độ Consumer.
+
+**A. Kịch bản phát sinh (Vấn đề):**
+- Consumer A nhận được dữ liệu từ Partition 1, nhưng luồng code xử lý quá lâu (ví dụ gọi API đối tác bị treo), vượt quá ngưỡng thời gian cấu hình `max.poll.interval.ms`.
+- Do không nhận được tín hiệu `poll()` mới, Kafka Group Coordinator phán quyết: *"Consumer A đã bị treo"*, và kích hoạt quá trình Rebalance.
+- Partition 1 được thu hồi và giao cho Consumer B. B bắt đầu đọc và xử lý lại tin nhắn đó.
+- Lát sau, API trả về kết quả, Consumer A "thức tỉnh" (trở thành Zombie). Nó hoàn tất logic và hồn nhiên gửi lệnh `commitSync()` lên Kafka để xác nhận xử lý xong Partition 1. 
+- Nếu Kafka cho phép A commit, hệ thống sẽ bị **Duplicate Data** trầm trọng vì cả A và B cùng xử lý một tin nhắn.
+
+**B. Giải pháp bảo vệ của Kafka (Generation ID / Epoch):**
+- Để chống lại thảm họa này, mỗi khi Group Rebalance, Coordinator sẽ tăng một bộ đếm lên 1 đơn vị, gọi là **Generation ID** (hay Epoch của Consumer Group).
+- Ví dụ: Ban đầu Group ở Generation `1`. Sau khi Rebalance (chuyển P1 cho B), Group chuyển sang Generation `2`.
+- Khi Zombie A thức dậy và gửi lệnh commit, request của nó đính kèm nhãn mác cũ là `Generation 1`.
+- Kafka Coordinator kiểm tra và phát hiện nhãn này đã lạc hậu so với hiện tại (`Generation 2`). Nó lập tức **từ chối** lệnh commit của A và ném ra lỗi `CommitFailedException`. 
+- Nhờ cơ chế định danh thế hệ (Generation ID) này, Kafka ngăn chặn triệt để hiện tượng Split-Brain ở Consumer, đảm bảo tính toàn vẹn cho dữ liệu.
 
 ---
 
