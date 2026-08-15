@@ -3,6 +3,19 @@ networks:
     driver: bridge
 
 services:
+  gateway-service:
+    build:
+      context: .
+      dockerfile: ./gateway_service/Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - gateway-data:/app/data
+    networks:
+      - logistic_net
+
   auth-service:
     build:
       context: .
