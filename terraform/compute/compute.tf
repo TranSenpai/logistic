@@ -28,7 +28,7 @@ resource "aws_security_group" "logistic_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["42.116.178.24/32"]
+    cidr_blocks = ["1.53.50.118/32"]
   }
 
   egress {
