@@ -236,5 +236,8 @@ jobs:
           # Cấp quyền thực thi cho các script khởi tạo DB (nếu có)
           chmod -R +x scripts/
           
-          # Chạy ứng dụng bằng Podman Compose
-          sudo podman-compose up -d --build
+          # Kích hoạt linger để các tiến trình của user ubuntu không bị kill khi SSH ngắt kết nối
+          # sudo loginctl enable-linger ubuntu
+          
+          # Chạy ứng dụng bằng Podman Compose (Rootless mode - KHÔNG dùng sudo)
+          podman-compose up -d --build
