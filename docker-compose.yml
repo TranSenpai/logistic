@@ -55,6 +55,32 @@ services:
     networks:
       - logistic_net
 
+  user-service:
+    build:
+      context: .
+      dockerfile: ./user_service/Dockerfile
+    ports:
+      - "9004:9004"
+    env_file:
+      - .env
+    volumes:
+      - user-data:/app/data
+    networks:
+      - logistic_net
+
+  vehicle-service:
+    build:
+      context: .
+      dockerfile: ./vehicle_service/Dockerfile
+    ports:
+      - "9005:9005"
+    env_file:
+      - .env
+    volumes:
+      - vehicle-data:/app/data
+    networks:
+      - logistic_net
+
   matching-db-master:
     image: docker.io/library/postgres:16-alpine
     container_name: matching-db-master
@@ -271,6 +297,8 @@ volumes:
   auth-data:
   media-data:
   matching-data:
+  user-data:
+  vehicle-data:
   matching-db-master-data:
   postgres-replica-data:
   controller-1-data:

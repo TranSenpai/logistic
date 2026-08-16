@@ -11,7 +11,7 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	GrpcPort string `env:"USER_SERVICE_PORT" env-default:"9003"`
+	GrpcPort string `env:"USER_SERVICE_PORT" env-default:"9004"`
 }
 
 type DatabaseConfig struct {

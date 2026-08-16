@@ -9,6 +9,7 @@ import (
 
 	pbauth "github.com/logistic/api/logistic/auth_service/v1"
 	pbmatching "github.com/logistic/api/logistic/matching_service/v1"
+	pbmedia "github.com/logistic/api/logistic/media_service/v1"
 	pbuser "github.com/logistic/api/logistic/user_service/v1"
 	pbvehicle "github.com/logistic/api/logistic/vehicle_service/v1"
 
@@ -39,9 +40,24 @@ func Injection(ginEngine *gin.Engine) error {
 
 	authClient := pbauth.NewAuthServiceClient(conn)
 
+	mediaGrpcAddr := os.Getenv("GATEWAY_MEDIA_GRPC_ADDR")
+	if mediaGrpcAddr == "" {
+		mediaGrpcAddr = "media-service:9002"
+	}
+	mediaConn, err := grpc.NewClient(
+		mediaGrpcAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
+	if err != nil {
+		log.Printf("Failed to connect to media_service via gRPC: %v", err)
+		return err
+	}
+	mediaClient := pbmedia.NewMediaServiceClient(mediaConn)
+
 	matchingGrpcAddr := os.Getenv("GATEWAY_MATCHING_GRPC_ADDR")
 	if matchingGrpcAddr == "" {
-		matchingGrpcAddr = "matching_service:9002"
+		matchingGrpcAddr = "matching-service:9003"
 	}
 
 	matchingConn, err := grpc.NewClient(
@@ -58,7 +74,7 @@ func Injection(ginEngine *gin.Engine) error {
 	// User Service gRPC Client
 	userGrpcAddr := os.Getenv("GATEWAY_USER_GRPC_ADDR")
 	if userGrpcAddr == "" {
-		userGrpcAddr = "user_service:9003"
+		userGrpcAddr = "user-service:9004"
 	}
 	userConn, err := grpc.NewClient(
 		userGrpcAddr,
@@ -72,7 +88,7 @@ func Injection(ginEngine *gin.Engine) error {
 	// Vehicle Service gRPC Client
 	vehicleGrpcAddr := os.Getenv("GATEWAY_VEHICLE_GRPC_ADDR")
 	if vehicleGrpcAddr == "" {
-		vehicleGrpcAddr = "vehicle_service:9004"
+		vehicleGrpcAddr = "vehicle-service:9005"
 	}
 	vehicleConn, err := grpc.NewClient(
 		vehicleGrpcAddr,
@@ -85,7 +101,7 @@ func Injection(ginEngine *gin.Engine) error {
 	}
 
 	// Register các HTTP route (cũ)
-	http.RegisterGatewayRoutes(ginEngine, authClient, matchingClient)
+	http.RegisterGatewayRoutes(ginEngine, authClient, matchingClient, mediaClient)
 
 	// Khởi tạo gRPC-Gateway Mux cho các service mới
 	gwMux := runtime.NewServeMux()

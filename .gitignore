@@ -53,3 +53,6 @@ override.tf.json
 *.pem
 rootkey.csv
 chuong_accessKeys.csv
+
+# Bỏ qua các file thực thi (executable)
+*.exe

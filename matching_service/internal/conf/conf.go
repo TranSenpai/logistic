@@ -44,10 +44,7 @@ type NatConfig struct {
 
 type KafkaConfig struct {
 	ClusterId string `env:"KAFKA_KRAFT_CLUSTER_ID" env-required:"true"`
-	Host      string `env:"KAFKA_HOST" env-required:"true"`
-	Port1     string `env:"KAFKA_BROKER_1_PORT" env-required:"true"`
-	Port2     string `env:"KAFKA_BROKER_2_PORT" env-required:"true"`
-	Port3     string `env:"KAFKA_BROKER_3_PORT" env-required:"true"`
+	Brokers   string `env:"KAFKA_BROKERS" env-required:"true"`
 }
 
 func (db *MasterDatabaseConfig) GetDataSource() string {
