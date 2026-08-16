@@ -1,4 +1,4 @@
-package handler
+package controller
 
 import (
 	"crypto/rand"
@@ -13,12 +13,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type AuthHandler struct {
+type AuthController struct {
 	authClient pb.AuthServiceClient
 }
 
-func NewAuthHandler(authClient pb.AuthServiceClient) *AuthHandler {
-	return &AuthHandler{
+func NewAuthController(authClient pb.AuthServiceClient) *AuthController {
+	return &AuthController{
 		authClient: authClient,
 	}
 }
@@ -46,15 +46,15 @@ type LoginRequest struct {
 // @Failure      400 {object} map[string]interface{} "Lỗi dữ liệu đầu vào"
 // @Failure      409 {object} map[string]interface{} "Email đã tồn tại"
 // @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
-// @Router       /auth/register [post]
-func (h *AuthHandler) Register(ctx *gin.Context) {
+// @Router       /api/auth/v1/register [post]
+func (c *AuthController) Register(ctx *gin.Context) {
 	var req RegisterRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "validation_failed", "message": err.Error()})
 		return
 	}
 
-	resp, err := h.authClient.Register(ctx.Request.Context(), &pb.RegisterRequest{
+	resp, err := c.authClient.Register(ctx.Request.Context(), &pb.RegisterRequest{
 		Email:    req.Email,
 		FullName: req.FullName,
 		Password: req.Password,
@@ -90,15 +90,15 @@ func (h *AuthHandler) Register(ctx *gin.Context) {
 // @Failure      400 {object} map[string]interface{} "Lỗi dữ liệu đầu vào"
 // @Failure      401 {object} map[string]interface{} "Sai email hoặc mật khẩu"
 // @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
-// @Router       /auth/login [post]
-func (h *AuthHandler) Login(ctx *gin.Context) {
+// @Router       /api/auth/v1/login [post]
+func (c *AuthController) Login(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "validation_failed", "message": err.Error()})
 		return
 	}
 
-	resp, err := h.authClient.Login(ctx.Request.Context(), &pb.LoginRequest{
+	resp, err := c.authClient.Login(ctx.Request.Context(), &pb.LoginRequest{
 		Email:    req.Email,
 		Password: req.Password,
 	})
@@ -126,13 +126,13 @@ func (h *AuthHandler) Login(ctx *gin.Context) {
 // @Produce      json
 // @Success      307 {string} string "Redirect đến Google OAuth consent screen"
 // @Failure      500 {object} map[string]interface{} "Lỗi khi lấy Google Login URL"
-// @Router       /auth/google/login [get]
-func (h *AuthHandler) GoogleLogin(ctx *gin.Context) {
+// @Router       /api/auth/v1/google/login [get]
+func (c *AuthController) GoogleLogin(ctx *gin.Context) {
 	b := make([]byte, 16)
 	rand.Read(b)
 	state := base64.URLEncoding.EncodeToString(b)
 
-	resp, err := h.authClient.GetGoogleLoginURL(ctx.Request.Context(), &pb.GetGoogleLoginURLRequest{
+	resp, err := c.authClient.GetGoogleLoginURL(ctx.Request.Context(), &pb.GetGoogleLoginURLRequest{
 		State: state,
 	})
 	if err != nil {
@@ -154,8 +154,8 @@ func (h *AuthHandler) GoogleLogin(ctx *gin.Context) {
 // @Success      307 {string} string "Redirect về frontend với cookie đã set"
 // @Failure      400 {object} map[string]interface{} "State không hợp lệ"
 // @Failure      500 {object} map[string]interface{} "Lỗi xử lý callback"
-// @Router       /auth/google/callback [get]
-func (h *AuthHandler) GoogleCallback(ctx *gin.Context) {
+// @Router       /api/auth/v1/google/callback [get]
+func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	urlState := ctx.Query("state")
 	cookieState, err := ctx.Cookie("oauth_state")
 	if err != nil || urlState != cookieState {
@@ -164,7 +164,7 @@ func (h *AuthHandler) GoogleCallback(ctx *gin.Context) {
 	}
 	
 	code := ctx.Query("code")
-	resp, err := h.authClient.GoogleCallback(ctx.Request.Context(), &pb.GoogleCallbackRequest{
+	resp, err := c.authClient.GoogleCallback(ctx.Request.Context(), &pb.GoogleCallbackRequest{
 		Code: code,
 	})
 	if err != nil {
@@ -190,8 +190,8 @@ func (h *AuthHandler) GoogleCallback(ctx *gin.Context) {
 // @Param        Authorization header string false "Bearer token (nếu không dùng cookie)"
 // @Success      200 {object} map[string]interface{} "Lấy thông tin thành công"
 // @Failure      401 {object} map[string]interface{} "Token không hợp lệ hoặc không tìm thấy"
-// @Router       /auth/get-info [get]
-func (h *AuthHandler) GetInfo(ctx *gin.Context) {
+// @Router       /api/auth/v1/get-info [get]
+func (c *AuthController) GetInfo(ctx *gin.Context) {
 	token, err := ctx.Cookie("access_token")
 	if err != nil {
 		authHeader := ctx.GetHeader("Authorization")
@@ -205,7 +205,7 @@ func (h *AuthHandler) GetInfo(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := h.authClient.VerifyToken(ctx.Request.Context(), &pb.VerifyTokenRequest{
+	resp, err := c.authClient.VerifyToken(ctx.Request.Context(), &pb.VerifyTokenRequest{
 		Token: token,
 	})
 	if err != nil {

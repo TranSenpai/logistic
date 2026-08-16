@@ -1,4 +1,4 @@
-name: 'Smart Application Pipeline'
+name: 'Application Pipeline Job'
 
 # Định nghĩa các sự kiện (triggers) sẽ kích hoạt luồng CI/CD này
 on:
@@ -249,6 +249,9 @@ jobs:
           OTEL_EXPORTER_OTLP_ENDPOINT=${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
           EOF
           
+          # Kích hoạt linger để các tiến trình của user ubuntu không bị kill khi SSH ngắt kết nối
+          sudo loginctl enable-linger ubuntu
+
           chmod -R +x scripts/
           
           # Nếu list Service cần Restart rỗng => Nghĩa là bạn commit linh tinh không dính đến source code
