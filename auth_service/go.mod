@@ -46,3 +46,5 @@ require (
 )
 
 replace github.com/logistic/api => ../api
+
+replace github.com/logistic/pkg => ../pkg

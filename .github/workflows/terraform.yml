@@ -211,13 +211,32 @@ jobs:
         script: |
           mkdir -p /home/ubuntu/logistic
 
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '>=1.22.0'
+
+    - name: Compile Go Binaries
+      working-directory: ${{ github.workspace }}
+      run: |
+        export GOOS=linux
+        export GOARCH=amd64
+        export CGO_ENABLED=0
+        go work sync
+        go build -o auth_service/auth_service_bin ./auth_service/cmd
+        go build -o gateway_service/gateway_service_bin ./gateway_service/cmd
+        go build -o matching_service/matching_service_bin ./matching_service/cmd
+        go build -o media_service/media_service_bin ./media_service/cmd
+        go build -o user_service/user_service_bin ./user_service/cmd
+        go build -o vehicle_service/vehicle_service_bin ./vehicle_service/cmd
+
     - name: Copy Source Code to EC2 via SCP
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ env.EC2_IP }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        source: "api/,auth_service/,config/,gateway_service/,matching_service/,media_service/,nginx/,notification_service/,pkg/,scripts/,user_service/,vehicle_service/,wallet_service/,docker-compose.yml,go.mod,go.sum,go.work,go.work.sum"
+        source: "auth_service/,config/,gateway_service/,matching_service/,media_service/,nginx/,scripts/,user_service/,vehicle_service/,docker-compose.yml"
         target: "/home/ubuntu/logistic"
 
     - name: Generate .env & Deploy Podman

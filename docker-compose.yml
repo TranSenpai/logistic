@@ -5,8 +5,8 @@ networks:
 services:
   gateway-service:
     build:
-      context: .
-      dockerfile: ./gateway_service/Dockerfile
+      context: ./gateway_service
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     env_file:
@@ -18,8 +18,8 @@ services:
 
   auth-service:
     build:
-      context: .
-      dockerfile: ./auth_service/Dockerfile
+      context: ./auth_service
+      dockerfile: Dockerfile
     ports: 
       - "9001:9001"
     env_file:
@@ -31,8 +31,8 @@ services:
   
   media-service:
     build:
-      context: .
-      dockerfile: ./media_service/Dockerfile
+      context: ./media_service
+      dockerfile: Dockerfile
     ports:
       - "9002:9002"
     env_file:
@@ -44,8 +44,8 @@ services:
 
   matching-service:
     build:
-      context: .
-      dockerfile: ./matching_service/Dockerfile
+      context: ./matching_service
+      dockerfile: Dockerfile
     ports:
       - "9003:9003"
     env_file:
@@ -57,8 +57,8 @@ services:
 
   user-service:
     build:
-      context: .
-      dockerfile: ./user_service/Dockerfile
+      context: ./user_service
+      dockerfile: Dockerfile
     ports:
       - "9004:9004"
     env_file:
@@ -70,8 +70,8 @@ services:
 
   vehicle-service:
     build:
-      context: .
-      dockerfile: ./vehicle_service/Dockerfile
+      context: ./vehicle_service
+      dockerfile: Dockerfile
     ports:
       - "9005:9005"
     env_file:
