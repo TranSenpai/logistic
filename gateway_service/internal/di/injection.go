@@ -1,7 +1,6 @@
 package di
 
 import (
-	"context"
 	"log"
 	"os"
 
@@ -14,7 +13,6 @@ import (
 	pbvehicle "github.com/logistic/api/logistic/vehicle_service/v1"
 
 	"github.com/gin-gonic/gin"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -85,6 +83,8 @@ func Injection(ginEngine *gin.Engine) error {
 		log.Printf("Failed to connect to user_service via gRPC: %v", err)
 		return err
 	}
+	userClient := pbuser.NewUserServiceClient(userConn)
+
 	// Vehicle Service gRPC Client
 	vehicleGrpcAddr := os.Getenv("GATEWAY_VEHICLE_GRPC_ADDR")
 	if vehicleGrpcAddr == "" {
@@ -99,28 +99,10 @@ func Injection(ginEngine *gin.Engine) error {
 		log.Printf("Failed to connect to vehicle_service via gRPC: %v", err)
 		return err
 	}
+	vehicleClient := pbvehicle.NewVehicleServiceClient(vehicleConn)
 
 	// Register các HTTP route (cũ)
-	http.RegisterGatewayRoutes(ginEngine, authClient, matchingClient, mediaClient)
-
-	// Khởi tạo gRPC-Gateway Mux cho các service mới
-	gwMux := runtime.NewServeMux()
-	
-	// Register gRPC-Gateway handlers
-	err = pbuser.RegisterUserServiceHandler(context.Background(), gwMux, userConn)
-	if err != nil {
-		log.Printf("Failed to register user_service gateway: %v", err)
-		return err
-	}
-
-	err = pbvehicle.RegisterVehicleServiceHandler(context.Background(), gwMux, vehicleConn)
-	if err != nil {
-		log.Printf("Failed to register vehicle_service gateway: %v", err)
-		return err
-	}
-
-	// Tích hợp gRPC-Gateway vào Gin
-	ginEngine.Any("/v1/*any", gin.WrapH(gwMux))
+	http.RegisterGatewayRoutes(ginEngine, authClient, matchingClient, mediaClient, userClient, vehicleClient)
 
 	return nil
 }
