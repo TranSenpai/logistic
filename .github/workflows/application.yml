@@ -253,6 +253,17 @@ jobs:
           sudo loginctl enable-linger ubuntu
 
           chmod -R +x scripts/
+
+          echo "Configuring Nginx with Cloudflare SSL..."
+          sudo mkdir -p /etc/nginx/ssl
+          echo "${{ secrets.CLOUDFLARE_CERT_PEM }}" | sudo tee /etc/nginx/ssl/cloudflare.pem > /dev/null
+          echo "${{ secrets.CLOUDFLARE_CERT_KEY }}" | sudo tee /etc/nginx/ssl/cloudflare.key > /dev/null
+          sudo chmod 600 /etc/nginx/ssl/cloudflare.key
+          
+          sudo cp nginx/logistic.conf /etc/nginx/sites-available/logistic
+          sudo ln -sf /etc/nginx/sites-available/logistic /etc/nginx/sites-enabled/
+          sudo rm -f /etc/nginx/sites-enabled/default
+          sudo nginx -t && sudo systemctl reload nginx
           
           # Nếu list Service cần Restart rỗng => Nghĩa là bạn commit linh tinh không dính đến source code
           if [ -z "$SERVICES_TO_RESTART" ]; then
