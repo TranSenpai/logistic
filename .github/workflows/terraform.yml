@@ -187,6 +187,20 @@ jobs:
       run: |
         IP=$(terraform output -raw server_logistic_ip)
         echo "EC2_IP=$IP" >> $GITHUB_ENV
+        SG_ID=$(terraform output -raw security_group_id)
+        echo "SG_ID=$SG_ID" >> $GITHUB_ENV
+
+    - name: Get GitHub Runner IP
+      id: ip
+      uses: haythem/public-ip@v1.3
+
+    - name: Allow Runner IP to Security Group
+      run: |
+        aws ec2 authorize-security-group-ingress \
+          --group-id ${{ env.SG_ID }} \
+          --protocol tcp \
+          --port 22 \
+          --cidr ${{ steps.ip.outputs.ipv4 }}/32
 
     - name: Create working directory on EC2
       uses: appleboy/ssh-action@v1.0.3
@@ -241,3 +255,12 @@ jobs:
           
           # Chạy ứng dụng bằng Podman Compose (Rootless mode - KHÔNG dùng sudo)
           podman-compose up -d --build
+
+    - name: Revoke Runner IP from Security Group
+      if: always()
+      run: |
+        aws ec2 revoke-security-group-ingress \
+          --group-id ${{ env.SG_ID }} \
+          --protocol tcp \
+          --port 22 \
+          --cidr ${{ steps.ip.outputs.ipv4 }}/32
