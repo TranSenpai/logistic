@@ -282,8 +282,8 @@ services:
     ports: 
       - "8081:8081"
     environment:
-      KAFKA_CLUSTER_0_NAME: "Logistic-Cluster"
-      KAFKA_CLUSTER_0_BOOTSTRAPSERVERS: "broker-1:19092,broker-2:19092,broker-3:19092"
+      KAFKA_CLUSTERS_0_NAME: "Logistic-Cluster"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "broker-1:19092,broker-2:19092,broker-3:19092"
     depends_on:
       - broker-1
       - broker-2
