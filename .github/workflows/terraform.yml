@@ -182,12 +182,12 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
-    - name: Get EC2 IP Address
+    - name: Get EC2 IP Address & Security Group ID
       id: get_ip
       run: |
         IP=$(terraform output -raw server_logistic_ip)
         echo "EC2_IP=$IP" >> $GITHUB_ENV
-        SG_ID=$(terraform output -raw security_group_id)
+        SG_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=logistic-security-group --query 'SecurityGroups[0].GroupId' --output text)
         echo "SG_ID=$SG_ID" >> $GITHUB_ENV
 
     - name: Get GitHub Runner IP
