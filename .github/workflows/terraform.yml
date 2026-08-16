@@ -182,11 +182,25 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
-    - name: Get EC2 IP Address
+    - name: Get EC2 IP Address & Security Group ID
       id: get_ip
       run: |
         IP=$(terraform output -raw server_logistic_ip)
         echo "EC2_IP=$IP" >> $GITHUB_ENV
+        SG_ID=$(aws ec2 describe-security-groups --filters Name=group-name,Values=logistic-security-group --query 'SecurityGroups[0].GroupId' --output text)
+        echo "SG_ID=$SG_ID" >> $GITHUB_ENV
+
+    - name: Get GitHub Runner IP
+      id: ip
+      uses: haythem/public-ip@v1.3
+
+    - name: Allow Runner IP to Security Group
+      run: |
+        aws ec2 authorize-security-group-ingress \
+          --group-id ${{ env.SG_ID }} \
+          --protocol tcp \
+          --port 22 \
+          --cidr ${{ steps.ip.outputs.ipv4 }}/32
 
     - name: Create working directory on EC2
       uses: appleboy/ssh-action@v1.0.3
@@ -197,13 +211,32 @@ jobs:
         script: |
           mkdir -p /home/ubuntu/logistic
 
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '>=1.22.0'
+
+    - name: Compile Go Binaries
+      working-directory: ${{ github.workspace }}
+      run: |
+        export GOOS=linux
+        export GOARCH=amd64
+        export CGO_ENABLED=0
+        go work sync
+        go build -o auth_service/auth_service_bin ./auth_service/cmd
+        go build -o gateway_service/gateway_service_bin ./gateway_service/cmd
+        go build -o matching_service/matching_service_bin ./matching_service/cmd
+        go build -o media_service/media_service_bin ./media_service/cmd
+        go build -o user_service/user_service_bin ./user_service/cmd
+        go build -o vehicle_service/vehicle_service_bin ./vehicle_service/cmd
+
     - name: Copy Source Code to EC2 via SCP
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ env.EC2_IP }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        source: "api/,auth_service/,config/,gateway_service/,matching_service/,media_service/,nginx/,notification_service/,pkg/,scripts/,user_service/,vehicle_service/,wallet_service/,docker-compose.yml,go.mod,go.sum,go.work,go.work.sum"
+        source: "auth_service/,config/,gateway_service/,matching_service/,media_service/,nginx/,scripts/,user_service/,vehicle_service/,docker-compose.yml"
         target: "/home/ubuntu/logistic"
 
     - name: Generate .env & Deploy Podman
@@ -222,15 +255,62 @@ jobs:
           done
           echo "Podman is installed!"
           
-          # Tạo file .env từ GitHub Secrets
-          # (Hãy bổ sung thêm các biến khác nếu bạn có dùng trong file .env gốc)
+          # Tạo file .env hoàn toàn từ GitHub Secrets theo đúng ý bạn
           cat << 'EOF' > .env
-          MATCHING_DB_MASTER_USER=${{ secrets.MATCHING_DB_MASTER_USER }}
-          MATCHING_DB_MASTER_PASSWORD=${{ secrets.MATCHING_DB_MASTER_PASSWORD }}
-          MATCHING_DB_MASTER_DB=${{ secrets.MATCHING_DB_MASTER_DB }}
+          NATS_HOST=${{ secrets.NATS_HOST }}
+          NATS_PORT=${{ secrets.NATS_PORT }}
+          KAFKA_KRAFT_CLUSTER_ID=${{ secrets.KAFKA_KRAFT_CLUSTER_ID }}
+          KAFKA_BROKERS=${{ secrets.KAFKA_BROKERS }}
+          GATEWAY_PORT=${{ secrets.GATEWAY_PORT }}
+          GATEWAY_AUTH_GRPC_ADDR=${{ secrets.GATEWAY_AUTH_GRPC_ADDR }}
+          GATEWAY_MATCHING_GRPC_ADDR=${{ secrets.GATEWAY_MATCHING_GRPC_ADDR }}
+          GATEWAY_USER_GRPC_ADDR=${{ secrets.GATEWAY_USER_GRPC_ADDR }}
+          GATEWAY_VEHICLE_GRPC_ADDR=${{ secrets.GATEWAY_VEHICLE_GRPC_ADDR }}
+          GATEWAY_MEDIA_GRPC_ADDR=${{ secrets.GATEWAY_MEDIA_GRPC_ADDR }}
+          AUTH_SERVICE_GRPC_PORT=${{ secrets.AUTH_SERVICE_GRPC_PORT }}
+          AUTH_SERVICE_JWT_SECRET=${{ secrets.AUTH_SERVICE_JWT_SECRET }}
+          AUTH_SERVICE_DB_DRIVER=${{ secrets.AUTH_SERVICE_DB_DRIVER }}
+          AUTH_SERVICE_DB_HOST=${{ secrets.AUTH_SERVICE_DB_HOST }}
+          AUTH_SERVICE_DB_PORT=${{ secrets.AUTH_SERVICE_DB_PORT }}
+          AUTH_SERVICE_DB_USER=${{ secrets.AUTH_SERVICE_DB_USER }}
+          AUTH_SERVICE_DB_PASSWORD=${{ secrets.AUTH_SERVICE_DB_PASSWORD }}
+          AUTH_SERVICE_DB_NAME=${{ secrets.AUTH_SERVICE_DB_NAME }}
+          AUTH_SERVICE_DB_ROOT_PASSWORD=${{ secrets.AUTH_SERVICE_DB_ROOT_PASSWORD }}
+          AUTH_DB_REPLICATION_USER=${{ secrets.AUTH_DB_REPLICATION_USER }}
+          AUTH_DB_REPLICATION_PASSWORD=${{ secrets.AUTH_DB_REPLICATION_PASSWORD }}
+          AUTH_SERVICE_GOOGLE_CLIENT_ID=${{ secrets.AUTH_SERVICE_GOOGLE_CLIENT_ID }}
+          AUTH_SERVICE_GOOGLE_CLIENT_SECRET=${{ secrets.AUTH_SERVICE_GOOGLE_CLIENT_SECRET }}
+          AUTH_SERVICE_GOOGLE_REDIRECT_URL=${{ secrets.AUTH_SERVICE_GOOGLE_REDIRECT_URL }}
+          MATCHING_SERVICE_GRPC_PORT=${{ secrets.MATCHING_SERVICE_GRPC_PORT }}
+          MATCHING_SERVICE_DB_DRIVER=${{ secrets.MATCHING_SERVICE_DB_DRIVER }}
+          MATCHING_DB_USER=${{ secrets.MATCHING_DB_USER }}
+          MATCHING_DB_PASSWORD=${{ secrets.MATCHING_DB_PASSWORD }}
+          MATCHING_DB_NAME=${{ secrets.MATCHING_DB_NAME }}
+          MATCHING_DB_MASTER_HOST=${{ secrets.MATCHING_DB_MASTER_HOST }}
+          MATCHING_DB_MASTER_PORT=${{ secrets.MATCHING_DB_MASTER_PORT }}
+          MATCHING_DB_SLAVE_HOST=${{ secrets.MATCHING_DB_SLAVE_HOST }}
+          MATCHING_DB_SLAVE_PORT=${{ secrets.MATCHING_DB_SLAVE_PORT }}
           MATCHING_DB_REPLICATION_USER=${{ secrets.MATCHING_DB_REPLICATION_USER }}
           MATCHING_DB_REPLICATION_PASSWORD=${{ secrets.MATCHING_DB_REPLICATION_PASSWORD }}
-          KAFKA_KRAFT_CLUSTER_ID=${{ secrets.KAFKA_KRAFT_CLUSTER_ID }}
+          MEDIA_SERVICE_GRPC_PORT=${{ secrets.MEDIA_SERVICE_GRPC_PORT }}
+          MEDIA_SERVICE_CLOUDINARY_URL=${{ secrets.MEDIA_SERVICE_CLOUDINARY_URL }}
+          USER_SERVICE_PORT=${{ secrets.USER_SERVICE_PORT }}
+          USER_DB_USER=${{ secrets.USER_DB_USER }}
+          USER_DB_PASSWORD=${{ secrets.USER_DB_PASSWORD }}
+          USER_DB_HOST=${{ secrets.USER_DB_HOST }}
+          USER_DB_PORT=${{ secrets.USER_DB_PORT }}
+          USER_DB_NAME=${{ secrets.USER_DB_NAME }}
+          USER_DB_REPLICATION_USER=${{ secrets.USER_DB_REPLICATION_USER }}
+          USER_DB_REPLICATION_PASSWORD=${{ secrets.USER_DB_REPLICATION_PASSWORD }}
+          VEHICLE_SERVICE_PORT=${{ secrets.VEHICLE_SERVICE_PORT }}
+          VEHICLE_DB_USER=${{ secrets.VEHICLE_DB_USER }}
+          VEHICLE_DB_PASSWORD=${{ secrets.VEHICLE_DB_PASSWORD }}
+          VEHICLE_DB_HOST=${{ secrets.VEHICLE_DB_HOST }}
+          VEHICLE_DB_PORT=${{ secrets.VEHICLE_DB_PORT }}
+          VEHICLE_DB_NAME=${{ secrets.VEHICLE_DB_NAME }}
+          VEHICLE_DB_REPLICATION_USER=${{ secrets.VEHICLE_DB_REPLICATION_USER }}
+          VEHICLE_DB_REPLICATION_PASSWORD=${{ secrets.VEHICLE_DB_REPLICATION_PASSWORD }}
+          OTEL_EXPORTER_OTLP_ENDPOINT=${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
           EOF
           
           # Cấp quyền thực thi cho các script khởi tạo DB (nếu có)
@@ -241,3 +321,12 @@ jobs:
           
           # Chạy ứng dụng bằng Podman Compose (Rootless mode - KHÔNG dùng sudo)
           podman-compose up -d --build
+
+    - name: Revoke Runner IP from Security Group
+      if: always()
+      run: |
+        aws ec2 revoke-security-group-ingress \
+          --group-id ${{ env.SG_ID }} \
+          --protocol tcp \
+          --port 22 \
+          --cidr ${{ steps.ip.outputs.ipv4 }}/32

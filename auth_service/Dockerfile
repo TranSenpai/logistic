@@ -1,36 +1,6 @@
-# --- Stage 1: Build binary ---
-FROM docker.io/library/golang:1.26.4-alpine3.24 AS build
-
-WORKDIR /workspace
-
-# Copy các file cấu hình module gốc và workspace
-COPY go.work go.work.sum ./
-COPY go.mod go.sum ./
-
-# MẸO: Phải COPY source code vào trước thì lệnh 'go work init' mới không bị lỗi "not found"
-COPY api/ ./api/
-COPY pkg/ ./pkg/
-COPY auth_service/ ./auth_service/
-
-RUN rm -f go.work go.work.sum && go work init . ./api ./pkg ./auth_service
-
-# Di chuyển vào thư mục của auth_service để build
-WORKDIR /workspace/auth_service
-
-# Build file binary (lưu tại thư mục hiện tại)
-RUN go build -o auth_service ./cmd
-
-# --- Stage 2: Môi trường chạy siêu nhẹ ---
 FROM docker.io/library/alpine:3.24
-
+RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
-
-# Copy file binary đã build từ stage 'build' sang
-COPY --from=build /workspace/auth_service/auth_service .
-
-# Chạy file binary
-CMD ["./auth_service"]
-
-# (Giải thích cờ -f: Vì chúng ta đang đứng ở thư mục gốc, Podman sẽ không biết Dockerfile nằm đâu, nên ta dùng -f để chỉ đường dẫn tới file Dockerfile)
-
-# 61.52 MB
+COPY auth_service_bin .
+RUN chmod +x auth_service_bin
+CMD ["./auth_service_bin"]

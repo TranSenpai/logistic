@@ -408,6 +408,33 @@ Kỹ sư hạ tầng (Platform Engineer) không bao giờ giao sinh mạng của
 2. **Lớp giữa (Public Subnet / DMZ):** Nơi cắm Load Balancer (ELB) hoặc Nginx. Dùng Security Group (Lớp 4) bóp chặt chỉ mở đúng Port 80 và 443. Mọi truy cập vào port khác lập tức bị từ chối.
 3. **Lõi (Private Subnet):** Trái tim của hệ thống chứa Database và Backend. Lớp Firewall ở đây thiết lập gắt gao nhất: Cắt hoàn toàn kết nối từ Internet, chỉ cho phép Inbound Port 3306/5432 **ĐỘC NHẤT** từ địa chỉ IP Private của chính con Backend/Nginx nội bộ. Bất kỳ Server nào khác trong mạng dù biết IP cũng không thể đụng vào DB.
 
+### 6.4. Cơ chế Mở cổng động (Dynamic IP Whitelisting) trong CI/CD
+
+#### 6.4.1. Bản chất của Public IP, Private IP và Tường lửa
+Khi triển khai hệ thống lên Cloud (như AWS EC2), máy chủ thường được cấp 2 loại địa chỉ IP:
+- **Private IP (IP Nội bộ):** Chỉ dùng để giao tiếp trong mạng nội bộ (VPC). Ví dụ: Web Server gọi cho Database Server thông qua Private IP để đảm bảo Hacker ngoài Internet không thể "chạm" được vào Database. Nếu một con Service nội bộ bị nhiễm virus, nó bắt buộc phải chạy ngang qua router mạng nội bộ, đối mặt với các Tường lửa (Firewall) chặn đường trước khi đến được các Service khác.
+- **Public IP (IP Công cộng):** Là "mặt tiền" để thế giới bên ngoài (Internet) gọi vào hệ thống của bạn (Ví dụ User truy cập vào Web App hoặc Cổng thanh toán).
+
+**Tường lửa (AWS Security Group):**
+Security Group đóng vai trò như "Bảo vệ gác cổng". Nếu bạn mở toang cổng điều khiển hệ thống (Port 22 - SSH) cho dải IP `0.0.0.0/0` (tức là ai cũng vào được), các con Bot rà quét của Hacker bên Nga, Trung Quốc... sẽ liên tục dội bom dò mật khẩu máy chủ của bạn 24/7.
+Do đó, Best Practice là: **Chỉ cho phép duy nhất IP tĩnh mạng nhà bạn (ví dụ `42.116.178.24`) được phép kết nối vào cổng 22 (SSH).** Nghĩa là chỉ ai ngồi ở nhà bạn thì mới có quyền gõ lệnh điều khiển Server.
+
+#### 6.4.2. Nghịch lý với CI/CD (GitHub Actions)
+Khi bạn dùng GitHub Actions để tự động deploy code lên EC2, con Bot (Runner) của GitHub bản chất là các máy chủ ảo nằm trên hệ thống đám mây của Microsoft Azure.
+- Con Bot này không nằm ở nhà bạn, nên IP của nó KHÔNG PHẢI là `42.116.178.24`.
+- Mỗi lần bạn bấm Deploy, GitHub lại thuê và cấp cho con Bot một địa chỉ IP ngẫu nhiên khác nhau trên thế giới.
+- Kết quả: Khi Bot GitHub gửi gói tin cố gắng SSH vào máy EC2 của bạn, **Tường lửa (Security Group)** thấy một IP lạ hoắc nằm ngoài danh sách ưu tiên liền lập tức "đánh chặn" và đá văng gói tin ra ngoài (Sinh ra lỗi `dial tcp: i/o timeout` mà bạn vừa gặp).
+
+#### 6.4.3. Giải pháp Chuẩn DevOps: Mở cổng động (Dynamic IP Whitelisting)
+Thay vì đập bỏ tường lửa và mở toang cổng cho cả thế giới vào (cực kỳ nguy hiểm), quy trình CI/CD sẽ được lập trình để "mở hé cửa" một cách thông minh, tự động và chớp nhoáng:
+
+1. **Lấy tọa độ:** Khi Bot GitHub bắt đầu chạy, nó tự kiểm tra xem IP Public hiện tại của chính nó đang là gì (ví dụ `20.55.10.12`).
+2. **Xin phép mở cửa:** Bot dùng một chiếc thẻ đặc quyền (AWS Access Key) gọi ra lệnh cho dịch vụ tường lửa AWS: *"Tôi là người quen, IP của tôi tạm thời hôm nay là `20.55.10.12`. Hãy mở đúng cái Port 22 cho duy nhất IP này vào đi."* (Đây chính là đoạn code `aws ec2 authorize-security-group-ingress`).
+3. **Chui vào làm việc:** Lỗ hổng bằng cái mũi kim được tường lửa mở ra vừa đúng cho Bot chui vào. Bot dùng SSH copy source code và chạy lệnh khởi động Podman một cách êm ái.
+4. **Hủy thẻ, đóng cổng:** Ngay khi Bot làm xong việc (hoặc lỡ bị lỗi đứt gánh giữa chừng), lệnh thu hồi (`aws ec2 revoke-security-group-ingress`) được cam kết luôn luôn chạy ở phút cuối cùng để "bịt lỗ" tường lửa lại. Máy EC2 của bạn lại trở về trạng thái "bế quan tỏa cảng" an toàn tuyệt đối!
+
+**Kết luận:** Hạ tầng nội bộ vẫn được cách ly an toàn với Virus và Hacker ngoài Internet, nhưng luồng Deploy CI/CD vẫn chạy tự động trơn tru mà không cần con người nhúng tay. Đó là nghệ thuật kết hợp giữa Bảo mật (Security) và Tự động hóa (DevOps Automation).
+
 ---
 
 ## 7. CASE STUDY TOÀN DIỆN: Hành trình End-to-End của 1 Request

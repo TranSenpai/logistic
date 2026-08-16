@@ -5,6 +5,7 @@ import (
 
 	pbauth "github.com/logistic/api/logistic/auth_service/v1"
 	pbmatching "github.com/logistic/api/logistic/matching_service/v1"
+	pbmedia "github.com/logistic/api/logistic/media_service/v1"
 
 	_ "gateway_service/docs" // Import swagger docs
 
@@ -13,7 +14,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func RegisterGatewayRoutes(ginEngine *gin.Engine, authClient pbauth.AuthServiceClient, matchingClient pbmatching.MatchingEngineServiceClient) {
+func RegisterGatewayRoutes(ginEngine *gin.Engine, authClient pbauth.AuthServiceClient, matchingClient pbmatching.MatchingEngineServiceClient, mediaClient pbmedia.MediaServiceClient) {
 	authHandler := handler.NewAuthHandler(authClient)
 	// matchingHandler := handler.NewMatchingHandler(matchingClient) // TODO: Implement matching handler
 
@@ -37,5 +38,12 @@ func RegisterGatewayRoutes(ginEngine *gin.Engine, authClient pbauth.AuthServiceC
 		// Sau này có thể thêm các service khác ở đây, ví dụ:
 		// vehicleGroup := apiGroup.Group("/vehicle")
 		// ...
+
+		mediaHandler := handler.NewMediaHandler(mediaClient)
+		mediaGroup := apiGroup.Group("/media")
+		{
+			mediaGroup.POST("/upload", mediaHandler.UploadFile)
+			mediaGroup.DELETE("/delete/:publicID", mediaHandler.DeleteFile)
+		}
 	}
 }

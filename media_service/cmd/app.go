@@ -1,41 +1,70 @@
 package main
 
 import (
-	"media_service/di"
-	"net/http"
+	"context"
+	"log"
+	"net"
+	"os"
+	"time"
 
-	_ "media_service/docs"
+	"media_service/internal/conf"
+	"media_service/internal/di"
 
-	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/logistic/pkg/tracer"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"google.golang.org/grpc"
 )
 
 type App struct {
-	engine *gin.Engine
-	server *http.Server
+	grpcServer *grpc.Server
+	listener   net.Listener
+	cfg        *conf.Config
+	shutdown   func(context.Context) error
 }
 
-func NewApp(port string) (*App, error) {
-	r := gin.Default()
+func NewApp(cfg *conf.Config) (*App, error) {
+	shutdownTracer, err := tracer.InitTracer("media_service", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
+	if err != nil {
+		log.Printf("Failed to initialize tracer: %v", err)
+	}
 
-	// Đăng ký route cho Swagger
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	lis, err := net.Listen("tcp", ":"+cfg.Server.GrpcPort)
+	if err != nil {
+		return nil, err
+	}
 
-	err := di.Injection(r)
+	grpcServer := grpc.NewServer(
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	)
+
+	err = di.Injection(grpcServer, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &App{
-		engine: r,
-		server: &http.Server{
-			Addr:    ":" + port,
-			Handler: r,
-		},
+		grpcServer: grpcServer,
+		listener:   lis,
+		cfg:        cfg,
+		shutdown:   shutdownTracer,
 	}, nil
 }
 
 func (a *App) Start() error {
-	return a.server.ListenAndServe()
+	return a.grpcServer.Serve(a.listener)
+}
+
+func (a *App) Stop() {
+	log.Println("Stopping Media Service (gRPC) gracefully...")
+	a.grpcServer.GracefulStop()
+
+	if a.shutdown != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := a.shutdown(ctx); err != nil {
+			log.Printf("Failed to shutdown tracer: %v", err)
+		}
+	}
+
+	log.Println("Media Service (gRPC) stopped.")
 }

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package logistic.media_service.v1;
+
+import "logistic/media_service/v1/media_messages.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/logistic/api/logistic/media_service/v1;mediav1";
+
+service MediaService {
+  rpc UploadFile(UploadFileRequest) returns (UploadFileResponse) {
+    option (google.api.http) = {
+      post: "/v1/media/upload"
+      body: "*"
+    };
+  }
+
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse) {
+    option (google.api.http) = {
+      delete: "/v1/media/{public_id}"
+    };
+  }
+}

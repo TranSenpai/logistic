@@ -21,20 +21,20 @@ type ServerConfig struct {
 
 type MasterDatabaseConfig struct {
 	Driver   string `env:"MATCHING_SERVICE_DB_DRIVER" env-required:"true"`
-	User     string `env:"MATCHING_DB_MASTER_USER" env-required:"true"`
-	Password string `env:"MATCHING_DB_MASTER_PASSWORD" env-required:"true"`
+	User     string `env:"MATCHING_DB_USER" env-required:"true"`
+	Password string `env:"MATCHING_DB_PASSWORD" env-required:"true"`
 	Host     string `env:"MATCHING_DB_MASTER_HOST" env-required:"true"`
 	Port     string `env:"MATCHING_DB_MASTER_PORT" env-required:"true"`
-	DBName   string `env:"MATCHING_DB_MASTER_DB" env-required:"true"`
+	DBName   string `env:"MATCHING_DB_NAME" env-required:"true"`
 }
 
 type SlaveDatabaseConfig struct {
 	Driver   string `env:"MATCHING_SERVICE_DB_DRIVER" env-required:"true"`
-	User     string `env:"MATCHING_DB_SLAVE_USER" env-required:"true"`
-	Password string `env:"MATCHING_DB_SLAVE_PASSWORD" env-required:"true"`
+	User     string `env:"MATCHING_DB_USER" env-required:"true"`
+	Password string `env:"MATCHING_DB_PASSWORD" env-required:"true"`
 	Host     string `env:"MATCHING_DB_SLAVE_HOST" env-required:"true"`
 	Port     string `env:"MATCHING_DB_SLAVE_PORT" env-required:"true"`
-	DBName   string `env:"MATCHING_DB_SLAVE_DB" env-required:"true"`
+	DBName   string `env:"MATCHING_DB_NAME" env-required:"true"`
 }
 
 type NatConfig struct {
@@ -44,10 +44,7 @@ type NatConfig struct {
 
 type KafkaConfig struct {
 	ClusterId string `env:"KAFKA_KRAFT_CLUSTER_ID" env-required:"true"`
-	Host      string `env:"KAFKA_HOST" env-required:"true"`
-	Port1     string `env:"KAFKA_BROKER_1_PORT" env-required:"true"`
-	Port2     string `env:"KAFKA_BROKER_2_PORT" env-required:"true"`
-	Port3     string `env:"KAFKA_BROKER_3_PORT" env-required:"true"`
+	Brokers   string `env:"KAFKA_BROKERS" env-required:"true"`
 }
 
 func (db *MasterDatabaseConfig) GetDataSource() string {

@@ -1,0 +1,6 @@
+[mysqld]
+server-id=2
+log-bin=mysql-bin
+binlog-do-db=auth_db
+bind-address=0.0.0.0
+read_only=1
