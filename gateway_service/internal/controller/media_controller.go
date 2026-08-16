@@ -1,4 +1,4 @@
-package handler
+package controller
 
 import (
 	"io"
@@ -10,18 +10,30 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type MediaHandler struct {
+type MediaController struct {
 	mediaClient pb.MediaServiceClient
 }
 
-func NewMediaHandler(mediaClient pb.MediaServiceClient) *MediaHandler {
-	return &MediaHandler{
+func NewMediaController(mediaClient pb.MediaServiceClient) *MediaController {
+	return &MediaController{
 		mediaClient: mediaClient,
 	}
 }
 
-// UploadFile handles file upload
-func (h *MediaHandler) UploadFile(ctx *gin.Context) {
+// UploadFile godoc
+// @Summary      Tải file lên hệ thống
+// @Description  Nhận file qua multipart/form-data và gọi gRPC sang media_service để lưu trữ (ví dụ Cloudinary).
+// @Tags         Media
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file formData file true "File cần tải lên"
+// @Param        folder formData string false "Thư mục lưu trữ"
+// @Param        prefix formData string false "Tiền tố tên file"
+// @Success      200 {object} map[string]interface{} "Tải lên thành công, trả về URL"
+// @Failure      400 {object} map[string]interface{} "Lỗi thiếu file hoặc file không hợp lệ"
+// @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
+// @Router       /api/media/v1/upload [post]
+func (c *MediaController) UploadFile(ctx *gin.Context) {
 	fileHeader, err := ctx.FormFile("file")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "validation_failed", "message": "file is required"})
@@ -44,7 +56,7 @@ func (h *MediaHandler) UploadFile(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := h.mediaClient.UploadFile(ctx.Request.Context(), &pb.UploadFileRequest{
+	resp, err := c.mediaClient.UploadFile(ctx.Request.Context(), &pb.UploadFileRequest{
 		FileContent: fileBytes,
 		FileName:    fileHeader.Filename,
 		Folder:      folder,
@@ -64,15 +76,25 @@ func (h *MediaHandler) UploadFile(ctx *gin.Context) {
 	})
 }
 
-// DeleteFile handles file deletion
-func (h *MediaHandler) DeleteFile(ctx *gin.Context) {
+// DeleteFile godoc
+// @Summary      Xóa file
+// @Description  Xóa file trên hệ thống lưu trữ thông qua public_id.
+// @Tags         Media
+// @Produce      json
+// @Param        publicID path string true "Public ID của file cần xóa"
+// @Success      200 {object} map[string]interface{} "Xóa thành công"
+// @Failure      400 {object} map[string]interface{} "Thiếu public_id"
+// @Failure      404 {object} map[string]interface{} "Không tìm thấy file"
+// @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
+// @Router       /api/media/v1/delete/{publicID} [delete]
+func (c *MediaController) DeleteFile(ctx *gin.Context) {
 	publicID := ctx.Param("publicID")
 	if publicID == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "validation_failed", "message": "publicID is required"})
 		return
 	}
 
-	resp, err := h.mediaClient.DeleteFile(ctx.Request.Context(), &pb.DeleteFileRequest{
+	resp, err := c.mediaClient.DeleteFile(ctx.Request.Context(), &pb.DeleteFileRequest{
 		PublicId: publicID,
 	})
 	if err != nil {
