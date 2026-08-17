@@ -1,0 +1,39 @@
+syntax = "proto3";
+package logistic.wallet_service.v1;
+
+import "google/api/annotations.proto";
+import "logistic/wallet_service/v1/wallet_messages.proto";
+
+option go_package = "github.com/logistic/api/logistic/wallet_service/v1;walletv1";
+
+service WalletService {
+  rpc GetBalance(GetBalanceReq) returns (GetBalanceRes) {
+    option (google.api.http) = {get: "/v1/wallet/balance/{user_id}"};
+  }
+
+  rpc Deposit(DepositReq) returns (DepositRes) {
+    option (google.api.http) = {
+      post: "/v1/wallet/deposit"
+      body: "*"
+    };
+  }
+
+  rpc Transfer(TransferReq) returns (TransferRes) {
+    option (google.api.http) = {
+      post: "/v1/wallet/transfer"
+      body: "*"
+    };
+  }
+
+  rpc SearchWallets(SearchWalletsReq) returns (SearchWalletsRes) {
+    option (google.api.http) = {
+      get: "/v1/wallet/search"
+    };
+  }
+
+  rpc SearchTransactions(SearchTransactionsReq) returns (SearchTransactionsRes) {
+    option (google.api.http) = {
+      get: "/v1/wallet/transactions/search"
+    };
+  }
+}

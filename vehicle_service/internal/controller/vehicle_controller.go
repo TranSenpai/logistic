@@ -7,6 +7,7 @@ import (
 	"vehicle_service/internal/mapper"
 	"vehicle_service/internal/entity"
 	vehiclev1 "github.com/logistic/api/logistic/vehicle_service/v1"
+	"github.com/google/uuid"
 )
 
 type vehicleController struct {
@@ -23,8 +24,9 @@ func NewVehicleController(engine biz.VehicleEngine, appMapper mapper.AppMapper) 
 }
 
 func (c *vehicleController) RegisterVehicle(ctx context.Context, req *vehiclev1.RegisterVehicleRequest) (*vehiclev1.RegisterVehicleResponse, error) {
+	parsedDriverID, _ := uuid.FromBytes(req.DriverId)
 	param := &entity.RegisterVehicleParam{
-		DriverID:          req.DriverId,
+		DriverID:          parsedDriverID.String(),
 		LicensePlate:      req.LicensePlate,
 		Brand:             req.Brand,
 		Model:             req.Model,
@@ -38,15 +40,19 @@ func (c *vehicleController) RegisterVehicle(ctx context.Context, req *vehiclev1.
 		return nil, err
 	}
 
+	// Convert string ID to bytes
+	parsedID, _ := uuid.Parse(res.ID)
+
 	return &vehiclev1.RegisterVehicleResponse{
-		Id:      res.ID,
+		Id:      parsedID[:],
 		Message: res.Message,
 	}, nil
 }
 
 func (c *vehicleController) GetVehicle(ctx context.Context, req *vehiclev1.GetVehicleRequest) (*vehiclev1.GetVehicleResponse, error) {
+	parsedID, _ := uuid.FromBytes(req.Id)
 	param := &entity.GetVehicleParam{
-		ID: req.Id,
+		ID: parsedID.String(),
 	}
 
 	v, err := c.engine.GetVehicle(ctx, param)
@@ -60,8 +66,9 @@ func (c *vehicleController) GetVehicle(ctx context.Context, req *vehiclev1.GetVe
 }
 
 func (c *vehicleController) ListVehicles(ctx context.Context, req *vehiclev1.ListVehiclesRequest) (*vehiclev1.ListVehiclesResponse, error) {
+	parsedDriverID, _ := uuid.FromBytes(req.DriverId)
 	param := &entity.ListVehiclesParam{
-		DriverID: req.DriverId,
+		DriverID: parsedDriverID.String(),
 	}
 
 	vehicles, err := c.engine.ListVehicles(ctx, param)
@@ -82,8 +89,9 @@ func (c *vehicleController) ListVehicles(ctx context.Context, req *vehiclev1.Lis
 }
 
 func (c *vehicleController) UpdateVehicleStatus(ctx context.Context, req *vehiclev1.UpdateVehicleStatusRequest) (*vehiclev1.UpdateVehicleStatusResponse, error) {
+	parsedID, _ := uuid.FromBytes(req.Id)
 	param := &entity.UpdateVehicleStatusParam{
-		ID:     req.Id,
+		ID:     parsedID.String(),
 		Status: req.Status,
 	}
 

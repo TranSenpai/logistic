@@ -52,8 +52,8 @@ func (c *AppMapperImpl) EntityVehicleListToPbVehicleList(source []entity.Vehicle
 }
 func (c *AppMapperImpl) EntityVehicleToPbVehicle(source entity.Vehicle) *v1.Vehicle {
 	var vehiclev1Vehicle v1.Vehicle
-	vehiclev1Vehicle.Id = mapper.UUIDToString(source.ID)
-	vehiclev1Vehicle.DriverId = mapper.UUIDToString(source.DriverID)
+	vehiclev1Vehicle.Id = mapper.UUIDToBytes(source.ID)
+	vehiclev1Vehicle.DriverId = mapper.UUIDToBytes(source.DriverID)
 	vehiclev1Vehicle.LicensePlate = source.LicensePlate
 	vehiclev1Vehicle.Brand = source.Brand
 	vehiclev1Vehicle.Model = source.Model
@@ -66,12 +66,12 @@ func (c *AppMapperImpl) EntityVehicleToPbVehicle(source entity.Vehicle) *v1.Vehi
 func (c *AppMapperImpl) PbVehicleToEntity(source *v1.Vehicle) (entity.Vehicle, error) {
 	var entityVehicle entity.Vehicle
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).Id)
+		uuidUUID, err := mapper.BytesToUUID((*source).Id)
 		if err != nil {
 			return entityVehicle, err
 		}
 		entityVehicle.ID = uuidUUID
-		uuidUUID2, err := mapper.StringToUUID((*source).DriverId)
+		uuidUUID2, err := mapper.BytesToUUID((*source).DriverId)
 		if err != nil {
 			return entityVehicle, err
 		}

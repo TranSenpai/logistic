@@ -1,0 +1,1316 @@
+<title>Elasticsearch Field Notes</title>
+<style>
+  :root {
+    --bg: #EEF0F2;
+    --surface: #FFFFFF;
+    --surface-2: #E4E8EB;
+    --ink: #14181D;
+    --ink-soft: #545C66;
+    --ink-faint: #848D96;
+    --line: #D6DBDF;
+    --line-strong: #B9C1C7;
+    --accent: #C9711E;
+    --accent-strong: #A85B15;
+    --accent-soft: #F7E4CC;
+    --accent-ink: #7A3E0A;
+    --critical: #B0243F;
+    --critical-soft: #F6DCE1;
+    --moderate: #8A6A12;
+    --moderate-soft: #F1E7C8;
+    --good: #2E7D5B;
+    --good-soft: #DCEEE5;
+    --shadow: 0 1px 2px rgba(20,24,29,0.06), 0 8px 24px -12px rgba(20,24,29,0.18);
+    --serif: Georgia, "Iowan Old Style", "Times New Roman", "Noto Serif", serif;
+    --sans: -apple-system, "Segoe UI", "Noto Sans", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "Cascadia Code", Consolas, "SF Mono", Menlo, "Noto Sans Mono", "Courier New", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14171B;
+      --surface: #1B1F24;
+      --surface-2: #23282E;
+      --ink: #ECEEF0;
+      --ink-soft: #A8B0B8;
+      --ink-faint: #767F88;
+      --line: #2C3238;
+      --line-strong: #3B424A;
+      --accent: #E6A64C;
+      --accent-strong: #F0BC72;
+      --accent-soft: #3A2B12;
+      --accent-ink: #F6D9A8;
+      --critical: #E2637B;
+      --critical-soft: #3A1B22;
+      --moderate: #D8BE64;
+      --moderate-soft: #362C13;
+      --good: #6FC49E;
+      --good-soft: #17332A;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -16px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171B;
+    --surface: #1B1F24;
+    --surface-2: #23282E;
+    --ink: #ECEEF0;
+    --ink-soft: #A8B0B8;
+    --ink-faint: #767F88;
+    --line: #2C3238;
+    --line-strong: #3B424A;
+    --accent: #E6A64C;
+    --accent-strong: #F0BC72;
+    --accent-soft: #3A2B12;
+    --accent-ink: #F6D9A8;
+    --critical: #E2637B;
+    --critical-soft: #3A1B22;
+    --moderate: #D8BE64;
+    --moderate-soft: #362C13;
+    --good: #6FC49E;
+    --good-soft: #17332A;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -16px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+  a:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .mono { font-family: var(--mono); }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+    font-weight: 600;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--serif);
+    font-weight: 600;
+    text-wrap: balance;
+    line-height: 1.18;
+    margin: 0;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--line);
+    background: var(--surface);
+    padding: 1.5rem 1.1rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0 0.4rem;
+  }
+  .brand .mark {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+  .brand .mark .dot { color: var(--accent); }
+  .toc { display: flex; flex-direction: column; gap: 0.15rem; }
+  .toc-part {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 0.55rem;
+    align-items: baseline;
+    padding: 0.42rem 0.4rem;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--ink-soft);
+    font-size: 0.88rem;
+    transition: background-color .15s ease, color .15s ease;
+  }
+  .toc-part .num {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    text-align: right;
+  }
+  .toc-part:hover { background: var(--surface-2); color: var(--ink); }
+  .toc-part.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+  .toc-part.active .num { color: var(--accent-strong); }
+  .toc-foot {
+    margin-top: auto;
+    padding: 0.8rem 0.4rem 0;
+    border-top: 1px solid var(--line);
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    line-height: 1.5;
+  }
+
+  .nav-toggle { display: none; }
+
+  /* ---------- Main ---------- */
+  main { min-width: 0; }
+  .content {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 3.4rem 1.6rem 6rem;
+  }
+  .wide { max-width: 900px; }
+
+  .hero {
+    padding-bottom: 2.2rem;
+    margin-bottom: 2.6rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .hero h1 { font-size: clamp(1.9rem, 3.4vw, 2.7rem); margin-top: 0.5rem; }
+  .hero .dek {
+    margin-top: 0.9rem;
+    font-size: 1.08rem;
+    color: var(--ink-soft);
+    max-width: 62ch;
+  }
+  .hero .dek b { color: var(--ink); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.4rem; }
+  .chip {
+    font-size: 0.78rem;
+    font-family: var(--mono);
+    padding: 0.32rem 0.62rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 100px;
+    color: var(--ink-soft);
+    background: var(--surface);
+  }
+  .chip b { color: var(--accent-strong); font-weight: 700; }
+
+  .kicker-row {
+    margin-top: 1.6rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.9rem;
+  }
+  .kicker {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 0.85rem 0.95rem;
+  }
+  .kicker .k-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); }
+  .kicker .k-val { margin-top: 0.3rem; font-size: 0.92rem; font-weight: 600; }
+
+  section.part { padding-top: 0.4rem; scroll-margin-top: 1.4rem; }
+  section.sub { scroll-margin-top: 1.4rem; }
+
+  .part-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.85rem;
+    margin: 3.2rem 0 0.4rem;
+  }
+  .part-head .roman {
+    font-family: var(--serif);
+    font-size: 1.7rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .part-head h2 { font-size: 1.55rem; }
+  .part-sub { margin-top: 0.35rem; color: var(--ink-soft); font-size: 1rem; max-width: 60ch; }
+
+  h3.h { font-size: 1.18rem; margin-top: 2.2rem; margin-bottom: 0.7rem; }
+  h4.h { font-family: var(--sans); font-size: 0.98rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.55rem; color: var(--ink); }
+
+  p { margin: 0.85rem 0; max-width: 68ch; }
+  ul, ol { margin: 0.85rem 0; padding-left: 1.3rem; max-width: 66ch; }
+  li { margin: 0.35rem 0; }
+  strong { font-weight: 700; }
+  code {
+    font-family: var(--mono);
+    font-size: 0.87em;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    padding: 0.05em 0.38em;
+    border-radius: 4px;
+  }
+
+  .mark {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    padding: 0.02em 0.28em;
+    border-radius: 3px;
+  }
+
+  blockquote.rule {
+    margin: 1.3rem 0;
+    padding: 0.9rem 1.1rem;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 8px 8px 0;
+    color: var(--accent-ink);
+    font-size: 0.98rem;
+  }
+  blockquote.rule p { margin: 0; max-width: none; color: inherit; }
+  blockquote.rule b { font-weight: 700; }
+
+  .callout {
+    margin: 1.3rem 0;
+    padding: 0.95rem 1.15rem;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+  }
+  .callout .c-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 0.35rem;
+  }
+  .callout p:first-of-type { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* ---------- Figures / diagrams ---------- */
+  figure.fig {
+    margin: 1.7rem 0 1.9rem;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  figure.fig .fig-body {
+    padding: 1.1rem 1.1rem 0.4rem;
+    overflow-x: auto;
+  }
+  figure.fig svg { display: block; width: 100%; height: auto; max-width: 100%; }
+  figure.fig figcaption {
+    padding: 0.7rem 1.1rem 0.95rem;
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+    border-top: 1px dashed var(--line);
+    margin-top: 0.6rem;
+  }
+  figure.fig figcaption b { color: var(--ink); }
+  .svg-accent { fill: var(--accent); }
+  .svg-accent-stroke { stroke: var(--accent); }
+  .svg-ink { fill: var(--ink); }
+  .svg-soft { fill: var(--ink-soft); }
+  .svg-faint { fill: var(--ink-faint); }
+  .svg-line { stroke: var(--line-strong); }
+  .svg-surface { fill: var(--surface); }
+  .svg-surface2 { fill: var(--surface-2); }
+  .svg-accent-soft { fill: var(--accent-soft); }
+  .svg-critical { fill: var(--critical); }
+  .svg-good { fill: var(--good); }
+
+  /* ---------- Tables ---------- */
+  .table-wrap { overflow-x: auto; margin: 1.2rem 0 1.6rem; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; min-width: 420px; }
+  thead th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    background: var(--surface-2);
+    padding: 0.6rem 0.85rem;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 0.62rem 0.85rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    background: var(--surface);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td.num { font-variant-numeric: tabular-nums; font-family: var(--mono); }
+  td b, th b { color: var(--ink); }
+  .ok { color: var(--good); font-weight: 700; }
+  .no { color: var(--critical); font-weight: 700; }
+
+  /* ---------- Cards / grids ---------- */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.3rem 0; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 1.3rem 0; }
+  .card {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+  }
+  .card h5 { margin: 0 0 0.4rem; font-family: var(--sans); font-size: 0.95rem; font-weight: 700; }
+  .card p { margin: 0; font-size: 0.9rem; color: var(--ink-soft); max-width: none; }
+
+  /* ---------- Severity / findings ---------- */
+  .finding {
+    display: grid;
+    grid-template-columns: 5px 1fr;
+    gap: 0.9rem;
+    margin: 0.9rem 0;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .finding .stripe { background: var(--ink-faint); }
+  .finding.critical .stripe { background: var(--critical); }
+  .finding.moderate .stripe { background: var(--moderate); }
+  .finding .f-body { padding: 0.85rem 1rem 0.9rem 0; }
+  .f-top { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .sev-tag { font-family: var(--mono); font-size: 0.68rem; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; padding: 0.16rem 0.5rem; border-radius: 100px; }
+  .finding.critical .sev-tag { background: var(--critical-soft); color: var(--critical); }
+  .finding.moderate .sev-tag { background: var(--moderate-soft); color: var(--moderate); }
+  .finding.minor .sev-tag { background: var(--surface-2); color: var(--ink-faint); }
+  .f-file { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-faint); }
+  .f-title { margin-top: 0.4rem; font-weight: 700; font-size: 0.96rem; }
+  .f-desc { margin-top: 0.25rem; font-size: 0.89rem; color: var(--ink-soft); max-width: none; }
+
+  /* ---------- Checklist ---------- */
+  .checklist { list-style: none; padding: 0; margin: 1rem 0; }
+  .checklist li {
+    display: grid;
+    grid-template-columns: 1.4rem 1fr;
+    gap: 0.6rem;
+    padding: 0.4rem 0;
+    font-size: 0.94rem;
+  }
+  .checklist li::before {
+    content: "";
+    width: 1.05rem; height: 1.05rem;
+    margin-top: 0.15rem;
+    border: 1.5px solid var(--accent);
+    border-radius: 4px;
+    background: var(--accent-soft);
+  }
+
+  .num-list { counter-reset: nl; list-style: none; padding: 0; margin: 1rem 0; }
+  .num-list li {
+    counter-increment: nl;
+    position: relative;
+    padding: 0.55rem 0 0.55rem 2.5rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.94rem;
+  }
+  .num-list li:first-child { border-top: none; }
+  .num-list li::before {
+    content: counter(nl);
+    position: absolute;
+    left: 0; top: 0.55rem;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--accent-strong);
+    width: 1.7rem;
+  }
+
+  .kbd-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+
+  pre.term {
+    margin: 1rem 0 1.6rem;
+    background: #14171B;
+    color: #DCE1E5;
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.83rem;
+    line-height: 1.55;
+    box-shadow: var(--shadow);
+  }
+  pre.term .p { color: #6FCF97; }
+  pre.term .c { color: #7A8791; }
+
+  .footer-note {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    color: var(--ink-faint);
+    font-size: 0.84rem;
+  }
+
+  @media (max-width: 980px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar {
+      position: relative;
+      height: auto;
+      top: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding: 1rem 1rem 0.4rem;
+    }
+    .toc { display: none; flex-direction: row; flex-wrap: wrap; padding-bottom: 0.8rem; }
+    .toc.open { display: flex; }
+    .toc-part { grid-template-columns: auto auto; font-size: 0.82rem; }
+    .toc-foot { display: none; }
+    .nav-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      background: var(--surface-2);
+      border: 1px solid var(--line-strong);
+      color: var(--ink-soft);
+      border-radius: 100px;
+      padding: 0.32rem 0.75rem;
+      cursor: pointer;
+    }
+    .brand { display: flex; align-items: center; }
+    .grid-2, .grid-3, .kicker-row { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark">field<span class="dot">·</span>notes</span>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="toc">☰ Mục lục</button>
+    </div>
+    <nav class="toc" id="toc">
+      <a class="toc-part" href="#top"><span class="num">＊</span><span>Mở đầu</span></a>
+      <a class="toc-part" href="#what"><span class="num">I</span><span>What — ES là gì</span></a>
+      <a class="toc-part" href="#why"><span class="num">II</span><span>Why — vì sao tồn tại</span></a>
+      <a class="toc-part" href="#internals"><span class="num">III</span><span>Nguyên lý &amp; thuật toán</span></a>
+      <a class="toc-part" href="#where"><span class="num">IV</span><span>Where — dùng ở đâu</span></a>
+      <a class="toc-part" href="#when"><span class="num">V</span><span>When — nên hay đừng</span></a>
+      <a class="toc-part" href="#how"><span class="num">VI</span><span>How — triển khai thật</span></a>
+      <a class="toc-part" href="#tradeoffs"><span class="num">VII</span><span>Ưu &amp; nhược điểm</span></a>
+      <a class="toc-part" href="#cheatsheet"><span class="num">IX</span><span>Lộ trình &amp; tra cứu</span></a>
+    </nav>
+    <div class="toc-foot">Cẩm nang nội bộ · dự án Logistics<br>Trọng tâm: <span class="mono">wallet_service</span></div>
+  </aside>
+
+  <main>
+    <div class="content" id="top">
+
+      <div class="hero">
+        <div class="eyebrow">Cẩm nang kỹ thuật · người mới học Elasticsearch</div>
+        <h1>Elasticsearch, từ nguyên lý tới thực chiến</h1>
+        <p class="dek">Đi từ bản chất <b>search engine</b> → nguyên lý &amp; thuật toán bên trong Lucene → khi nào nên dùng → cách nó đang chạy thật trong <span class="mono">wallet_service</span> của dự án Logistics.</p>
+        <div class="chips">
+          <span class="chip">What · Why · Where · When</span>
+          <span class="chip">How <b>×2</b> — nguyên lý &amp; implement</span>
+          <span class="chip">Ưu / Nhược</span>
+          <span class="chip">7 sơ đồ cơ chế</span>
+        </div>
+        <div class="kicker-row">
+          <div class="kicker"><div class="k-label">Vai trò</div><div class="k-val">Read model (CQRS)</div></div>
+          <div class="kicker"><div class="k-label">Lõi</div><div class="k-val">Apache Lucene</div></div>
+          <div class="kicker"><div class="k-label">Chân lý dữ liệu</div><div class="k-val">Vẫn là MySQL</div></div>
+        </div>
+      </div>
+
+      <!-- ================= PHẦN I — WHAT ================= -->
+      <section class="part" id="what">
+        <div class="part-head"><span class="roman">I</span><h2>What — Elasticsearch là cái gì?</h2></div>
+        <p class="part-sub">Bản chất, hệ sinh thái, và mô hình dữ liệu — trước khi học cách dùng, cần biết đang cầm cái gì trong tay.</p>
+
+        <h3 class="h">1.1 · Định nghĩa một câu</h3>
+        <blockquote class="rule"><p><b>Elasticsearch</b> là một search engine phân tán, lưu trữ document JSON, xây trên nền thư viện Apache Lucene, giao tiếp hoàn toàn qua HTTP/JSON.</p></blockquote>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Vế</th><th>Nghĩa là gì</th></tr></thead>
+            <tbody>
+              <tr><td><b>Search engine</b></td><td>Sinh ra để tìm kiếm &amp; xếp hạng theo độ liên quan — không phải giữ dữ liệu chuẩn xác tuyệt đối</td></tr>
+              <tr><td><b>Phân tán</b></td><td>Dữ liệu tự chia nhỏ ra nhiều máy, tự nhân bản, tự cân bằng khi thêm/bớt máy</td></tr>
+              <tr><td><b>Document JSON</b></td><td>Đơn vị dữ liệu là 1 object JSON, không phải 1 dòng bảng phẳng</td></tr>
+              <tr><td><b>Trên nền Lucene</b></td><td>Toàn bộ lõi tìm kiếm là của Lucene — ES là lớp phân tán + API bọc ngoài</td></tr>
+              <tr><td><b>HTTP/JSON</b></td><td>Không driver riêng, không ngôn ngữ query riêng kiểu SQL — chỉ là REST API</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="h">1.2 · Cây phả hệ — ai là ai</h3>
+
+        <figure class="fig">
+          <div class="fig-body">
+            <svg viewBox="0 0 680 330" role="img" aria-label="Sơ đồ phân lớp: Kibana và Logstash nằm trên Elasticsearch, Elasticsearch bọc quanh Apache Lucene, Lucene ghi xuống đĩa">
+              <rect x="20" y="10" width="440" height="46" rx="8" class="svg-surface2" stroke-width="1" style="stroke:var(--line-strong)"/>
+              <text x="38" y="30" class="mono svg-ink" font-size="12" font-weight="700">Kibana</text>
+              <text x="38" y="46" class="svg-soft" font-size="11">Dashboard, biểu đồ, dev tools</text>
+
+              <rect x="20" y="66" width="440" height="46" rx="8" class="svg-surface2" style="stroke:var(--line-strong)"/>
+              <text x="38" y="86" class="mono svg-ink" font-size="12" font-weight="700">Logstash / Beats / Fluentd</text>
+              <text x="38" y="102" class="svg-soft" font-size="11">Đường ống bơm dữ liệu vào</text>
+
+              <rect x="20" y="128" width="440" height="76" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+              <text x="38" y="150" font-family="Georgia, serif" font-size="14" font-weight="700" fill="var(--accent-ink)">ELASTICSEARCH</text>
+              <text x="440" y="150" text-anchor="end" class="mono" font-size="10" font-weight="700" fill="var(--accent-strong)">← chúng ta ở đây</text>
+              <text x="38" y="170" fill="var(--accent-ink)" font-size="11">• Cluster, Node, Shard, Replica — lớp PHÂN TÁN</text>
+              <text x="38" y="188" fill="var(--accent-ink)" font-size="11">• REST API, Query DSL, Mapping — lớp GIAO TIẾP</text>
+
+              <rect x="20" y="220" width="440" height="76" rx="10" class="svg-surface2" style="stroke:var(--line-strong)"/>
+              <text x="38" y="242" font-family="Georgia, serif" font-size="14" font-weight="700" class="svg-ink">APACHE LUCENE</text>
+              <text x="38" y="262" class="svg-soft" font-size="11">• Inverted Index, Segment, BM25, Analyzer</text>
+              <text x="38" y="280" class="svg-soft" font-size="11">• Chạy trên MỘT máy, không biết gì về mạng</text>
+
+              <line x1="240" y1="112" x2="240" y2="128" class="svg-line" stroke-width="1.5" marker-end="url(#arrN)"/>
+              <line x1="240" y1="204" x2="240" y2="220" class="svg-line" stroke-width="1.5" marker-end="url(#arrN)"/>
+
+              <path d="M 460 166 C 560 166, 560 260, 470 260" fill="none" stroke="var(--accent-strong)" stroke-width="1.3" stroke-dasharray="3 3"/>
+              <text x="565" y="212" text-anchor="middle" class="mono" font-size="10.5" fill="var(--accent-strong)">ES = Lucene</text>
+              <text x="565" y="226" text-anchor="middle" class="mono" font-size="10.5" fill="var(--accent-strong)">+ phân tán + API</text>
+
+              <rect x="20" y="308" width="440" height="18" rx="4" class="svg-surface2" style="stroke:var(--line)"/>
+              <text x="240" y="321" text-anchor="middle" class="svg-faint mono" font-size="10">Ổ đĩa — segment files</text>
+
+              <defs>
+                <marker id="arrN" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L8,4 L0,8 Z" class="svg-line"/>
+                </marker>
+              </defs>
+            </svg>
+          </div>
+          <figcaption><b>Lucene là động cơ xe</b> — mạnh nhưng trần trụi, một mình không tự chạy được. <b>Elasticsearch là cả chiếc xe</b> — lắp động cơ Lucene, thêm vô lăng (REST API), thêm nhiều bánh phối hợp (phân tán). Kibana là màn hình giải trí gắn thêm.</figcaption>
+        </figure>
+
+        <p>Hiểu điều này quan trọng: mỗi khi đọc về <em>"inverted index", "segment", "BM25"</em> — đó là <b>Lucene</b>. Còn <em>"shard", "replica", "cluster", "index API"</em> — đó là <b>Elasticsearch</b>.</p>
+
+        <h4 class="h">Lịch sử ngắn — và một drama giấy phép cần biết</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mốc</th><th>Sự kiện</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1999</td><td>Doug Cutting viết <b>Lucene</b> (Java) — sau này cũng là cha đẻ Hadoop</td></tr>
+              <tr><td class="num">2010</td><td>Shay Banon viết lại <b>Elasticsearch</b> từ dự án Compass, thêm khả năng phân tán</td></tr>
+              <tr><td class="num">2015</td><td>Bộ <b>ELK Stack</b> bùng nổ trong giới DevOps</td></tr>
+              <tr><td class="num">2021</td><td>Elastic đổi giấy phép sang SSPL → AWS <b>fork ra OpenSearch</b></td></tr>
+              <tr><td class="num">2024</td><td>Elastic bổ sung <b>AGPLv3</b>, chính thức open source trở lại</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Hiện có <b>hai nhánh song song</b>: Elasticsearch (Elastic) và OpenSearch (AWS, fork từ ES 7.10) — API gần giống hệt. Dự án này dùng client <code>go-elasticsearch/v8</code>, tức nhánh Elastic chính chủ.</p>
+
+        <h4 class="h">Mô hình dữ liệu — đối chiếu SQL</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Elasticsearch</th><th>SQL</th><th>Ghi chú</th></tr></thead>
+            <tbody>
+              <tr><td><b>Index</b></td><td>Table</td><td>Từ ES 7.0 không còn "type" — mỗi index 1 loại document</td></tr>
+              <tr><td><b>Document</b></td><td>Row</td><td>Là JSON, có thể lồng nhau — không phẳng như SQL</td></tr>
+              <tr><td><b>Mapping</b></td><td>Schema</td><td><b>Tạo rồi gần như không sửa được</b> — điểm đau lớn nhất</td></tr>
+              <tr><td><b>Query DSL</b></td><td>Câu lệnh SQL</td><td>JSON lồng nhau, dựng bằng <code>map[string]any</code></td></tr>
+              <tr><td><b>Shard</b></td><td>Partition</td><td>Số shard <b>chốt cứng lúc tạo index</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <div class="c-label">Chống ngộ nhận</div>
+          <p><b>❌ "ES thay được MySQL."</b> Không có transaction đa document, không <code>ROLLBACK</code>. Dữ liệu tài chính luôn phải qua database thật trước.</p>
+          <p><b>❌ "Ghi xong tìm thấy ngay."</b> Không — ES là <b>Near Real-Time</b>, mặc định trễ ~1 giây (chi tiết ở Phần III.5).</p>
+          <p><b>❌ "ES có JOIN như SQL."</b> Gần như không — triết lý ES là <em>denormalize</em>: nhồi sẵn dữ liệu cần vào 1 document, chấp nhận trùng lặp để đổi lấy tốc độ.</p>
+        </div>
+      </section>
+
+      <!-- ================= PHẦN II — WHY ================= -->
+      <section class="part" id="why">
+        <div class="part-head"><span class="roman">II</span><h2>Why — vì sao Elasticsearch tồn tại?</h2></div>
+        <p class="part-sub">Bài toán mà B-Tree của SQL bó tay.</p>
+
+        <p>Bảng <code>transactions</code> 50 triệu dòng, tìm giao dịch có mô tả chứa <code>"tiền cọc"</code>:</p>
+        <pre class="term">SELECT * FROM transactions <span class="p">WHERE description LIKE '%tiền cọc%'</span> ORDER BY created_at DESC;
+<span class="c">-- B-Tree sắp xếp trái→phải: tra được 'tiền%' (có điểm neo)
+-- nhưng '%tiền%' không có điểm neo → quét cả 50 triệu dòng</span></pre>
+
+        <p><b>Ví dụ dễ hiểu:</b> B-Tree là <b>danh bạ điện thoại</b> — sắp theo tên nên tra "Nguyễn Văn A" cực nhanh. Nhưng hỏi <em>"ai có chữ 'Văn' trong tên?"</em> thì phải lật từng trang từ đầu.</p>
+
+        <h3 class="h">2.1 · Lời giải: lật ngược chỉ mục</h3>
+        <p>Thay vì hỏi <em>"dòng này chứa từ nào?"</em>, ES lật ngược: <em>"từ này nằm ở những dòng nào?"</em></p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th></th><th>Full scan (<code>LIKE %x%</code>)</th><th>Inverted Index</th></tr></thead>
+            <tbody>
+              <tr><td>Tra 1 từ khoá</td><td class="no"><code>O(N)</code> — N = tổng số dòng</td><td class="ok"><code>O(log T)</code> — T = số từ khoá <i>khác nhau</i></td></tr>
+              <tr><td>Khi dữ liệu tăng 100×</td><td class="no">Chậm tuyến tính theo N</td><td class="ok">Từ vựng gần như không đổi → không chậm đi</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Năm bài toán sau thì SQL gần như <b>không có lời giải</b>: xếp hạng theo độ liên quan, tìm trên nhiều cột có trọng số khác nhau, chịu lỗi chính tả, gom nhóm nhiều chiều tức thì, gợi ý gõ-tới-đâu-ra-tới-đó.</p>
+
+        <blockquote class="rule"><p>Dữ liệu tăng từ 1 triệu lên 100 triệu dòng, nhưng <b>số từ tiếng Việt khác nhau gần như không đổi</b> — inverted index vì vậy gần như không chậm đi theo quy mô dữ liệu.</p></blockquote>
+      </section>
+
+      <!-- ================= PHẦN III — INTERNALS ================= -->
+      <section class="part" id="internals">
+        <div class="part-head"><span class="roman">III</span><h2>Nguyên lý &amp; thuật toán lõi</h2></div>
+        <p class="part-sub">Phần đáng giá nhất — hiểu phần này thì mọi hành vi "kỳ lạ" của ES đều trở nên hiển nhiên.</p>
+
+        <h3 class="h">3.1 · Inverted index — cơ chế trung tâm</h3>
+        <figure class="fig">
+          <div class="fig-body">
+            <svg viewBox="0 0 720 400" role="img" aria-label="3 document ở bên trái được phân tích thành các token; bên phải là bảng term-postings; truy vấn 'tiền cọc' giao hai danh sách postings của tiền và cọc ra kết quả {1,2}">
+              <text x="10" y="22" class="mono svg-faint" font-size="10.5" letter-spacing="0.06em">DỮ LIỆU GỐC</text>
+              <g font-size="11.5">
+                <rect x="10" y="34" width="270" height="34" rx="6" class="svg-surface2" style="stroke:var(--line-strong)"/>
+                <text x="22" y="55" class="svg-ink"><tspan font-weight="700" font-family="var(--mono)">ID 1</tspan><tspan dx="8" class="svg-soft">đóng băng tiền cọc</tspan></text>
+
+                <rect x="10" y="76" width="270" height="34" rx="6" class="svg-surface2" style="stroke:var(--line-strong)"/>
+                <text x="22" y="97"><tspan font-weight="700" font-family="var(--mono)" class="svg-ink">ID 2</tspan><tspan dx="8" class="svg-soft">hoàn tiền cọc</tspan></text>
+
+                <rect x="10" y="118" width="270" height="34" rx="6" class="svg-surface2" style="stroke:var(--line-strong)"/>
+                <text x="22" y="139"><tspan font-weight="700" font-family="var(--mono)" class="svg-ink">ID 3</tspan><tspan dx="8" class="svg-soft">nạp tiền vào ví</tspan></text>
+              </g>
+
+              <path d="M290 92 C 330 92, 330 92, 366 92" fill="none" class="svg-line" stroke-width="1.4" marker-end="url(#arrN2)"/>
+              <text x="328" y="82" text-anchor="middle" class="mono svg-faint" font-size="9.5">phân tích</text>
+
+              <text x="380" y="22" class="mono svg-faint" font-size="10.5" letter-spacing="0.06em">TERM → POSTINGS</text>
+              <g font-size="11.5" font-family="var(--mono)">
+                <!-- rows -->
+                <text x="382" y="46" class="svg-ink">băng</text><text x="470" y="46" class="svg-soft">[1]</text>
+                <rect x="382" y="54" width="230" height="24" rx="4" fill="var(--accent-soft)"/>
+                <text x="390" y="70" fill="var(--accent-ink)" font-weight="700">cọc</text><text x="470" y="70" fill="var(--accent-ink)" font-weight="700">[1, 2]</text>
+                <text x="382" y="94" class="svg-ink">đóng</text><text x="470" y="94" class="svg-soft">[1]</text>
+                <text x="382" y="118" class="svg-ink">hoàn</text><text x="470" y="118" class="svg-soft">[2]</text>
+                <text x="382" y="142" class="svg-ink">nạp</text><text x="470" y="142" class="svg-soft">[3]</text>
+                <rect x="382" y="150" width="230" height="24" rx="4" fill="var(--accent-soft)"/>
+                <text x="390" y="166" fill="var(--accent-ink)" font-weight="700">tiền</text><text x="470" y="166" fill="var(--accent-ink)" font-weight="700">[1, 2, 3]</text>
+                <text x="382" y="190" class="svg-ink">ví</text><text x="470" y="190" class="svg-soft">[3]</text>
+              </g>
+
+              <line x1="382" y1="204" x2="612" y2="204" class="svg-line" stroke-dasharray="2 3"/>
+              <text x="382" y="228" class="mono" font-size="11" fill="var(--accent-strong)" font-weight="700">Truy vấn: "tiền cọc"</text>
+              <path d="M497 166 C 540 166, 540 250, 497 250" fill="none" stroke="var(--accent-strong)" stroke-width="1.3"/>
+              <path d="M497 70 C 540 70, 540 250, 497 250" fill="none" stroke="var(--accent-strong)" stroke-width="1.3"/>
+              <circle cx="497" cy="250" r="3" fill="var(--accent-strong)"/>
+              <text x="382" y="278" class="svg-soft" font-size="11">giao: {1,2,3} ∩ {1,2} =</text>
+
+              <rect x="382" y="288" width="90" height="30" rx="15" fill="var(--accent)"/>
+              <text x="427" y="308" text-anchor="middle" class="mono" font-size="12.5" font-weight="700" fill="#fff">{ 1, 2 }</text>
+              <text x="382" y="342" class="svg-faint" font-size="10.5">Không hề đụng vào dữ liệu gốc.</text>
+
+              <defs>
+                <marker id="arrN2" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L8,4 L0,8 Z" class="svg-line"/>
+                </marker>
+              </defs>
+            </svg>
+          </div>
+          <figcaption>Tìm <b>"tiền cọc"</b> = lấy giao của 2 postings list, không quét document nào. Y hệt mục lục cuối sách giáo khoa.</figcaption>
+        </figure>
+
+        <h3 class="h">3.2 · Analysis pipeline — nơi mọi thứ bắt đầu</h3>
+        <p>Trước khi vào index, mọi văn bản bị băm nhỏ qua 3 chặng:</p>
+
+        <figure class="fig">
+          <div class="fig-body">
+            <svg viewBox="0 0 700 190" role="img" aria-label="Chuỗi Đóng Băng Tiền Cọc 2024 đi qua Char Filter, Tokenizer, Token Filter để ra các token cuối cùng đóng băng tiền cọc 2024">
+              <text x="10" y="20" class="mono svg-soft" font-size="11">"Đóng Băng Tiền Cọc &lt;b&gt;2024&lt;/b&gt;!"</text>
+
+              <g font-size="10.5" font-family="var(--mono)" font-weight="700">
+                <rect x="10" y="40" width="150" height="34" rx="6" fill="var(--surface-2)" style="stroke:var(--line-strong)"/>
+                <text x="85" y="61" text-anchor="middle" class="svg-ink">① Char Filter</text>
+
+                <rect x="190" y="40" width="150" height="34" rx="6" fill="var(--surface-2)" style="stroke:var(--line-strong)"/>
+                <text x="265" y="61" text-anchor="middle" class="svg-ink">② Tokenizer</text>
+
+                <rect x="370" y="40" width="150" height="34" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <text x="445" y="61" text-anchor="middle" fill="var(--accent-ink)">③ Token Filter</text>
+              </g>
+
+              <path d="M160 57 L190 57" class="svg-line" stroke-width="1.4" marker-end="url(#arrN3)"/>
+              <path d="M340 57 L370 57" class="svg-line" stroke-width="1.4" marker-end="url(#arrN3)"/>
+              <path d="M520 57 L560 57" class="svg-line" stroke-width="1.4" marker-end="url(#arrN3)"/>
+
+              <text x="10" y="100" class="svg-faint" font-size="10">gỡ thẻ HTML</text>
+              <text x="190" y="100" class="svg-faint" font-size="10">cắt theo ranh giới từ</text>
+              <text x="370" y="100" class="svg-faint" font-size="10">lowercase, bỏ stopword…</text>
+
+              <rect x="10" y="118" width="660" height="48" rx="8" fill="var(--accent-soft)"/>
+              <text x="26" y="140" class="mono" font-size="10.5" fill="var(--accent-ink)">["đóng","băng","tiền","cọc","2024"]</text>
+              <text x="26" y="156" fill="var(--accent-ink)" font-size="10">→ ghi vào Inverted Index. Câu <b>query</b> cũng phải qua đúng pipeline này.</text>
+
+              <defs>
+                <marker id="arrN3" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L8,4 L0,8 Z" class="svg-line"/>
+                </marker>
+              </defs>
+            </svg>
+          </div>
+          <figcaption>Nguyên tắc vàng: <b>câu truy vấn phải qua CÙNG một analyzer với lúc ghi</b>. Đây là nguyên nhân số 1 khiến người mới ngồi debug cả buổi khi query ra 0 kết quả.</figcaption>
+        </figure>
+
+        <h4 class="h"><code>text</code> vs <code>keyword</code> — cặp đôi gây nhầm lẫn nhất</h4>
+        <figure class="fig">
+          <div class="fig-body">
+            <svg viewBox="0 0 640 210" role="img" aria-label="Chuỗi Đóng băng tiền cọc rẽ hai nhánh: keyword giữ nguyên một token, text nổ thành 4 token riêng">
+              <rect x="200" y="10" width="240" height="30" rx="15" class="svg-surface2" style="stroke:var(--line-strong)"/>
+              <text x="320" y="30" text-anchor="middle" class="mono svg-ink" font-size="11">"Đóng băng tiền cọc"</text>
+
+              <path d="M280 40 C 200 70, 140 70, 110 92" fill="none" class="svg-line" stroke-width="1.3" marker-end="url(#arrN4)"/>
+              <path d="M360 40 C 440 70, 500 70, 530 92" fill="none" class="svg-line" stroke-width="1.3" marker-end="url(#arrN4)"/>
+
+              <text x="90" y="86" text-anchor="middle" font-family="var(--mono)" font-size="10.5" font-weight="700" fill="var(--accent-strong)">keyword</text>
+              <rect x="10" y="98" width="160" height="30" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/>
+              <text x="90" y="118" text-anchor="middle" font-family="var(--mono)" font-size="9.5" fill="var(--accent-ink)">"Đóng băng tiền cọc"</text>
+              <text x="90" y="146" text-anchor="middle" class="svg-soft" font-size="10">1 token nguyên vẹn</text>
+              <text x="90" y="164" text-anchor="middle" class="svg-faint mono" font-size="9.5">→ query: term</text>
+
+              <text x="530" y="86" text-anchor="middle" font-family="var(--mono)" font-size="10.5" font-weight="700" fill="var(--accent-strong)">text</text>
+              <g font-family="var(--mono)" font-size="9.5">
+                <rect x="410" y="98" width="46" height="24" rx="4" class="svg-surface2" style="stroke:var(--line-strong)"/><text x="433" y="114" text-anchor="middle" class="svg-ink">đóng</text>
+                <rect x="460" y="98" width="46" height="24" rx="4" class="svg-surface2" style="stroke:var(--line-strong)"/><text x="483" y="114" text-anchor="middle" class="svg-ink">băng</text>
+                <rect x="510" y="98" width="46" height="24" rx="4" class="svg-surface2" style="stroke:var(--line-strong)"/><text x="533" y="114" text-anchor="middle" class="svg-ink">tiền</text>
+                <rect x="560" y="98" width="46" height="24" rx="4" class="svg-surface2" style="stroke:var(--line-strong)"/><text x="583" y="114" text-anchor="middle" class="svg-ink">cọc</text>
+              </g>
+              <text x="530" y="146" text-anchor="middle" class="svg-soft" font-size="10">4 token rời rạc</text>
+              <text x="530" y="164" text-anchor="middle" class="svg-faint mono" font-size="9.5">→ query: match</text>
+
+              <defs>
+                <marker id="arrN4" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L8,4 L0,8 Z" class="svg-line"/>
+                </marker>
+              </defs>
+            </svg>
+          </div>
+          <figcaption>Cùng một chuỗi, hai số phận khác nhau tuỳ mapping. Ghép chéo (<code>term</code> trên field <code>text</code>) = 0 kết quả.</figcaption>
+        </figure>
+
+        <blockquote class="rule"><p>🔑 <b><code>term</code> đi với <code>keyword</code>, <code>match</code> đi với <code>text</code>.</b> Nhớ đúng 1 câu này là dùng được phần lớn ES.</p></blockquote>
+
+        <h4 class="h">Multi-field — 1 field, 2 cách đánh index</h4>
+        <p>Field vừa muốn tìm mò vừa muốn lọc chính xác thì đánh index 2 lần:</p>
+        <pre class="term">"reference_id": { <span class="p">"type": "text"</span>, "fields": { "keyword": { <span class="p">"type": "keyword"</span> } } }
+<span class="c">// reference_id          → tìm full-text kiểu mò mẫm
+// reference_id.keyword  → lọc chính xác / sort / gom nhóm</span></pre>
+
+        <h3 class="h">3.3 · Thuật toán chấm điểm — BM25</h3>
+        <p>SQL trả lời "đúng/sai". ES trả lời <b>"hợp lý tới mức nào"</b> — qua 2 trực giác: <b>TF</b> (từ xuất hiện càng nhiều trong 1 document càng liên quan) và <b>IDF</b> (từ càng hiếm toàn index càng quý).</p>
+
+        <figure class="fig">
+          <div class="fig-body">
+            <svg viewBox="0 0 640 260" role="img" aria-label="Biểu đồ so sánh: đường TF-IDF tăng tuyến tính không giới hạn, đường BM25 bão hoà và phẳng dần khi số lần xuất hiện tăng">
+              <line x1="60" y1="20" x2="60" y2="210" class="svg-line" stroke-width="1.3"/>
+              <line x1="60" y1="210" x2="600" y2="210" class="svg-line" stroke-width="1.3"/>
+              <text x="30" y="20" class="svg-faint mono" font-size="9.5" text-anchor="middle" transform="rotate(-90 30 110)">điểm số</text>
+              <text x="330" y="234" text-anchor="middle" class="svg-faint mono" font-size="9.5">số lần từ khoá xuất hiện trong document</text>
+
+              <!-- TF-IDF linear -->
+              <line x1="60" y1="210" x2="560" y2="30" stroke="var(--ink-faint)" stroke-width="1.6" stroke-dasharray="5 4"/>
+              <text x="562" y="34" class="svg-faint" font-size="10.5" font-weight="700">TF-IDF</text>
+              <text x="562" y="48" class="svg-faint" font-size="9">tuyến tính, dễ bị spam</text>
+
+              <!-- BM25 saturating curve as polyline approximating log-ish saturation -->
+              <polyline points="60,210 120,140 180,105 240,85 320,68 400,58 480,52 560,49" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/>
+              <text x="562" y="53" class="svg-faint" font-size="1"></text>
+              <text x="484" y="40" fill="var(--accent-strong)" font-size="10.5" font-weight="700">BM25</text>
+              <text x="440" y="98" fill="var(--accent-strong)" font-size="9">bão hoà — nhắc lần 20 gần</text>
+              <text x="440" y="110" fill="var(--accent-strong)" font-size="9">như không tăng thêm điểm</text>
+
+              <line x1="60" y1="210" x2="60" y2="215" class="svg-line"/>
+            </svg>
+          </div>
+          <figcaption>BM25 áp dụng <b>đường cong bão hoà</b>: nhắc từ khoá lần 2 tăng điểm nhiều, lần 20 gần như không tăng nữa — chống spam từ khoá tốt hơn TF-IDF cổ điển.</figcaption>
+        </figure>
+
+        <pre class="term">                                    f(q,D) · (k₁ + 1)
+<span class="p">BM25(q,D)</span> = IDF(q) · ─────────────────────────────────────────
+                     f(q,D) + k₁ · (1 − b + b · |D| / avgdl)
+
+<span class="c">k₁ = 1.2  → tốc độ bão hoà     b = 0.75 → mức phạt document dài</span></pre>
+
+        <p>Với ứng dụng nghiệp vụ thông thường, gần như <b>không bao giờ</b> cần chỉnh <code>k₁</code>, <code>b</code> — chỉ đụng vào khi có bằng chứng cụ thể document dài đang bị thiệt thòi.</p>
+
+        <div class="grid-2">
+          <div class="card"><h5>Block-Max WAND</h5><p>Người dùng chỉ xem top-10. Mỗi lô postings lưu sẵn điểm trần — lô nào chắc chắn không lọt top thì bỏ qua nguyên lô, không tính điểm.</p></div>
+          <div class="card"><h5>HNSW (ES 8.x)</h5><p>Vector search / semantic search dùng đồ thị nhiều tầng, tìm láng giềng gần đúng ~<code>O(log N)</code>. Xu hướng hiện nay: hybrid BM25 + kNN, gộp điểm bằng RRF.</p></div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nhu cầu</th><th>Thuật toán</th><th>Ghi chú</th></tr></thead>
+            <tbody>
+              <tr><td>Chịu lỗi chính tả</td><td class="mono">Levenshtein Automaton</td><td><code>fuzziness: AUTO</code>, tối đa 2 ký tự sai</td></tr>
+              <tr><td>Autocomplete</td><td class="mono">FST + edge n-gram</td><td>Completion Suggester</td></tr>
+              <tr><td>Đếm giá trị duy nhất</td><td class="mono">HyperLogLog++</td><td><code>cardinality</code> agg — <b>xấp xỉ</b>, sai số ~0.5%</td></tr>
+              <tr><td>Tính phân vị (p99)</td><td class="mono">T-Digest</td><td><code>percentiles</code> agg — <b>xấp xỉ</b>, chính xác ở đuôi</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <blockquote class="rule"><p>⚠️ <code>cardinality</code> và <code>percentiles</code> <b>cố tình xấp xỉ</b> để đổi lấy RAM cố định. Số liệu đối soát tài chính phải hỏi database, không hỏi ES.</p></blockquote>
+
+        <h3 class="h">3.4 · Segment — nền tảng của mọi hành vi "kỳ lạ"</h3>
+        <p>Một shard không phải 1 file — mà là nhiều <b>segment</b>, và mỗi segment <b>bất biến (immutable)</b>: ghi ra đĩa rồi không bao giờ sửa.</p>
+
+        <div class="grid-2">
+          <div class="card"><h5>4 lợi ích</h5><p>Không cần khoá khi đọc · cache vĩnh viễn hợp lệ · nén mạnh tay · OS page cache phát huy tối đa.</p></div>
+          <div class="card"><h5>Cái giá phải trả</h5><p><b>Xoá</b> = đánh dấu tombstone (chưa xoá thật). <b>Sửa</b> = xoá + chèn mới. Dọn rác thật chỉ xảy ra khi <b>merge</b>.</p></div>
+        </div>
+
+        <h3 class="h">3.5 · Vòng đời ghi — Refresh, Translog, Flush, Merge</h3>
+        <figure class="fig">
+          <div class="fig-body">
+            <svg viewBox="0 0 720 200" role="img" aria-label="Client ghi document vào buffer trong RAM và đồng thời vào translog trên đĩa; sau 1 giây refresh biến buffer thành segment tìm được; flush định kỳ ghi bền xuống đĩa; merge chạy ngầm gộp segment nhỏ">
+              <g font-family="var(--mono)" font-size="10.5" font-weight="700">
+                <rect x="10" y="20" width="120" height="40" rx="6" class="svg-surface2" style="stroke:var(--line-strong)"/>
+                <text x="70" y="44" text-anchor="middle" class="svg-ink">Client ghi</text>
+
+                <rect x="170" y="10" width="150" height="30" rx="6" class="svg-surface2" style="stroke:var(--line-strong)"/>
+                <text x="245" y="30" text-anchor="middle" class="svg-ink" font-size="9.5">Buffer (RAM)</text>
+                <rect x="170" y="46" width="150" height="30" rx="6" fill="var(--surface-2)" style="stroke:var(--line-strong)"/>
+                <text x="245" y="66" text-anchor="middle" class="svg-ink" font-size="9.5">Translog (đĩa)</text>
+
+                <rect x="360" y="20" width="140" height="40" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <text x="430" y="38" text-anchor="middle" fill="var(--accent-ink)" font-size="9.5">Refresh ~1s</text>
+                <text x="430" y="52" text-anchor="middle" fill="var(--accent-ink)" font-size="8.5" font-weight="400">→ segment TÌM ĐƯỢC</text>
+
+                <rect x="540" y="20" width="80" height="40" rx="6" class="svg-surface2" style="stroke:var(--line-strong)"/>
+                <text x="580" y="38" text-anchor="middle" class="svg-ink" font-size="9.5">Flush</text>
+                <text x="580" y="52" text-anchor="middle" class="svg-soft" font-size="8">bền vững</text>
+              </g>
+
+              <path d="M130 40 L170 40" class="svg-line" stroke-width="1.4" marker-end="url(#arrN5)"/>
+              <path d="M320 26 L360 38" class="svg-line" stroke-width="1.4" marker-end="url(#arrN5)"/>
+              <path d="M500 40 L540 40" class="svg-line" stroke-width="1.4" marker-end="url(#arrN5)"/>
+
+              <rect x="360" y="100" width="260" height="46" rx="8" class="svg-surface2" style="stroke:var(--line-strong)"/>
+              <text x="490" y="120" text-anchor="middle" font-family="var(--mono)" font-size="9.5" class="svg-ink" font-weight="700">Merge (chạy ngầm liên tục)</text>
+              <text x="490" y="136" text-anchor="middle" class="svg-soft" font-size="9">gộp segment nhỏ + dọn tombstone</text>
+              <path d="M580 100 C 580 85, 460 70, 430 60" fill="none" class="svg-line" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arrN5)"/>
+
+              <defs>
+                <marker id="arrN5" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L8,4 L0,8 Z" class="svg-line"/>
+                </marker>
+              </defs>
+            </svg>
+          </div>
+          <figcaption><b>Translog</b> ghi song song xuống đĩa ngay lập tức — mất điện giữa 2 lần refresh vẫn không mất dữ liệu, ES replay translog lúc khởi động lại.</figcaption>
+        </figure>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th><code>refresh</code></th><th>Hành vi</th><th>Dùng khi</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">"false"</td><td>Ghi xong trả về luôn, ~1s sau mới tìm thấy</td><td class="ok">Mặc định — chuẩn production</td></tr>
+              <tr><td class="mono">"wait_for"</td><td>Chặn tới chu kỳ refresh kế tiếp</td><td>UI cần thấy kết quả ngay sau ghi</td></tr>
+              <tr><td class="mono">"true"</td><td>Ép refresh ngay, đẻ ra segment vụn</td><td class="no">Chỉ dùng trong test</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="h">3.6 · Kiến trúc phân tán</h3>
+        <figure class="fig">
+          <div class="fig-body">
+            <svg viewBox="0 0 720 300" role="img" aria-label="Client gửi request tới coordinating node, node này ở pha Query hỏi tất cả các shard chỉ lấy doc id và score, rồi ở pha Fetch chỉ hỏi lại đúng các shard chứa top-K để lấy nội dung đầy đủ">
+              <g font-family="var(--mono)" font-size="9.5">
+                <rect x="300" y="10" width="140" height="34" rx="17" class="svg-surface2" style="stroke:var(--line-strong)"/>
+                <text x="370" y="32" text-anchor="middle" class="svg-ink" font-weight="700">Coordinating node</text>
+
+                <!-- 3 nodes -->
+                <g>
+                  <rect x="30" y="110" width="180" height="80" rx="8" fill="var(--surface-2)" style="stroke:var(--line-strong)"/>
+                  <text x="120" y="128" text-anchor="middle" class="svg-ink" font-weight="700">NODE A</text>
+                  <rect x="46" y="140" width="60" height="20" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="76" y="154" text-anchor="middle" fill="var(--accent-ink)" font-size="8.5">P0</text>
+                  <rect x="116" y="140" width="60" height="20" rx="4" class="svg-surface" style="stroke:var(--line-strong)"/><text x="146" y="154" text-anchor="middle" class="svg-soft" font-size="8.5">R2</text>
+                </g>
+                <g>
+                  <rect x="270" y="110" width="180" height="80" rx="8" fill="var(--surface-2)" style="stroke:var(--line-strong)"/>
+                  <text x="360" y="128" text-anchor="middle" class="svg-ink" font-weight="700">NODE B</text>
+                  <rect x="286" y="140" width="60" height="20" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="316" y="154" text-anchor="middle" fill="var(--accent-ink)" font-size="8.5">P1</text>
+                  <rect x="356" y="140" width="60" height="20" rx="4" class="svg-surface" style="stroke:var(--line-strong)"/><text x="386" y="154" text-anchor="middle" class="svg-soft" font-size="8.5">R0</text>
+                </g>
+                <g>
+                  <rect x="510" y="110" width="180" height="80" rx="8" fill="var(--surface-2)" style="stroke:var(--line-strong)"/>
+                  <text x="600" y="128" text-anchor="middle" class="svg-ink" font-weight="700">NODE C</text>
+                  <rect x="526" y="140" width="60" height="20" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="556" y="154" text-anchor="middle" fill="var(--accent-ink)" font-size="8.5">P2</text>
+                  <rect x="596" y="140" width="60" height="20" rx="4" class="svg-surface" style="stroke:var(--line-strong)"/><text x="626" y="154" text-anchor="middle" class="svg-soft" font-size="8.5">R1</text>
+                </g>
+              </g>
+
+              <path d="M340 44 C 260 70, 160 90, 120 110" fill="none" class="svg-line" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arrN6)"/>
+              <path d="M370 44 L370 110" fill="none" class="svg-line" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arrN6)"/>
+              <path d="M400 44 C 480 70, 580 90, 600 110" fill="none" class="svg-line" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#arrN6)"/>
+              <text x="370" y="72" text-anchor="middle" fill="var(--accent-strong)" font-size="9.5" font-weight="700">① Query: chỉ [doc_id + score]</text>
+
+              <rect x="230" y="216" width="280" height="52" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/>
+              <text x="370" y="238" text-anchor="middle" fill="var(--accent-ink)" font-family="var(--mono)" font-size="10" font-weight="700">② Fetch — chỉ hỏi lại shard chứa top-K</text>
+              <text x="370" y="256" text-anchor="middle" fill="var(--accent-ink)" font-size="9.5">lấy đúng <code>_source</code> cần trả về</text>
+
+              <text x="370" y="292" text-anchor="middle" class="svg-faint" font-size="9.5"><code>shard = hash(_routing) % số_primary_shard</code> → không đổi được số shard sau khi tạo index</text>
+
+              <defs>
+                <marker id="arrN6" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L8,4 L0,8 Z" class="svg-line"/>
+                </marker>
+              </defs>
+            </svg>
+          </div>
+          <figcaption>Truy vấn 2 pha: <b>Query</b> (nhẹ, chỉ id+điểm) rồi <b>Fetch</b> (chỉ đúng top-K). Đây cũng là lý do <b>deep pagination đắt</b> — trang sâu buộc mỗi shard trả về <code>from+size</code> bản ghi cho coordinator gộp, nên <code>index.max_result_window</code> mặc định chặn ở <b>10.000</b>. Đi sâu hơn dùng <code>search_after</code>.</figcaption>
+        </figure>
+
+        <div class="callout">
+          <div class="c-label">Vì sao master node luôn số lẻ (3, 5)?</div>
+          <p>Bầu master cần <b>quá bán</b> đồng ý. Với 2 node mà đứt mạng giữa chúng, mỗi bên tự nhận mình là master → <b>split-brain</b>, ghi dữ liệu khác nhau. Với 3 node, bên giữ được 2 mới thắng — bài học xương máu của ES thời kỳ đầu.</p>
+        </div>
+      </section>
+
+      <!-- ================= PHẦN IV — WHERE ================= -->
+      <section class="part" id="where">
+        <div class="part-head"><span class="roman">IV</span><h2>Where — dùng ở đâu?</h2></div>
+
+        <div class="grid-3">
+          <div class="card"><h5>Full-text search</h5><p>Tìm sản phẩm, tra cứu tài liệu — đúng nghề gốc: BM25, fuzzy, synonym, highlight.</p></div>
+          <div class="card"><h5>Log &amp; Observability</h5><p>ELK Stack, APM — ghi nhiều/đọc ít, aggregation nhanh theo thời gian.</p></div>
+          <div class="card"><h5>E-commerce facet</h5><p>Lọc theo hãng/giá/màu + đếm số lượng — aggregation nhiều tầng trong mili-giây.</p></div>
+          <div class="card"><h5>Geo search</h5><p>"Tài xế trong bán kính 5km" — <code>geo_point</code>, cây BKD.</p></div>
+          <div class="card"><h5>Security (SIEM)</h5><p>Truy vấn tương quan tức thì trên khối log khổng lồ.</p></div>
+          <div class="card"><h5>Vector / RAG</h5><p>Semantic search, chatbot doanh nghiệp — <code>dense_vector</code> + HNSW.</p></div>
+        </div>
+
+        <h3 class="h">Vị trí trong kiến trúc — luôn là công dân hạng hai</h3>
+        <figure class="fig">
+          <div class="fig-body">
+            <svg viewBox="0 0 640 210" role="img" aria-label="Client tách thành hai đường: đường ghi Command đi vào MySQL là nguồn chân lý; đường đọc Query đi vào Elasticsearch là read model; MySQL đồng bộ dữ liệu sang Elasticsearch">
+              <rect x="270" y="10" width="100" height="30" rx="15" class="svg-surface2" style="stroke:var(--line-strong)"/>
+              <text x="320" y="30" text-anchor="middle" class="mono svg-ink" font-size="10.5" font-weight="700">Client</text>
+
+              <path d="M300 40 C 220 70, 160 80, 140 100" fill="none" class="svg-line" stroke-width="1.3" marker-end="url(#arrN7)"/>
+              <text x="180" y="72" fill="var(--ink-soft)" font-size="10" font-family="var(--mono)">ghi (command)</text>
+              <path d="M340 40 C 440 70, 500 80, 520 100" fill="none" class="svg-line" stroke-width="1.3" marker-end="url(#arrN7)"/>
+              <text x="440" y="72" fill="var(--ink-soft)" font-size="10" font-family="var(--mono)">đọc (query)</text>
+
+              <rect x="30" y="108" width="220" height="60" rx="10" class="svg-surface2" style="stroke:var(--line-strong)"/>
+              <text x="140" y="132" text-anchor="middle" class="svg-ink" font-weight="700" font-size="11.5">MySQL (ent)</text>
+              <text x="140" y="150" text-anchor="middle" class="svg-soft" font-size="9.5">SOURCE OF TRUTH · ACID</text>
+
+              <rect x="400" y="108" width="220" height="60" rx="10" fill="var(--accent-soft)" stroke="var(--accent)"/>
+              <text x="510" y="132" text-anchor="middle" fill="var(--accent-ink)" font-weight="700" font-size="11.5">Elasticsearch</text>
+              <text x="510" y="150" text-anchor="middle" fill="var(--accent-ink)" font-size="9.5">READ MODEL · có thể mất, dựng lại được</text>
+
+              <path d="M250 148 C 320 190, 350 190, 400 155" fill="none" stroke="var(--accent-strong)" stroke-width="1.3" marker-end="url(#arrN7)"/>
+              <text x="325" y="196" text-anchor="middle" fill="var(--accent-strong)" font-size="9.5" font-family="var(--mono)">đồng bộ (outbox / dual-write)</text>
+
+              <defs>
+                <marker id="arrN7" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L8,4 L0,8 Z" class="svg-line"/>
+                </marker>
+              </defs>
+            </svg>
+          </div>
+          <figcaption>Mô hình <b>CQRS</b>. Mất sạch cluster ES phải là sự cố khắc phục được bằng re-index từ database — không mất một bản ghi nghiệp vụ nào.</figcaption>
+        </figure>
+
+        <h4 class="h">Trong dự án Logistics này</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Service</th><th>Bài toán tiềm năng</th><th>Nên dùng ES?</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">wallet_service</td><td>Tra cứu lịch sử giao dịch, lọc đa điều kiện</td><td class="ok">✓ Đang dùng</td></tr>
+              <tr><td class="mono">user_service</td><td>Tìm tài xế/chủ hàng theo tên, sđt, biển số</td><td class="ok">✓ Hợp — nhiều field, cần tìm gần đúng</td></tr>
+              <tr><td class="mono">vehicle_service</td><td>Tìm xe theo tải trọng, loại, khu vực</td><td>⚠ Lọc số thuần — MySQL index đã đủ</td></tr>
+              <tr><td class="mono">matching_service</td><td>Ghép chuyến theo vị trí + tải trọng + giá</td><td class="no">✗ Cần chính xác tuyệt đối &amp; trễ cực thấp</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= PHẦN V — WHEN ================= -->
+      <section class="part" id="when">
+        <div class="part-head"><span class="roman">V</span><h2>When — khi nào nên, khi nào đừng</h2></div>
+
+        <div class="grid-2">
+          <div class="card"><h5 style="color:var(--good)">Nên dùng khi</h5>
+            <ul class="checklist" style="margin:0">
+              <li>Dữ liệu &gt; 1 triệu bản ghi, còn tăng</li>
+              <li>Cần tìm văn bản tự do (<code>LIKE %...%</code> đang giết database)</li>
+              <li>Cần xếp hạng theo độ liên quan, không chỉ đúng/sai</li>
+              <li>Cần facet/aggregation nhiều chiều tức thì</li>
+              <li>Có người vận hành được cluster</li>
+            </ul>
+          </div>
+          <div class="card"><h5 style="color:var(--critical)">Đừng dùng khi</h5>
+            <ul class="checklist" style="margin:0">
+              <li>Dưới 500 nghìn bản ghi → Postgres <code>tsvector</code> đủ dùng</li>
+              <li>Cần transaction/ACID trên dữ liệu đó</li>
+              <li>Cần đọc thấy ngay lập tức sau khi ghi (&lt;1s)</li>
+              <li>Cần con số chính xác tuyệt đối để đối soát</li>
+              <li>Đội chưa có ai vận hành được</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tiêu chí</th><th>MySQL Fulltext</th><th>Postgres tsvector</th><th><b>Elasticsearch</b></th><th>Algolia (SaaS)</th></tr></thead>
+            <tbody>
+              <tr><td>Chi phí vận hành</td><td>Không</td><td>Không</td><td class="no">Cao</td><td>Trả tiền</td></tr>
+              <tr><td>Chấm điểm liên quan</td><td>Yếu</td><td>Khá</td><td class="ok">Xuất sắc</td><td>Xuất sắc</td></tr>
+              <tr><td>Mở rộng ngang</td><td class="no">✗</td><td class="no">✗</td><td class="ok">✓</td><td>✓</td></tr>
+              <tr><td>Ngưỡng dữ liệu hợp lý</td><td>&lt; 1 triệu</td><td>&lt; 10 triệu</td><td class="ok">Không giới hạn</td><td>Theo gói tiền</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= PHẦN VI — HOW ================= -->
+      <section class="part wide" id="how">
+        <div class="part-head"><span class="roman">VI</span><h2>How — triển khai thực tế</h2></div>
+
+        <h3 class="h">6.1 · Đồng bộ Database → Elasticsearch</h3>
+        <p>Đây mới là chỗ hệ thống thật hay vỡ trận, không phải viết query.</p>
+
+        <div class="grid-3">
+          <div class="card"><h5>① Dual Write</h5><p>Ghi thẳng 2 nơi. Đơn giản nhưng <b>không nguyên tử</b> — ES fail là lệch vĩnh viễn. <span class="mono" style="font-size:.78rem;color:var(--accent-strong)">← repo đang dùng</span></p></div>
+          <div class="card"><h5>② Transactional Outbox</h5><p>Ghi kèm 1 bảng outbox trong cùng transaction, worker đẩy sau. Không bao giờ mất sự kiện — chuẩn công nghiệp.</p></div>
+          <div class="card"><h5>③ CDC (Debezium)</h5><p>Đọc thẳng binlog MySQL. Code nghiệp vụ không cần biết ES tồn tại, nhưng hạ tầng nặng hơn.</p></div>
+        </div>
+        <blockquote class="rule"><p>Khuyến nghị thực tế: <b>Outbox</b> làm đường chính + <b>Batch reindex</b> chạy đêm làm lưới an toàn đối soát. Repo đã có sẵn Kafka — hạ tầng làm Outbox gần như có đủ.</p></blockquote>
+
+        <h3 class="h">6.2 · Query DSL — bộ khung cần thuộc</h3>
+        <pre class="term">{ "query": { "bool": {
+    <span class="p">"must":     [ ... ]</span>,   // AND — CÓ tính điểm
+    <span class="p">"filter":   [ ... ]</span>,   // AND — KHÔNG tính điểm, ĐƯỢC CACHE
+    "should":   [ ... ],   // OR — có tính điểm
+    "must_not": [ ... ]    // NOT
+}}}</pre>
+        <blockquote class="rule"><p>🔑 Điều kiện chỉ trả lời đúng/sai (trạng thái, khoảng ngày, ID) → bỏ vào <code>filter</code>. Chỉ văn bản người dùng gõ mới cần <code>must</code>. Đúng chỗ có thể nhanh gấp nhiều lần nhờ cache bitmap.</p></blockquote>
+
+        <h3 class="h">6.3 · Implement trong <span class="mono">wallet_service</span></h3>
+        <p>File nguồn: <code>wallet_service/internal/search/elasticsearch.go</code> — toàn bộ phần ES của repo. Client: <code>github.com/elastic/go-elasticsearch/v8</code>.</p>
+
+        <figure class="fig">
+          <div class="fig-body">
+            <svg viewBox="0 0 700 210" role="img" aria-label="Luồng gRPC SearchWallets đi qua controller, build query, gọi Elasticsearch, map ra proto; luồng ghi từ biz layer index document sau khi commit MySQL">
+              <g font-family="var(--mono)" font-size="9.5" font-weight="700">
+                <rect x="10" y="14" width="150" height="30" rx="6" class="svg-surface2" style="stroke:var(--line-strong)"/><text x="85" y="34" text-anchor="middle" class="svg-ink">gRPC SearchWallets</text>
+                <rect x="200" y="14" width="150" height="30" rx="6" class="svg-surface2" style="stroke:var(--line-strong)"/><text x="275" y="34" text-anchor="middle" class="svg-ink" font-size="9">controller</text>
+                <rect x="390" y="14" width="150" height="30" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="465" y="34" text-anchor="middle" fill="var(--accent-ink)">buildQuery + doSearch</text>
+                <rect x="580" y="14" width="110" height="30" rx="6" class="svg-surface2" style="stroke:var(--line-strong)"/><text x="635" y="34" text-anchor="middle" class="svg-ink" font-size="9">mapper→proto</text>
+              </g>
+              <path d="M160 29 L200 29" class="svg-line" marker-end="url(#arrN8)"/>
+              <path d="M350 29 L390 29" class="svg-line" marker-end="url(#arrN8)"/>
+              <path d="M540 29 L580 29" class="svg-line" marker-end="url(#arrN8)"/>
+
+              <line x1="10" y1="80" x2="690" y2="80" class="svg-line" stroke-dasharray="2 4"/>
+              <text x="10" y="100" class="mono svg-faint" font-size="9.5">ĐƯỜNG GHI</text>
+              <g font-family="var(--mono)" font-size="9.5" font-weight="700">
+                <rect x="10" y="112" width="170" height="32" rx="6" class="svg-surface2" style="stroke:var(--line-strong)"/><text x="95" y="132" text-anchor="middle" class="svg-ink" font-size="9">uow.Do() commit MySQL</text>
+                <rect x="230" y="112" width="190" height="32" rx="6" class="svg-surface2" style="stroke:var(--line-strong)"/><text x="325" y="132" text-anchor="middle" class="svg-ink" font-size="9">mapper.EntityToESWallet()</text>
+                <rect x="470" y="112" width="190" height="32" rx="6" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="565" y="132" text-anchor="middle" fill="var(--accent-ink)" font-size="9">esEngine.IndexWallet()</text>
+              </g>
+              <path d="M180 128 L230 128" class="svg-line" marker-end="url(#arrN8)"/>
+              <path d="M420 128 L470 128" class="svg-line" marker-end="url(#arrN8)"/>
+              <text x="10" y="176" class="svg-faint" font-size="10">Chỉ gọi ES <b style="fill:var(--accent-strong)">SAU KHI</b> transaction MySQL đã commit thành công — không trong transaction.</text>
+
+              <defs>
+                <marker id="arrN8" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L8,4 L0,8 Z" class="svg-line"/>
+                </marker>
+              </defs>
+            </svg>
+          </div>
+          <figcaption>Đường ghi &amp; đường đọc trong <span class="mono">wallet_service</span>. <code>DocumentID</code> luôn = ID entity → index trở thành upsert, idempotent.</figcaption>
+        </figure>
+
+        <h4 class="h">Bài học error-handling của client ES</h4>
+        <pre class="term">if err != nil    { ... }  <span class="c">// chỉ bắt lỗi TẦNG MẠNG (đứt cáp, sai host)</span>
+if res.IsError() { ... }  <span class="c">// bắt lỗi NGHIỆP VỤ (HTTP 4xx/5xx: sai mapping, 401)</span>
+<span class="p">// ES trả 400 "mapping sai bét" thì err vẫn là nil!</span></pre>
+
+        <h3 class="h">6.4 · Vấn đề đang tồn tại trong code (đã rà)</h3>
+        <div class="finding critical">
+          <div class="stripe"></div>
+          <div class="f-body">
+            <div class="f-top"><span class="sev-tag">Nghiêm trọng</span><span class="f-file">biz/wallet_biz.go — HoldDeposit</span></div>
+            <div class="f-title">Index ES nằm bên trong transaction MySQL</div>
+            <div class="f-desc">4 lượt HTTP tới ES diễn ra khi các dòng ví escrow vẫn đang bị <code>FOR UPDATE</code> khoá — ES lag 200ms là khoá thêm 200ms cho mọi giao dịch. Nếu transaction rollback sau khi ES đã ghi, ES giữ nguyên dữ liệu của giao dịch chưa từng tồn tại.</div>
+          </div>
+        </div>
+        <div class="finding moderate">
+          <div class="stripe"></div>
+          <div class="f-body">
+            <div class="f-top"><span class="sev-tag">Đáng sửa</span><span class="f-file">wallet_controller.go — SearchTransactions</span></div>
+            <div class="f-title">Bộ lọc ngày tháng là code chết</div>
+            <div class="f-desc">Proto có <code>from_time</code>/<code>to_time</code>, query builder đã viết sẵn logic <code>range</code> — nhưng controller không map <code>req.FromTime → params.From</code>. Client gửi khoảng thời gian lên, server lặng lẽ bỏ qua.</div>
+          </div>
+        </div>
+        <div class="finding moderate">
+          <div class="stripe"></div>
+          <div class="f-body">
+            <div class="f-top"><span class="sev-tag">Đáng sửa</span><span class="f-file">wallet_biz.go — mọi lệnh IndexWallet/IndexTransaction</span></div>
+            <div class="f-title">Nuốt trọn lỗi khi index</div>
+            <div class="f-desc"><code>_ = esEngine.IndexWallet(...)</code> — lỗi bị vứt sạch, không log. ES lệch dần khỏi MySQL mà không có cảnh báo nào.</div>
+          </div>
+        </div>
+        <div class="finding minor">
+          <div class="stripe"></div>
+          <div class="f-body">
+            <div class="f-top"><span class="sev-tag">Nhỏ</span><span class="f-file">elasticsearch.go / di / mapping</span></div>
+            <div class="f-title">Một loạt điểm nhỏ cộng dồn</div>
+            <div class="f-desc">Ping lúc boot không check <code>res.IsError()</code> · <code>EnsureIndices</code> bỏ qua error trả về · chưa dùng Bulk API (7 request tuần tự) · điều kiện lọc để trong <code>must</code> thay vì <code>filter</code> · mapping <code>uint8</code>↔ES <code>byte</code> lệch dấu.</div>
+          </div>
+        </div>
+
+        <h3 class="h">6.5 · Vận hành production — checklist</h3>
+        <ol class="num-list">
+          <li><b>Kích cỡ shard:</b> 10–50GB mỗi shard — nhỏ quá phí quản lý, lớn quá phục hồi chậm</li>
+          <li><b>JVM Heap:</b> 50% RAM máy, không bao giờ vượt 31GB (mất compressed oops)</li>
+          <li><b>Nửa RAM còn lại</b> để dành cho OS page cache — đừng cấp hết cho heap</li>
+          <li><b>Master node:</b> số lẻ (3), tách riêng khỏi data node</li>
+          <li><b>Snapshot định kỳ</b> ra S3 — dù là read model, re-index toàn bộ vẫn tốn thời gian</li>
+        </ol>
+      </section>
+
+      <!-- ================= PHẦN VII/VIII — TRADEOFFS ================= -->
+      <section class="part" id="tradeoffs">
+        <div class="part-head"><span class="roman">VII–VIII</span><h2>Ưu &amp; nhược điểm</h2></div>
+
+        <div class="grid-2">
+          <div class="card" style="border-color:var(--good)">
+            <h5 style="color:var(--good)">Ưu điểm</h5>
+            <ul class="checklist" style="margin:0">
+              <li>Tốc độ full-text phi thường trên trăm triệu document</li>
+              <li>Xếp hạng theo độ liên quan (BM25 + boost + rescore)</li>
+              <li>Mở rộng ngang thực thụ — thêm node tự cân bằng</li>
+              <li>Aggregation nhiều tầng trong mili-giây</li>
+              <li>API thuần HTTP/JSON — debug bằng <code>curl</code></li>
+            </ul>
+          </div>
+          <div class="card" style="border-color:var(--critical)">
+            <h5 style="color:var(--critical)">Nhược điểm</h5>
+            <ul class="checklist" style="margin:0">
+              <li>Không ACID, không transaction đa document</li>
+              <li>Mapping gần như không sửa được sau khi tạo</li>
+              <li>Ngốn RAM khủng khiếp (heap + page cache)</li>
+              <li>Deep pagination sập ở ngưỡng 10.000</li>
+              <li>Đồng bộ dữ liệu là bài toán riêng, dễ lệch</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PHẦN IX — CHEATSHEET ================= -->
+      <section class="part" id="cheatsheet">
+        <div class="part-head"><span class="roman">IX</span><h2>Lộ trình học &amp; tra cứu nhanh</h2></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>Chặng</th><th>Việc cần làm</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>Cảm nhận</td><td>Docker chạy ES + Kibana, dùng Dev Tools gõ thử</td></tr>
+              <tr><td class="num">2</td><td>Analysis</td><td>Nghịch API <code>_analyze</code>, nắm chắc <code>text</code> vs <code>keyword</code></td></tr>
+              <tr><td class="num">3</td><td>Mapping</td><td>Tự khai mapping, cố tình sai để xem lỗi</td></tr>
+              <tr><td class="num">4</td><td>Query DSL</td><td><code>bool</code> + <code>must</code>/<code>filter</code>, <code>match</code> vs <code>term</code></td></tr>
+              <tr><td class="num">5</td><td>Relevance</td><td>Dùng <code>_explain</code> xem ES chấm điểm ra sao</td></tr>
+              <tr><td class="num">6</td><td>Aggregation</td><td><code>terms</code>, <code>date_histogram</code>, agg lồng nhau</td></tr>
+              <tr><td class="num">7</td><td>Vận hành</td><td>Shard, replica, <code>_cat</code> API, ILM, snapshot</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4 class="h">Ba API học nhanh nhất</h4>
+        <pre class="term"><span class="c"># "Câu này bị cắt token gì?" — giải 90% ca query không ra kết quả</span>
+curl "localhost:9200/_analyze?pretty" -d '{"analyzer":"standard","text":"Đóng băng tiền cọc"}'
+
+<span class="c"># "Vì sao document này được điểm 3.7?"</span>
+curl "localhost:9200/transactions/_explain/DOC_ID?pretty" -d '{"query":{"match":{"description":"tiền cọc"}}}'
+
+<span class="c"># "Cluster khoẻ không?"</span>
+curl "localhost:9200/_cat/indices?v"</pre>
+
+        <h4 class="h">20 điều khắc cốt ghi tâm</h4>
+        <div class="grid-2">
+          <div class="card"><h5>Về bản chất</h5>
+            <ul style="margin:0;padding-left:1.1rem;font-size:.9rem;color:var(--ink-soft)">
+              <li>ES là read model — mất = re-index, không mất dữ liệu</li>
+              <li>ES = Lucene + phân tán + REST API</li>
+              <li>Không transaction đa document, không JOIN đúng nghĩa</li>
+            </ul>
+          </div>
+          <div class="card"><h5>Về mapping &amp; analysis</h5>
+            <ul style="margin:0;padding-left:1.1rem;font-size:.9rem;color:var(--ink-soft)">
+              <li><code>term</code>↔<code>keyword</code>, <code>match</code>↔<code>text</code></li>
+              <li>Query phải qua cùng analyzer với lúc ghi</li>
+              <li>Mapping tạo rồi không sửa được — dùng alias từ đầu</li>
+            </ul>
+          </div>
+          <div class="card"><h5>Về nguyên lý bên trong</h5>
+            <ul style="margin:0;padding-left:1.1rem;font-size:.9rem;color:var(--ink-soft)">
+              <li>Segment bất biến — xoá = tombstone</li>
+              <li>Refresh 1s = Near Real-Time</li>
+              <li>Số primary shard không đổi được sau khi tạo</li>
+            </ul>
+          </div>
+          <div class="card"><h5>Về code</h5>
+            <ul style="margin:0;padding-left:1.1rem;font-size:.9rem;color:var(--ink-soft)">
+              <li>Check cả <code>err</code> lẫn <code>res.IsError()</code></li>
+              <li><code>DocumentID</code> = ID entity → idempotent</li>
+              <li>Không bao giờ gọi ES trong transaction database</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer-note">Cẩm nang nội bộ dự án Logistics · trọng tâm <span class="mono">wallet_service</span> · bản vẽ lại từ <span class="mono">ELASTICSEARCH.md</span></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var toggle = document.getElementById('navToggle');
+    var toc = document.getElementById('toc');
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        var open = toc.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    }
+
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc-part'));
+    var sections = links
+      .map(function (l) { return document.querySelector(l.getAttribute('href')); })
+      .filter(Boolean);
+
+    if ('IntersectionObserver' in window && sections.length) {
+      var byId = {};
+      links.forEach(function (l) { byId[l.getAttribute('href').slice(1)] = l; });
+
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var link = byId[entry.target.id];
+          if (!link) return;
+          if (entry.isIntersecting) {
+            links.forEach(function (l) { l.classList.remove('active'); });
+            link.classList.add('active');
+          }
+        });
+      }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+
+      sections.forEach(function (s) { obs.observe(s); });
+    }
+  })();
+</script>

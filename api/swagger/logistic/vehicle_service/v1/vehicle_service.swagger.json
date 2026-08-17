@@ -38,7 +38,8 @@
             "name": "driverId",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -98,7 +99,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -128,7 +130,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -206,7 +209,8 @@
       "type": "object",
       "properties": {
         "driverId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "licensePlate": {
           "type": "string"
@@ -234,7 +238,8 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "message": {
           "type": "string"
@@ -253,10 +258,12 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "driverId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "licensePlate": {
           "type": "string"

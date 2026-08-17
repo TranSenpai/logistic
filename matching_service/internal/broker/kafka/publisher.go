@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -18,12 +19,12 @@ import (
 
 type kafkaPublisher struct {
 	producer sarama.SyncProducer
-	mapper   mapper.AppMapper
+	mapper   mapper.MatchingMapper
 }
 
 var _ biz.EventPublisher = (*kafkaPublisher)(nil)
 
-func NewKafkaPublisher(brokers []string, appMapper mapper.AppMapper) (biz.EventPublisher, error) {
+func NewKafkaPublisher(brokers []string, appMapper mapper.MatchingMapper) (biz.EventPublisher, error) {
 	config := sarama.NewConfig()
 
 	config.Producer.Return.Successes = true
@@ -59,6 +60,8 @@ func (p *kafkaPublisher) payloadToBytes(payload any) ([]byte, error) {
 		}
 		payload := &pb.Asks{Asks: p.mapper.EntityAskListToPbAskList(v)}
 		return proto.Marshal(payload)
+	case map[string]any:
+		return json.Marshal(v)
 	default:
 		return nil, fmt.Errorf("unsupported payload type for protobuf serialization")
 	}

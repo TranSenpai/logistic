@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"matching_service/ent/schema/mixin"
+	"github.com/logistic/pkg/ent/mixin"
 
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"

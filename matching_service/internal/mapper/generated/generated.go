@@ -11,9 +11,9 @@ import (
 	mapper "matching_service/internal/mapper"
 )
 
-type AppMapperImpl struct{}
+type MatchingMapperImpl struct{}
 
-func (c *AppMapperImpl) EntAskListToEntityAskList(source []*ent.Asks) []entity.Ask {
+func (c *MatchingMapperImpl) EntAskListToEntityAskList(source []*ent.Asks) []entity.Ask {
 	var entityAskList []entity.Ask
 	if source != nil {
 		entityAskList = make([]entity.Ask, len(source))
@@ -23,7 +23,7 @@ func (c *AppMapperImpl) EntAskListToEntityAskList(source []*ent.Asks) []entity.A
 	}
 	return entityAskList
 }
-func (c *AppMapperImpl) EntAskToEntityAsk(source *ent.Asks) entity.Ask {
+func (c *MatchingMapperImpl) EntAskToEntityAsk(source *ent.Asks) entity.Ask {
 	var entityAsk entity.Ask
 	if source != nil {
 		entityAsk.ID = c.uuidUUIDToUuidUUID((*source).ID)
@@ -51,7 +51,7 @@ func (c *AppMapperImpl) EntAskToEntityAsk(source *ent.Asks) entity.Ask {
 	}
 	return entityAsk
 }
-func (c *AppMapperImpl) EntBidListToEntityBidList(source []*ent.Bids) []entity.Bid {
+func (c *MatchingMapperImpl) EntBidListToEntityBidList(source []*ent.Bids) []entity.Bid {
 	var entityBidList []entity.Bid
 	if source != nil {
 		entityBidList = make([]entity.Bid, len(source))
@@ -61,7 +61,7 @@ func (c *AppMapperImpl) EntBidListToEntityBidList(source []*ent.Bids) []entity.B
 	}
 	return entityBidList
 }
-func (c *AppMapperImpl) EntBidToEntityBid(source *ent.Bids) entity.Bid {
+func (c *MatchingMapperImpl) EntBidToEntityBid(source *ent.Bids) entity.Bid {
 	var entityBid entity.Bid
 	if source != nil {
 		entityBid.ID = c.uuidUUIDToUuidUUID((*source).ID)
@@ -84,7 +84,7 @@ func (c *AppMapperImpl) EntBidToEntityBid(source *ent.Bids) entity.Bid {
 	}
 	return entityBid
 }
-func (c *AppMapperImpl) EntityAskListToPbAskList(source []entity.Ask) []*v1.Ask {
+func (c *MatchingMapperImpl) EntityAskListToPbAskList(source []entity.Ask) []*v1.Ask {
 	var pV1AskList []*v1.Ask
 	if source != nil {
 		pV1AskList = make([]*v1.Ask, len(source))
@@ -94,7 +94,7 @@ func (c *AppMapperImpl) EntityAskListToPbAskList(source []entity.Ask) []*v1.Ask 
 	}
 	return pV1AskList
 }
-func (c *AppMapperImpl) EntityAskToPbAsk(source entity.Ask) *v1.Ask {
+func (c *MatchingMapperImpl) EntityAskToPbAsk(source entity.Ask) *v1.Ask {
 	var v1Ask v1.Ask
 	v1Ask.Id = mapper.UUIDToBytes(source.ID)
 	v1Ask.DriverId = mapper.UUIDToBytes(source.DriverID)
@@ -112,7 +112,7 @@ func (c *AppMapperImpl) EntityAskToPbAsk(source entity.Ask) *v1.Ask {
 	v1Ask.CreatedAt = mapper.TimeToTimestamp(source.CreatedAt)
 	return &v1Ask
 }
-func (c *AppMapperImpl) EntityBidListToPbBidList(source []entity.Bid) []*v1.Bid {
+func (c *MatchingMapperImpl) EntityBidListToPbBidList(source []entity.Bid) []*v1.Bid {
 	var pV1BidList []*v1.Bid
 	if source != nil {
 		pV1BidList = make([]*v1.Bid, len(source))
@@ -122,7 +122,7 @@ func (c *AppMapperImpl) EntityBidListToPbBidList(source []entity.Bid) []*v1.Bid 
 	}
 	return pV1BidList
 }
-func (c *AppMapperImpl) EntityBidToPbBid(source entity.Bid) *v1.Bid {
+func (c *MatchingMapperImpl) EntityBidToPbBid(source entity.Bid) *v1.Bid {
 	var v1Bid v1.Bid
 	v1Bid.Id = mapper.UUIDToBytes(source.ID)
 	v1Bid.ShipperId = mapper.UUIDToBytes(source.ShipperID)
@@ -144,14 +144,14 @@ func (c *AppMapperImpl) EntityBidToPbBid(source entity.Bid) *v1.Bid {
 	v1Bid.CreatedAt = mapper.TimeToTimestamp(source.CreatedAt)
 	return &v1Bid
 }
-func (c *AppMapperImpl) MapEntityLocationToPb(source entity.Location) *v1.Location {
+func (c *MatchingMapperImpl) MapEntityLocationToPb(source entity.Location) *v1.Location {
 	var v1Location v1.Location
 	v1Location.Latitude = source.Latitude
 	v1Location.Longitude = source.Longitude
 	v1Location.ZoneId = source.ZoneID
 	return &v1Location
 }
-func (c *AppMapperImpl) MapLocation(source *v1.Location) entity.Location {
+func (c *MatchingMapperImpl) MapLocation(source *v1.Location) entity.Location {
 	var entityLocation entity.Location
 	if source != nil {
 		entityLocation.Latitude = (*source).Latitude
@@ -160,7 +160,7 @@ func (c *AppMapperImpl) MapLocation(source *v1.Location) entity.Location {
 	}
 	return entityLocation
 }
-func (c *AppMapperImpl) PbAskToEntity(source *v1.Ask) (entity.Ask, error) {
+func (c *MatchingMapperImpl) PbAskToEntity(source *v1.Ask) (entity.Ask, error) {
 	var entityAsk entity.Ask
 	if source != nil {
 		uuidUUID, err := mapper.BytesToUUID((*source).DriverId)
@@ -185,7 +185,7 @@ func (c *AppMapperImpl) PbAskToEntity(source *v1.Ask) (entity.Ask, error) {
 	}
 	return entityAsk, nil
 }
-func (c *AppMapperImpl) PbBidToEntity(source *v1.Bid) (entity.Bid, error) {
+func (c *MatchingMapperImpl) PbBidToEntity(source *v1.Bid) (entity.Bid, error) {
 	var entityBid entity.Bid
 	if source != nil {
 		uuidUUID, err := mapper.BytesToUUID((*source).ShipperId)
@@ -214,7 +214,7 @@ func (c *AppMapperImpl) PbBidToEntity(source *v1.Bid) (entity.Bid, error) {
 	}
 	return entityBid, nil
 }
-func (c *AppMapperImpl) uuidUUIDToUuidUUID(source uuid.UUID) uuid.UUID {
+func (c *MatchingMapperImpl) uuidUUIDToUuidUUID(source uuid.UUID) uuid.UUID {
 	var uuidUUID uuid.UUID
 	for i := 0; i < len(source); i++ {
 		uuidUUID[i] = source[i]

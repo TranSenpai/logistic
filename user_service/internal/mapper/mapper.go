@@ -32,24 +32,24 @@ type AppMapper interface {
 
 	// ==================== CONTROLLER MAPPER ====================
 
-	// goverter:map ID Id | UUIDToString
+	// goverter:map ID Id | UUIDToBytes
 	// goverter:map CreatedAt CreatedAt | TimeToString
 	// goverter:map UpdatedAt UpdatedAt | TimeToString
 	EntityUserToPbUser(source entity.User) *pb.User
 
-	// goverter:map Id ID | StringToUUID
+	// goverter:map Id ID | BytesToUUID
 	// goverter:ignore CreatedAt
 	// goverter:ignore UpdatedAt
 	// goverter:ignore PasswordHash
 	PbUserToEntityUser(req *pb.User) (entity.User, error)
 
-	// goverter:map UserID UserId | UUIDToString
+	// goverter:map UserID UserId | UUIDToBytes
 	// goverter:map IDCard IdCard
 	// goverter:map Rating Rating | Float64ToFloat32
 	// goverter:map KycStatus KycStatus
 	EntityDriverProfileToPbDriverProfile(source entity.DriverProfile) *pb.DriverProfile
 
-	// goverter:map UserID UserId | UUIDToString
+	// goverter:map UserID UserId | UUIDToBytes
 	EntityShipperProfileToPbShipperProfile(source entity.ShipperProfile) *pb.ShipperProfile
 }
 
@@ -75,18 +75,18 @@ func EntShipperProfileUserID(b uuid.UUID) uuid.UUID {
 	return b
 }
 
-func StringToUUID(s string) (uuid.UUID, error) {
-	if s == "" {
+func BytesToUUID(b []byte) (uuid.UUID, error) {
+	if len(b) == 0 {
 		return uuid.Nil, nil
 	}
-	return uuid.Parse(s)
+	return uuid.FromBytes(b)
 }
 
-func UUIDToString(u uuid.UUID) string {
+func UUIDToBytes(u uuid.UUID) []byte {
 	if u == uuid.Nil {
-		return ""
+		return nil
 	}
-	return u.String()
+	return u[:]
 }
 
 func Float64ToFloat32(f float64) float32 {

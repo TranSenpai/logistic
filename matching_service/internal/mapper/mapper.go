@@ -17,7 +17,7 @@ import (
 // goverter:extend IdentityTime
 //
 //go:generate go run github.com/jmattheis/goverter/cmd/goverter@latest gen ./
-type AppMapper interface {
+type MatchingMapper interface {
 	// ==================== REPO MAPPER ====================
 
 	// goverter:map . CurrentLocation | MapAskCurrentLocation

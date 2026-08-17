@@ -2,6 +2,7 @@ package concurrencyUtils
 
 import (
 	"context"
+	"log"
 )
 
 // Gom N tín hiệu hủy thành tín hiệu hủy tổng
@@ -36,20 +37,20 @@ func OrChannel(cancelSignal ...<-chan struct{}) <-chan struct{} {
 }
 
 // Đọc một channels hỗ trợ khả năng ngắt ngang
-func OrDone[T any](ctx context.Context, channel <-chan T) <-chan T {
+func OrDone[T any](done <-chan struct{}, channel <-chan T) <-chan T {
 	valStream := make(chan T)
 	go func() {
 		defer close(valStream)
 		for {
 			select {
-			case <-ctx.Done():
+			case <-done:
 				return
 			case val, ok := <-channel:
 				if !ok {
 					return
 				}
 				select {
-				case <-ctx.Done():
+				case <-done:
 					return
 				case valStream <- val:
 				}
@@ -77,7 +78,7 @@ func Bridge[T any](ctx context.Context, channels <-chan <-chan T) <-chan T {
 				stream = subChannels
 			}
 
-			for val := range OrDone(ctx, stream) {
+			for val := range OrDone(ctx.Done(), stream) {
 				select {
 				case <-ctx.Done():
 					return
@@ -259,3 +260,38 @@ func take(ctx context.Context, valueStream <-chan string, num int) <-chan string
 // Định nghĩa Stateful Ward (Ward nhưng store được trạng thái Ward trước kia đã làm gì)
 
 // Định nghĩa Steward (Giám sát Heartbeat của Ward để ra quyết định clear and new)
+
+type Worker struct {
+	msgChan  <-chan []byte
+	handler  func(ctx context.Context, payload []byte) error
+	quitChan chan struct{}
+}
+
+func NewWorker(msgChan <-chan []byte, handler func(ctx context.Context, payload []byte) error) *Worker {
+	return &Worker{
+		msgChan:  msgChan,
+		handler:  handler,
+		quitChan: make(chan struct{}),
+	}
+}
+
+func (w *Worker) Start(ctx context.Context) {
+	go func() {
+		// 1. Dùng OrChannel gom tín hiệu hủy của hệ thống (ctx.Done()) và
+		// tín hiệu dập máy thủ công (w.quitChan) lại làm 1.
+		combinedDone := OrChannel(ctx.Done(), w.quitChan)
+
+		for payload := range OrDone(combinedDone, w.msgChan) {
+			if err := w.handler(ctx, payload); err != nil {
+				log.Printf("[Worker] Handler error: %v", err)
+			}
+		}
+
+		log.Println("[Worker] Shutting down cleanly!")
+
+	}()
+}
+
+func (w *Worker) Stop() {
+	close(w.quitChan)
+}
