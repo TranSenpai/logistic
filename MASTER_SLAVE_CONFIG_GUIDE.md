@@ -118,9 +118,9 @@ Cuối cùng, dán khối cấu hình này vào file `docker-compose.yml` của 
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: ${MATCHING_DB_MASTER_USER}
-      POSTGRES_PASSWORD: ${MATCHING_DB_MASTER_PASSWORD}
-      POSTGRES_DB: ${MATCHING_DB_MASTER_DB}
+      POSTGRES_USER: ${MATCHING_DB_USER}
+      POSTGRES_PASSWORD: ${MATCHING_DB_PASSWORD}
+      POSTGRES_DB: ${MATCHING_DB_NAME}
       REPLICATION_USER: ${MATCHING_DB_REPLICATION_USER}
       REPLICATION_PASSWORD: ${MATCHING_DB_REPLICATION_PASSWORD}
     command: 
@@ -141,8 +141,8 @@ Cuối cùng, dán khối cấu hình này vào file `docker-compose.yml` của 
     ports:
       - "5433:5432"
     environment:
-      POSTGRES_USER: ${MATCHING_DB_MASTER_USER}
-      POSTGRES_PASSWORD: ${MATCHING_DB_MASTER_PASSWORD}
+      POSTGRES_USER: ${MATCHING_DB_USER}
+      POSTGRES_PASSWORD: ${MATCHING_DB_PASSWORD}
       PGPASSWORD: ${MATCHING_DB_REPLICATION_PASSWORD}
     depends_on:
       - matching-db-master
