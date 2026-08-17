@@ -240,12 +240,12 @@ services:
 
   kafka-ui:
     image: docker.io/provectuslabs/kafka-ui:latest
-    container-name: kafka-ui
-    ports: 
+    container_name: kafka-ui
+    ports:
       - "8081:8081"
     environment:
-      - KAFKA_CLUSTER_0_NAME: "Logistic-Cluster"
-      - KAFKA_CLUSTER_0_BOOTSTRAPSERVERS: "broker-1:19092,broker-2:19092,broker-3:19092"
+      KAFKA_CLUSTER_0_NAME: "Logistic-Cluster"
+      KAFKA_CLUSTER_0_BOOTSTRAPSERVERS: "broker-1:19092,broker-2:19092,broker-3:19092"
     depends_on:
       - broker-1
       - broker-2
@@ -253,8 +253,72 @@ services:
     networks:
       - logistic_net
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.0
+    container_name: elasticsearch
+    environment:
+      - node.name=es01
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - xpack.security.enabled=true
+      # Tắt TLS nội bộ (chỉ dùng basic auth) để khớp với client wallet_service đang
+      # dùng địa chỉ http://, và để dev/local không phải tự dựng CA certificate.
+      - xpack.security.http.ssl.enabled=false
+      - xpack.license.self_generated.type=basic
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -u elastic:$${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - logistic_net
+
+  # Container chạy 1 lần rồi thoát: chờ Elasticsearch khỏe, tự động gán mật khẩu
+  # KIBANA_PASSWORD cho user hệ thống có sẵn "kibana_system" thông qua Security API.
+  # Nhờ đó không ai phải tay copy mật khẩu từ log ES sang cấu hình Kibana.
+  es-setup-kibana-user:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.0
+    container_name: es-setup-kibana-user
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+    command: >
+      bash -c "
+        curl -sf -u elastic:$$ELASTIC_PASSWORD -X POST
+          -H 'Content-Type: application/json'
+          http://elasticsearch:9200/_security/user/kibana_system/_password
+          -d '{\"password\":\"'\"$$KIBANA_PASSWORD\"'\"}'
+        && echo '[es-setup-kibana-user] kibana_system password configured'
+      "
+    networks:
+      - logistic_net
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.19.0
+    container_name: kibana
+    depends_on:
+      es-setup-kibana-user:
+        condition: service_completed_successfully
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+    ports:
+      - "5601:5601"
+    networks:
+      - logistic_net
+
 volumes:
   nats-data:
+  gateway-data:
   auth-data:
   media-data:
   matching-data:
@@ -263,6 +327,7 @@ volumes:
   controller-1-data:
   controller-2-data:
   controller-3-data:
+  es-data:
   broker-1-data:
   broker-2-data:
   broker-3-data:

@@ -20,10 +20,10 @@ var _ biz.EventPublisher = (*natsPublisher)(nil)
 
 type natsPublisher struct {
 	natJetStreamContext nats.JetStreamContext
-	mapper              mapper.AppMapper
+	mapper              mapper.MatchingMapper
 }
 
-func InitPublisher(natJetStreamContext nats.JetStreamContext, appMapper mapper.AppMapper) biz.EventPublisher {
+func InitPublisher(natJetStreamContext nats.JetStreamContext, appMapper mapper.MatchingMapper) biz.EventPublisher {
 	return &natsPublisher{
 		natJetStreamContext: natJetStreamContext,
 		mapper:              appMapper,

@@ -12,6 +12,7 @@ type Config struct {
 	SlaveDatabase  SlaveDatabaseConfig
 	NatConfig      NatConfig
 	KafkaConfig    KafkaConfig
+	WalletService  WalletServiceConfig
 }
 
 type ServerConfig struct {
@@ -48,6 +49,10 @@ type KafkaConfig struct {
 	Port1     string `env:"KAFKA_BROKER_1_PORT" env-required:"true"`
 	Port2     string `env:"KAFKA_BROKER_2_PORT" env-required:"true"`
 	Port3     string `env:"KAFKA_BROKER_3_PORT" env-required:"true"`
+}
+
+type WalletServiceConfig struct {
+	GrpcAddr string `env:"MATCHING_WALLET_GRPC_ADDR" env-default:"wallet_service:9005"`
 }
 
 func (db *MasterDatabaseConfig) GetDataSource() string {

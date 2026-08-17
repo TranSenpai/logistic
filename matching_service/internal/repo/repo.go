@@ -19,12 +19,12 @@ import (
 type matchingRepoImpl struct {
 	masterClient *ent.Client
 	slaveClient  *ent.Client
-	mapper       mapper.AppMapper
+	mapper       mapper.MatchingMapper
 }
 
 var _ biz.MatchingRepo = (*matchingRepoImpl)(nil)
 
-func NewMatchingRepo(masterClient *ent.Client, slaveClient *ent.Client, mapper *generated.AppMapperImpl) biz.MatchingRepo {
+func NewMatchingRepo(masterClient *ent.Client, slaveClient *ent.Client, mapper *generated.MatchingMapperImpl) biz.MatchingRepo {
 	if masterClient == nil || slaveClient == nil {
 		log.Fatalf("[SYSTEM] failed to create master and slave client")
 	}

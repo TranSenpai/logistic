@@ -271,11 +271,26 @@ func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, a
 		Status:           entity.MatchStatusAccepted,
 	}
 
-	if e.walletClient != nil {
-		if err := e.walletClient.HoldDeposit(ctx, bid.ShipperID, contract.ConsensusDeposit); err != nil {
-			return nil, fmt.Errorf("failed to freeze shipper deposit: %w", err)
-		}
+	// Kiểm tra Shipper (bên đóng cọc) đủ số dư trước khi chốt match, tránh publish
+	// một khoản HoldDeposit chắc chắn sẽ bị wallet_service từ chối vì thiếu tiền.
+	balance, err := e.walletClient.CheckBalance(ctx, bid.ShipperID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check shipper balance: %w", err)
 	}
+	if balance < contract.ConsensusDeposit {
+		return nil, fmt.Errorf("%w: shipper %s needs %.2f, has %.2f", cerr.ErrInsufficientBalance, bid.ShipperID, contract.ConsensusDeposit, balance)
+	}
+
+	// Publish event sang wallet_service qua Kafka để HoldDeposit
+	_ = e.kafkaPub.Publish(ctx, &EventMessage{
+		Topic: "wallet.hold_deposit",
+		Key:   contract.ID.String(),
+		Payload: map[string]any{
+			"driver_id":   bid.ShipperID.String(), // Shipper cọc (đặt hàng)
+			"amount":      contract.ConsensusDeposit,
+			"contract_id": contract.ID.String(),
+		},
+	})
 
 	bid.Status = entity.BidStatusMatched
 	ask.Status = entity.AskStatusMatched

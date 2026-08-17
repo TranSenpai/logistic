@@ -6,6 +6,7 @@ import (
 	"user_service/internal/mapper"
 	"user_service/internal/entity"
 	userv1 "github.com/logistic/api/logistic/user_service/v1"
+	"github.com/google/uuid"
 )
 
 type userController struct {
@@ -34,15 +35,19 @@ func (c *userController) RegisterUser(ctx context.Context, req *userv1.RegisterU
 		return nil, err
 	}
 
+	// Convert string ID to bytes
+	parsedID, _ := uuid.Parse(res.ID)
+
 	return &userv1.RegisterUserResponse{
-		Id:      res.ID,
+		Id:      parsedID[:],
 		Message: res.Message,
 	}, nil
 }
 
 func (c *userController) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*userv1.GetUserResponse, error) {
+	parsedID, _ := uuid.FromBytes(req.Id)
 	param := &entity.GetUserParam{
-		ID: req.Id,
+		ID: parsedID.String(),
 	}
 
 	res, err := c.engine.GetUser(ctx, param)
@@ -66,8 +71,9 @@ func (c *userController) GetUser(ctx context.Context, req *userv1.GetUserRequest
 }
 
 func (c *userController) UpdateDriverKYC(ctx context.Context, req *userv1.UpdateDriverKYCRequest) (*userv1.UpdateDriverKYCResponse, error) {
+	parsedID, _ := uuid.FromBytes(req.UserId)
 	param := &entity.UpdateDriverKYCParam{
-		UserID:    req.UserId,
+		UserID:    parsedID.String(),
 		KycStatus: req.KycStatus,
 	}
 

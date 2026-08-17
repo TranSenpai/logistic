@@ -15,8 +15,9 @@ var (
 	ErrDuplicateRecord = errors.New("duplicate record")
 
 	//  Biz
-	ErrValidationFailed = errors.New("validation failed")
-	ErrUnauthorized     = errors.New("unauthorized action")
+	ErrValidationFailed    = errors.New("validation failed")
+	ErrUnauthorized        = errors.New("unauthorized action")
+	ErrInsufficientBalance = errors.New("insufficient balance")
 
 	// Internal Server Error
 	ErrInternalServer = errors.New("internal server error")
