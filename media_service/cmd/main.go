@@ -3,36 +3,35 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/logistic/pkg/i18n"
-
-	"github.com/joho/godotenv"
+	"media_service/internal/conf"
 )
 
-// @title 				Media Service API
-// @version 			1.0
-// @description 		Microservice xử lý file và ảnh cho Logistics OS.
-// @host 				localhost:8082
-// @BasePath 			/api/v1/mediaS
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Cảnh báo: Không tìm thấy file .env")
-	}
-
-	i18n.InitI18n("../pkg/i18n/locales")
-
-	port := os.Getenv("MEDIA_SERVICE_PORT")
-	if port == "" {
-		port = "8082"
-	}
-
-	app, err := NewApp(port)
+	cfg, err := conf.LoadConfig()
 	if err != nil {
-		log.Fatalf("Lỗi khởi tạo App: %v", err)
+		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	log.Printf("==== Media Service đang chạy tại cổng %s ====", port)
-	if err := app.Start(); err != nil {
-		log.Fatalf("Lỗi khởi động server: %v", err)
+	app, err := NewApp(cfg)
+	if err != nil {
+		log.Fatalf("Failed to initialize Media App: %v", err)
 	}
+
+	go func() {
+		log.Printf("Starting Media Service on :%s...", cfg.Server.GrpcPort)
+		if err := app.Start(); err != nil {
+			log.Fatalf("Media Service crashed: %v", err)
+		}
+	}()
+
+	// Graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Stopping Media Service...")
+	app.Stop()
 }

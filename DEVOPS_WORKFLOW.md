@@ -70,18 +70,29 @@ Sau khi phần cứng và mạng lưới đã được Provider cấp phát thà
    - Cú pháp: `git clone <URL_REPO> && cd <PROJECT_DIR>`
    - *Đặc tả:* Đồng bộ mã nguồn nguyên bản từ Remote Repository về môi trường triển khai (Local) của máy chủ.
 
----
+## GIAI ĐOẠN 4: TỰ ĐỘNG HÓA TRIỂN KHAI ỨNG DỤNG (APPLICATION CI/CD PIPELINE)
+Khác với phương pháp cổ điển là phải SSH thủ công vào server để `git clone` và sửa file `.env` bằng tay, dự án này áp dụng luồng tự động hóa 100% bằng **GitHub Actions** (được định nghĩa tại job `deploy-app` trong file `terraform.yml`).
 
-## GIAI ĐOẠN 4: TRIỂN KHAI ỨNG DỤNG (APPLICATION DEPLOYMENT)
-Quy trình khởi động hệ thống phần mềm (Backend, Message Queue, Database) trên hạ tầng mạng lưới đã chuẩn bị.
+Quy trình tự động hóa đưa Source Code lên EC2 và khởi chạy được thực hiện tuần tự qua các bước sau:
 
-1. **Triển khai Mã nguồn:** Đồng bộ Source Code từ Git Repository về máy chủ. Khởi tạo tệp tin `.env` chứa cấu hình môi trường và Secrets.
-2. **Điều hướng Lưu lượng (Reverse Proxy Routing):**
-   - Cấu hình file `nginx.conf` (hoặc `/etc/nginx/sites-available`).
-   - Thiết lập nguyên lý: Nginx lắng nghe tại Port 80, bóc tách Request và điều hướng `proxy_pass` tới các Port của Container Backend (Ví dụ: 8080 cho Auth Service, 8082 cho Media Service).
-3. **Vận hành Container (Orchestration):**
-   - Triển khai toàn bộ cụm Microservices thông qua cấu hình `docker-compose.yml` (hoặc `podman-compose up -d`).
-   - Mạng nội bộ (Private Bridge Network): Các Container giao tiếp chéo với nhau qua Bridge Network nhưng bị cô lập mạng (Network Isolation) hoàn toàn với thế giới Internet.
+1. **Định vị Máy chủ (Retrieve EC2 IP):**
+   - *Cú pháp lệnh:* `IP=$(terraform output -raw server_logistic_ip)`
+   - *Mục đích:* Dùng Terraform xuất ra địa chỉ IP Public của máy EC2 vừa được tạo ở Giai đoạn 2. Lưu IP này vào biến môi trường của GitHub Runner (`GITHUB_ENV`) để các bước sau biết đích đến để kết nối SSH.
+
+2. **Khởi tạo thư mục làm việc (Workspace Setup):**
+   - *Mục đích:* Đăng nhập SSH vào EC2 và chạy lệnh `mkdir -p /home/ubuntu/logistic` để đảm bảo thư mục gốc dự án luôn tồn tại trước khi chép code sang.
+
+3. **Chuyển giao Mã nguồn (Secure Copy - SCP):**
+   - *Cú pháp lệnh:* Sử dụng plugin `appleboy/scp-action`. Truyền vào IP, Username (`ubuntu`), Private Key (`EC2_SSH_PRIVATE_KEY`), và danh sách các thư mục mã nguồn (`source: "api/,gateway_service/,docker-compose.yml..."`).
+   - *Mục đích:* Thay vì cài Git trên EC2 và cấu hình xác thực lằng nhằng để pull code, Bot GitHub sẽ "đóng gói" các thư mục cần thiết và gửi thẳng qua giao thức bảo mật SCP vào thư mục `/home/ubuntu/logistic` trên EC2. Máy EC2 hoàn toàn không cần lưu giữ thông tin đăng nhập GitHub của bạn.
+
+4. **Sinh cấu hình động (Dynamic `.env` Injection):**
+   - *Cú pháp lệnh:* Mở kết nối SSH (`appleboy/ssh-action`) và dùng lệnh `cat << 'EOF' > .env` kết hợp với `${{ secrets.X }}`.
+   - *Mục đích:* File `.env` chứa các thông tin cực kỳ nhạy cảm (Mật khẩu Database, Secret Key...) luôn bị cấm đưa lên GitHub (chặn bởi `.gitignore`). Do đó, Bot GitHub sẽ lấy các biến an toàn đã được bạn thiết lập sẵn trong **GitHub Secrets** và "tiêm" (inject) trực tiếp vào file `.env` ngay trên không gian mạng của EC2.
+
+5. **Khởi chạy Hệ thống Container (Orchestration):**
+   - *Cú pháp lệnh:* `sudo podman-compose up -d --build`
+   - *Mục đích:* Chờ cho `cloud-init` cài đặt xong Podman. Kích hoạt Podman đọc file `docker-compose.yml`, tự động tải các base image (Postgres, NATS, Kafka...), tiến hành Build source code GoLang cho từng Microservice nội bộ, nạp các biến môi trường từ file `.env` vừa tạo, và khởi chạy toàn bộ mạng lưới dưới dạng các tiến trình chạy ngầm (Daemon mode `-d`).
 
 ---
 

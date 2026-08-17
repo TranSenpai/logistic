@@ -1,6 +1,19 @@
 basePath: /
 definitions:
-  handler.LoginRequest:
+  internal_controller.AcceptMatchReq:
+    properties:
+      ask_id:
+        type: string
+      bid_id:
+        type: string
+      consensus_price:
+        type: number
+    required:
+    - ask_id
+    - bid_id
+    - consensus_price
+    type: object
+  internal_controller.LoginRequest:
     properties:
       email:
         type: string
@@ -10,158 +23,89 @@ definitions:
     - email
     - password
     type: object
-  handler.RegisterRequest:
+  internal_controller.RegisterRequest:
     properties:
       email:
         type: string
       full_name:
         type: string
       password:
+        minLength: 6
         type: string
     required:
     - email
     - password
     type: object
-  RegisterUserRequest:
+  internal_controller.RegisterUserReq:
     properties:
-      phone:
-        type: string
       email:
         type: string
       password:
-        type: string
-      role:
-        type: string
-        description: "driver hoặc shipper"
-    required:
-    - phone
-    - email
-    - password
-    - role
-    type: object
-  RegisterUserResponse:
-    properties:
-      id:
-        type: string
-      message:
-        type: string
-    type: object
-  User:
-    properties:
-      id:
+        minLength: 6
         type: string
       phone:
         type: string
-      email:
-        type: string
       role:
         type: string
-      status:
-        type: string
-      created_at:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  DriverProfile:
-    properties:
-      user_id:
-        type: string
-      license_number:
-        type: string
-      id_card:
-        type: string
-      rating:
-        type: number
-      kyc_status:
-        type: string
-    type: object
-  ShipperProfile:
-    properties:
-      user_id:
-        type: string
-      company_name:
-        type: string
-      tax_code:
-        type: string
-    type: object
-  GetUserResponse:
-    properties:
-      user:
-        $ref: '#/definitions/User'
-      driver_profile:
-        $ref: '#/definitions/DriverProfile'
-      shipper_profile:
-        $ref: '#/definitions/ShipperProfile'
-    type: object
-  UpdateDriverKYCRequest:
-    properties:
-      user_id:
-        type: string
-      kyc_status:
-        type: string
-        description: "approved hoặc rejected"
     required:
-    - kyc_status
+    - email
+    - password
+    - phone
+    - role
     type: object
-  RegisterVehicleRequest:
+  internal_controller.RegisterVehicleReq:
     properties:
+      brand:
+        type: string
+      capacity_volume_cbm:
+        type: number
+      capacity_weight_kg:
+        type: number
       driver_id:
         type: string
       license_plate:
-        type: string
-      brand:
         type: string
       model:
         type: string
       vehicle_type:
         type: string
-        description: "Truck, Van, Bike"
-      capacity_weight_kg:
-        type: number
-      capacity_volume_cbm:
+    required:
+    - brand
+    - capacity_volume_cbm
+    - capacity_weight_kg
+    - driver_id
+    - license_plate
+    - model
+    - vehicle_type
+    type: object
+  internal_controller.SubmitAskReq:
+    properties:
+      driver_id:
+        type: string
+      min_price:
         type: number
     required:
     - driver_id
-    - license_plate
-    - vehicle_type
+    - min_price
     type: object
-  RegisterVehicleResponse:
+  internal_controller.SubmitBidReq:
     properties:
-      id:
-        type: string
-      message:
-        type: string
-    type: object
-  Vehicle:
-    properties:
-      id:
-        type: string
-      driver_id:
-        type: string
-      license_plate:
-        type: string
-      brand:
-        type: string
-      model:
-        type: string
-      vehicle_type:
-        type: string
-      capacity_weight_kg:
+      max_price:
         type: number
-      capacity_volume_cbm:
-        type: number
-      status:
+      shipper_id:
         type: string
+    required:
+    - max_price
+    - shipper_id
     type: object
-  ListVehiclesResponse:
+  internal_controller.UpdateDriverKYCReq:
     properties:
-      vehicles:
-        type: array
-        items:
-          $ref: '#/definitions/Vehicle'
+      kyc_status:
+        type: string
+    required:
+    - kyc_status
     type: object
-  UpdateVehicleStatusRequest:
+  internal_controller.UpdateVehicleStatusReq:
     properties:
       status:
         type: string
@@ -182,92 +126,12 @@ info:
   title: Logistics OS — Gateway API
   version: "1.0"
 paths:
-  # ──────────────────────────────────────────────
-  # AUTH SERVICE (Gin handlers — /api/v1/auth/*)
-  # ──────────────────────────────────────────────
-  /api/v1/auth/register:
-    post:
-      consumes:
-      - application/json
-      description: Tạo tài khoản mới bằng email và mật khẩu. Gateway chuyển tiếp request tới auth_service qua gRPC.
-      parameters:
-      - description: Thông tin đăng ký
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handler.RegisterRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Tạo tài khoản thành công
-          schema:
-            type: object
-            additionalProperties: true
-        "400":
-          description: Lỗi dữ liệu đầu vào
-          schema:
-            type: object
-            additionalProperties: true
-        "409":
-          description: Email đã tồn tại
-          schema:
-            type: object
-            additionalProperties: true
-        "500":
-          description: Lỗi server nội bộ
-          schema:
-            type: object
-            additionalProperties: true
-      summary: Đăng ký tài khoản
-      tags:
-      - Auth
-
-  /api/v1/auth/login:
-    post:
-      consumes:
-      - application/json
-      description: Đăng nhập bằng email và mật khẩu. Trả về access_token, refresh_token và expires_in.
-      parameters:
-      - description: Thông tin đăng nhập
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handler.LoginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Đăng nhập thành công, trả về token pair
-          schema:
-            type: object
-            additionalProperties: true
-        "400":
-          description: Lỗi dữ liệu đầu vào
-          schema:
-            type: object
-            additionalProperties: true
-        "401":
-          description: Sai email hoặc mật khẩu
-          schema:
-            type: object
-            additionalProperties: true
-        "500":
-          description: Lỗi server nội bộ
-          schema:
-            type: object
-            additionalProperties: true
-      summary: Đăng nhập
-      tags:
-      - Auth
-
-  /api/v1/auth/get-info:
+  /api/auth/v1/get-info:
     get:
-      description: Lấy thông tin profile của người dùng hiện tại. Token có thể truyền qua cookie access_token hoặc header Authorization Bearer.
+      description: Lấy thông tin profile của người dùng hiện tại. Token có thể truyền
+        qua cookie access_token hoặc header Authorization Bearer.
       parameters:
-      - description: "Bearer token (nếu không dùng cookie)"
+      - description: Bearer token (nếu không dùng cookie)
         in: header
         name: Authorization
         type: string
@@ -277,39 +141,21 @@ paths:
         "200":
           description: Lấy thông tin thành công
           schema:
-            type: object
             additionalProperties: true
+            type: object
         "401":
           description: Token không hợp lệ hoặc không tìm thấy
           schema:
-            type: object
             additionalProperties: true
+            type: object
       summary: Lấy thông tin người dùng
       tags:
       - Auth
-
-  /api/v1/auth/google/login:
+  /api/auth/v1/google/callback:
     get:
-      description: Khởi tạo luồng OAuth2 với Google. Redirect người dùng đến trang đăng nhập Google. Tạo state cookie để chống CSRF.
-      produces:
-      - application/json
-      responses:
-        "307":
-          description: Redirect đến Google OAuth consent screen
-          schema:
-            type: string
-        "500":
-          description: Lỗi khi lấy Google Login URL
-          schema:
-            type: object
-            additionalProperties: true
-      summary: Đăng nhập bằng Google OAuth2
-      tags:
-      - Auth - OAuth2
-
-  /api/v1/auth/google/callback:
-    get:
-      description: Xử lý callback từ Google sau khi user đăng nhập. Xác thực state, đổi code lấy token, set cookie access_token và refresh_token, rồi redirect về frontend.
+      description: Xử lý callback từ Google sau khi user đăng nhập. Xác thực state,
+        đổi code lấy token, set cookie access_token và refresh_token, rồi redirect
+        về frontend.
       parameters:
       - description: OAuth state parameter (CSRF protection)
         in: query
@@ -331,58 +177,294 @@ paths:
         "400":
           description: State không hợp lệ
           schema:
-            type: object
             additionalProperties: true
+            type: object
         "500":
           description: Lỗi xử lý callback
           schema:
-            type: object
             additionalProperties: true
+            type: object
       summary: Google OAuth2 Callback
       tags:
       - Auth - OAuth2
-
-  # ──────────────────────────────────────────────
-  # USER SERVICE (gRPC-Gateway — /v1/users/*)
-  # ──────────────────────────────────────────────
-  /v1/users/register:
+  /api/auth/v1/google/login:
+    get:
+      description: Khởi tạo luồng OAuth2 với Google. Redirect người dùng đến trang
+        đăng nhập Google. Tạo state cookie để chống CSRF.
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Redirect đến Google OAuth consent screen
+          schema:
+            type: string
+        "500":
+          description: Lỗi khi lấy Google Login URL
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Đăng nhập bằng Google OAuth2
+      tags:
+      - Auth - OAuth2
+  /api/auth/v1/login:
     post:
       consumes:
       - application/json
-      description: Đăng ký người dùng mới với role driver hoặc shipper. Proxied qua gRPC-Gateway tới user_service.
+      description: Đăng nhập bằng email và mật khẩu. Trả về access_token, refresh_token
+        và expires_in.
       parameters:
-      - description: Thông tin đăng ký user
+      - description: Thông tin đăng nhập
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/RegisterUserRequest'
+          $ref: '#/definitions/internal_controller.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Đăng ký thành công
+          description: Đăng nhập thành công, trả về token pair
           schema:
-            $ref: '#/definitions/RegisterUserResponse'
+            additionalProperties: true
+            type: object
         "400":
           description: Lỗi dữ liệu đầu vào
           schema:
-            type: object
             additionalProperties: true
-        "500":
-          description: Lỗi server
+            type: object
+        "401":
+          description: Sai email hoặc mật khẩu
           schema:
-            type: object
             additionalProperties: true
-      summary: Đăng ký người dùng (User Service)
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Đăng nhập
       tags:
-      - User
-
-  /v1/users/{id}:
-    get:
-      description: Lấy thông tin chi tiết của user theo ID, bao gồm profile driver hoặc shipper nếu có. Proxied qua gRPC-Gateway tới user_service.
+      - Auth
+  /api/auth/v1/register:
+    post:
+      consumes:
+      - application/json
+      description: Tạo tài khoản mới bằng email và mật khẩu. Gateway chuyển tiếp request
+        tới auth_service qua gRPC.
       parameters:
-      - description: User ID (UUID)
+      - description: Thông tin đăng ký
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Tạo tài khoản thành công
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Lỗi dữ liệu đầu vào
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Email đã tồn tại
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Đăng ký tài khoản
+      tags:
+      - Auth
+  /api/matching/v1/accept:
+    post:
+      consumes:
+      - application/json
+      description: Khách hàng hoặc tài xế chấp nhận lệnh ghép chuyến.
+      parameters:
+      - description: Thông tin Match
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller.AcceptMatchReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Chấp nhận thành công
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Lỗi dữ liệu đầu vào
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Chấp nhận ghép chuyến
+      tags:
+      - Matching
+  /api/matching/v1/ask:
+    post:
+      consumes:
+      - application/json
+      description: Tài xế gửi báo giá có xe trống (Ask) để ghép chuyến.
+      parameters:
+      - description: Thông tin Ask
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller.SubmitAskReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Gửi Ask thành công
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Lỗi dữ liệu đầu vào
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Gửi báo giá vận chuyển (Ask)
+      tags:
+      - Matching
+  /api/matching/v1/bid:
+    post:
+      consumes:
+      - application/json
+      description: Khách hàng gửi yêu cầu vận chuyển hàng hóa kèm theo giá cước đề
+        xuất (Bid).
+      parameters:
+      - description: Thông vị Bid
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller.SubmitBidReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Gửi Bid thành công
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Lỗi dữ liệu đầu vào
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Gửi yêu cầu vận chuyển (Bid)
+      tags:
+      - Matching
+  /api/media/v1/delete/{publicID}:
+    delete:
+      description: Xóa file trên hệ thống lưu trữ thông qua public_id.
+      parameters:
+      - description: Public ID của file cần xóa
+        in: path
+        name: publicID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Xóa thành công
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Thiếu public_id
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Không tìm thấy file
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Xóa file
+      tags:
+      - Media
+  /api/media/v1/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Nhận file qua multipart/form-data và gọi gRPC sang media_service
+        để lưu trữ (ví dụ Cloudinary).
+      parameters:
+      - description: File cần tải lên
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Thư mục lưu trữ
+        in: formData
+        name: folder
+        type: string
+      - description: Tiền tố tên file
+        in: formData
+        name: prefix
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tải lên thành công, trả về URL
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Lỗi thiếu file hoặc file không hợp lệ
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Tải file lên hệ thống
+      tags:
+      - Media
+  /api/user/v1/{id}:
+    get:
+      description: Lấy thông tin chi tiết của người dùng bằng ID.
+      parameters:
+      - description: User ID
         in: path
         name: id
         required: true
@@ -391,106 +473,97 @@ paths:
       - application/json
       responses:
         "200":
-          description: Thông tin user chi tiết
+          description: Thông tin chi tiết người dùng
           schema:
-            $ref: '#/definitions/GetUserResponse'
-        "404":
-          description: User không tìm thấy
-          schema:
-            type: object
             additionalProperties: true
-      summary: Lấy thông tin user (User Service)
+            type: object
+        "400":
+          description: Thiếu ID
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Lấy thông tin User
       tags:
       - User
-
-  /v1/users/{user_id}/kyc:
+  /api/user/v1/{user_id}/kyc:
     put:
       consumes:
       - application/json
-      description: Cập nhật trạng thái KYC cho driver (approved/rejected). Proxied qua gRPC-Gateway tới user_service.
+      description: Cập nhật trạng thái KYC.
       parameters:
-      - description: User ID của driver
+      - description: User ID của tài xế
         in: path
         name: user_id
         required: true
         type: string
-      - description: Trạng thái KYC mới
+      - description: Thông tin KYC
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/UpdateDriverKYCRequest'
+          $ref: '#/definitions/internal_controller.UpdateDriverKYCReq'
       produces:
       - application/json
       responses:
         "200":
-          description: Cập nhật KYC thành công
+          description: Cập nhật thành công
           schema:
-            type: object
-            properties:
-              message:
-                type: string
-        "400":
-          description: Lỗi dữ liệu
-          schema:
-            type: object
             additionalProperties: true
-      summary: Cập nhật KYC driver (User Service)
+            type: object
+        "400":
+          description: Lỗi dữ liệu đầu vào
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Cập nhật thông tin KYC của tài xế
       tags:
       - User
-
-  # ──────────────────────────────────────────────
-  # VEHICLE SERVICE (gRPC-Gateway — /v1/vehicles/*)
-  # ──────────────────────────────────────────────
-  /v1/vehicles:
-    get:
-      description: Liệt kê tất cả phương tiện của một driver. Proxied qua gRPC-Gateway tới vehicle_service.
-      parameters:
-      - description: Driver ID để lọc phương tiện
-        in: query
-        name: driver_id
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Danh sách phương tiện
-          schema:
-            $ref: '#/definitions/ListVehiclesResponse'
-      summary: Liệt kê phương tiện (Vehicle Service)
-      tags:
-      - Vehicle
-
+  /api/user/v1/register:
     post:
       consumes:
       - application/json
-      description: Đăng ký phương tiện mới cho driver. Proxied qua gRPC-Gateway tới vehicle_service.
+      description: Đăng ký người dùng hoặc tài xế mới vào hệ thống.
       parameters:
-      - description: Thông tin phương tiện
+      - description: Thông tin đăng ký
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/RegisterVehicleRequest'
+          $ref: '#/definitions/internal_controller.RegisterUserReq'
       produces:
       - application/json
       responses:
-        "200":
-          description: Đăng ký phương tiện thành công
+        "201":
+          description: Tạo người dùng thành công
           schema:
-            $ref: '#/definitions/RegisterVehicleResponse'
-        "400":
-          description: Lỗi dữ liệu
-          schema:
-            type: object
             additionalProperties: true
-      summary: Đăng ký phương tiện (Vehicle Service)
+            type: object
+        "400":
+          description: Lỗi dữ liệu đầu vào
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Đăng ký user mới
       tags:
-      - Vehicle
-
-  /v1/vehicles/{id}:
+      - User
+  /api/vehicle/v1/{id}:
     get:
-      description: Lấy thông tin chi tiết của phương tiện theo ID. Proxied qua gRPC-Gateway tới vehicle_service.
+      description: Lấy thông tin chi tiết của một phương tiện theo ID.
       parameters:
       - description: Vehicle ID
         in: path
@@ -503,21 +576,26 @@ paths:
         "200":
           description: Thông tin chi tiết phương tiện
           schema:
-            $ref: '#/definitions/Vehicle'
-        "404":
-          description: Phương tiện không tìm thấy
-          schema:
-            type: object
             additionalProperties: true
-      summary: Lấy thông tin phương tiện (Vehicle Service)
+            type: object
+        "400":
+          description: Thiếu ID
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Lấy thông tin phương tiện
       tags:
       - Vehicle
-
-  /v1/vehicles/{id}/status:
+  /api/vehicle/v1/{id}/status:
     put:
       consumes:
       - application/json
-      description: Cập nhật trạng thái phương tiện (active/inactive/maintenance). Proxied qua gRPC-Gateway tới vehicle_service.
+      description: Cập nhật trạng thái của phương tiện (Active, Inactive, InTransit...).
       parameters:
       - description: Vehicle ID
         in: path
@@ -529,23 +607,83 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/UpdateVehicleStatusRequest'
+          $ref: '#/definitions/internal_controller.UpdateVehicleStatusReq'
       produces:
       - application/json
       responses:
         "200":
-          description: Cập nhật trạng thái thành công
+          description: Cập nhật thành công
           schema:
-            type: object
-            properties:
-              message:
-                type: string
-        "400":
-          description: Lỗi dữ liệu
-          schema:
-            type: object
             additionalProperties: true
-      summary: Cập nhật trạng thái phương tiện (Vehicle Service)
+            type: object
+        "400":
+          description: Lỗi dữ liệu đầu vào
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Cập nhật trạng thái
+      tags:
+      - Vehicle
+  /api/vehicle/v1/list:
+    get:
+      description: Lấy danh sách các phương tiện trong hệ thống của tài xế.
+      parameters:
+      - description: Driver ID để lọc
+        in: query
+        name: driver_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Danh sách phương tiện
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Danh sách phương tiện
+      tags:
+      - Vehicle
+  /api/vehicle/v1/register:
+    post:
+      consumes:
+      - application/json
+      description: Đăng ký thông tin phương tiện (xe tải, xe khách...) cho tài xế.
+      parameters:
+      - description: Thông tin phương tiện
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller.RegisterVehicleReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Tạo phương tiện thành công
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Lỗi dữ liệu đầu vào
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Lỗi server nội bộ
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Đăng ký phương tiện
       tags:
       - Vehicle
 swagger: "2.0"

@@ -1,19 +1,6 @@
-FROM docker.io/library/golang:1.26.4-alpine3.24 AS build
-
-WORKDIR /workspace
-
-COPY go.work go.work.sum ./
-COPY ./go.mod ./go.sum ./
-COPY api/ ./api/
-COPY pkg/ ./pkg/
-COPY gateway_service/ ./gateway_service/
-
-RUN rm -f go.work go.work.sum && go work init . ./gateway_service
-
-WORKDIR /workspace/gateway_service
-RUN go build -o gateway_service ./cmd
-
 FROM docker.io/library/alpine:3.24
+RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
-COPY --from=build /workspace/gateway_service/gateway_service .
-CMD ["./gateway_service"]
+COPY gateway_service_bin .
+RUN chmod +x gateway_service_bin
+CMD ["./gateway_service_bin"]

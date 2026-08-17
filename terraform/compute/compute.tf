@@ -28,14 +28,53 @@ resource "aws_security_group" "logistic_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["1.53.50.118/32"]
   }
 
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [
+      "173.245.48.0/20",
+      "103.21.244.0/22",
+      "103.22.200.0/22",
+      "103.31.4.0/22",
+      "141.101.64.0/18",
+      "108.162.192.0/18",
+      "190.93.240.0/20",
+      "188.114.96.0/20",
+      "197.234.240.0/22",
+      "198.41.128.0/17",
+      "162.158.0.0/15",
+      "104.16.0.0/13",
+      "104.24.0.0/14",
+      "172.64.0.0/13",
+      "131.0.72.0/22"
+    ]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [
+      "173.245.48.0/20",
+      "103.21.244.0/22",
+      "103.22.200.0/22",
+      "103.31.4.0/22",
+      "141.101.64.0/18",
+      "108.162.192.0/18",
+      "190.93.240.0/20",
+      "188.114.96.0/20",
+      "197.234.240.0/22",
+      "198.41.128.0/17",
+      "162.158.0.0/15",
+      "104.16.0.0/13",
+      "104.24.0.0/14",
+      "172.64.0.0/13",
+      "131.0.72.0/22"
+    ]
   }
 
   egress {
@@ -81,10 +120,10 @@ resource "aws_instance" "logistic_server" {
                   apt-get autoremove -y --purge
                   rm -rf /var/lib/docker /var/lib/containerd /etc/docker /var/run/docker.sock
                   
-                  # Cài đặt Podman
+                  # Cài đặt Podman và Nginx
                   apt-get update -y
-                  apt-get install -y podman podman-compose
-                  echo "Install Podman successfully!"
+                  apt-get install -y podman podman-compose nginx
+                  echo "Install Podman and Nginx successfully!"
               else
                   echo "Podman is installed !"
               fi

@@ -11,6 +11,8 @@ import (
 	"matching_service/internal/mapper/generated"
 	"matching_service/internal/repo"
 
+	"strings"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -41,7 +43,7 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) error {
 	natsCtx, err := natsConec.JetStream()
 	natsPub := nats_jetstream.InitPublisher(natsCtx, appMapper)
 
-	brokers := []string{cfg.KafkaConfig.Port1, cfg.KafkaConfig.Port2, cfg.KafkaConfig.Port3}
+	brokers := strings.Split(cfg.KafkaConfig.Brokers, ",")
 	kafkaPub, err := kafka.NewKafkaPublisher(brokers, appMapper)
 	if err != nil {
 		return err
