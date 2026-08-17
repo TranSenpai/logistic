@@ -101,6 +101,9 @@ resource "aws_instance" "logistic_server" {
   tags = {
     Name = "Logistic-Production-Node"
   }
+  # trigger: aws_instance.logistic_server biến mất khỏi state (0 instance trên AWS
+  # thực tế) — cần terraform apply để tạo lại. paths: terraform/** của infrastructure.yml
+  # chỉ trigger khi có thay đổi trong thư mục này.
 
   # Ép Terraform tự động xóa EC2 cũ và tạo EC2 mới mỗi khi đoạn script user_data bên dưới bị sửa
   user_data_replace_on_change = true

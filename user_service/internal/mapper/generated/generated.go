@@ -53,7 +53,7 @@ func (c *AppMapperImpl) EntUserToEntityUser(source *ent.User) entity.User {
 }
 func (c *AppMapperImpl) EntityDriverProfileToPbDriverProfile(source entity.DriverProfile) *v1.DriverProfile {
 	var userv1DriverProfile v1.DriverProfile
-	userv1DriverProfile.UserId = mapper.UUIDToString(source.UserID)
+	userv1DriverProfile.UserId = mapper.UUIDToBytes(source.UserID)
 	userv1DriverProfile.LicenseNumber = source.LicenseNumber
 	userv1DriverProfile.IdCard = source.IDCard
 	userv1DriverProfile.Rating = mapper.Float64ToFloat32(source.Rating)
@@ -62,14 +62,14 @@ func (c *AppMapperImpl) EntityDriverProfileToPbDriverProfile(source entity.Drive
 }
 func (c *AppMapperImpl) EntityShipperProfileToPbShipperProfile(source entity.ShipperProfile) *v1.ShipperProfile {
 	var userv1ShipperProfile v1.ShipperProfile
-	userv1ShipperProfile.UserId = mapper.UUIDToString(source.UserID)
+	userv1ShipperProfile.UserId = mapper.UUIDToBytes(source.UserID)
 	userv1ShipperProfile.CompanyName = source.CompanyName
 	userv1ShipperProfile.TaxCode = source.TaxCode
 	return &userv1ShipperProfile
 }
 func (c *AppMapperImpl) EntityUserToPbUser(source entity.User) *v1.User {
 	var userv1User v1.User
-	userv1User.Id = mapper.UUIDToString(source.ID)
+	userv1User.Id = mapper.UUIDToBytes(source.ID)
 	userv1User.Phone = source.Phone
 	userv1User.Email = source.Email
 	userv1User.Role = source.Role
@@ -81,7 +81,7 @@ func (c *AppMapperImpl) EntityUserToPbUser(source entity.User) *v1.User {
 func (c *AppMapperImpl) PbUserToEntityUser(source *v1.User) (entity.User, error) {
 	var entityUser entity.User
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).Id)
+		uuidUUID, err := mapper.BytesToUUID((*source).Id)
 		if err != nil {
 			return entityUser, err
 		}

@@ -14,13 +14,13 @@ import (
 type matchingController struct {
 	pb.UnimplementedMatchingEngineServiceServer
 	matchingEngine biz.MatchingEngine
-	mapper         mapper.AppMapper
+	mapper         mapper.MatchingMapper
 }
 
 func NewMatchingController(engine biz.MatchingEngine) *matchingController {
 	return &matchingController{
 		matchingEngine: engine,
-		mapper:         &generated.AppMapperImpl{},
+		mapper:         &generated.MatchingMapperImpl{},
 	}
 }
 

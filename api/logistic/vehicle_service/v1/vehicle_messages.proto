@@ -1,56 +1,57 @@
 syntax = "proto3";
 
 package logistic.vehicle_service.v1;
+
 option go_package = "github.com/logistic/api/logistic/vehicle_service/v1;vehiclev1";
 
 message Vehicle {
-    string id = 1;
-    string driver_id = 2;
-    string license_plate = 3;
-    string brand = 4;
-    string model = 5;
-    string vehicle_type = 6; // Truck, Van, Bike
-    float capacity_weight_kg = 7;
-    float capacity_volume_cbm = 8;
-    string status = 9;
+  bytes id = 1;
+  bytes driver_id = 2;
+  string license_plate = 3;
+  string brand = 4;
+  string model = 5;
+  string vehicle_type = 6; // Truck, Van, Bike
+  float capacity_weight_kg = 7;
+  float capacity_volume_cbm = 8;
+  string status = 9;
 }
 
 message RegisterVehicleRequest {
-    string driver_id = 1;
-    string license_plate = 2;
-    string brand = 3;
-    string model = 4;
-    string vehicle_type = 5;
-    float capacity_weight_kg = 6;
-    float capacity_volume_cbm = 7;
+  bytes driver_id = 1;
+  string license_plate = 2;
+  string brand = 3;
+  string model = 4;
+  string vehicle_type = 5;
+  float capacity_weight_kg = 6;
+  float capacity_volume_cbm = 7;
 }
 
 message RegisterVehicleResponse {
-    string id = 1;
-    string message = 2;
+  bytes id = 1;
+  string message = 2;
 }
 
 message GetVehicleRequest {
-    string id = 1;
+  bytes id = 1;
 }
 
 message GetVehicleResponse {
-    Vehicle vehicle = 1;
+  Vehicle vehicle = 1;
 }
 
 message ListVehiclesRequest {
-    string driver_id = 1;
+  bytes driver_id = 1;
 }
 
 message ListVehiclesResponse {
-    repeated Vehicle vehicles = 1;
+  repeated Vehicle vehicles = 1;
 }
 
 message UpdateVehicleStatusRequest {
-    string id = 1;
-    string status = 2;
+  bytes id = 1;
+  string status = 2;
 }
 
 message UpdateVehicleStatusResponse {
-    string message = 1;
+  string message = 1;
 }

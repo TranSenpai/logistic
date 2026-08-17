@@ -23,7 +23,7 @@ const (
 
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Phone         string                 `protobuf:"bytes,2,opt,name=phone,proto3" json:"phone,omitempty"`
 	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	Role          string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
@@ -64,11 +64,11 @@ func (*User) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *User) GetId() string {
+func (x *User) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *User) GetPhone() string {
@@ -115,7 +115,7 @@ func (x *User) GetUpdatedAt() string {
 
 type DriverProfile struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	LicenseNumber string                 `protobuf:"bytes,2,opt,name=license_number,json=licenseNumber,proto3" json:"license_number,omitempty"`
 	IdCard        string                 `protobuf:"bytes,3,opt,name=id_card,json=idCard,proto3" json:"id_card,omitempty"`
 	Rating        float32                `protobuf:"fixed32,4,opt,name=rating,proto3" json:"rating,omitempty"`
@@ -154,11 +154,11 @@ func (*DriverProfile) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *DriverProfile) GetUserId() string {
+func (x *DriverProfile) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *DriverProfile) GetLicenseNumber() string {
@@ -191,7 +191,7 @@ func (x *DriverProfile) GetKycStatus() string {
 
 type ShipperProfile struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	CompanyName   string                 `protobuf:"bytes,2,opt,name=company_name,json=companyName,proto3" json:"company_name,omitempty"`
 	TaxCode       string                 `protobuf:"bytes,3,opt,name=tax_code,json=taxCode,proto3" json:"tax_code,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -228,11 +228,11 @@ func (*ShipperProfile) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ShipperProfile) GetUserId() string {
+func (x *ShipperProfile) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *ShipperProfile) GetCompanyName() string {
@@ -319,7 +319,7 @@ func (x *RegisterUserRequest) GetRole() string {
 
 type RegisterUserResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -355,11 +355,11 @@ func (*RegisterUserResponse) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *RegisterUserResponse) GetId() string {
+func (x *RegisterUserResponse) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *RegisterUserResponse) GetMessage() string {
@@ -371,7 +371,7 @@ func (x *RegisterUserResponse) GetMessage() string {
 
 type GetUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -406,11 +406,11 @@ func (*GetUserRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *GetUserRequest) GetId() string {
+func (x *GetUserRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 type GetUserResponse struct {
@@ -475,7 +475,7 @@ func (x *GetUserResponse) GetShipperProfile() *ShipperProfile {
 
 type UpdateDriverKYCRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	KycStatus     string                 `protobuf:"bytes,2,opt,name=kyc_status,json=kycStatus,proto3" json:"kyc_status,omitempty"` // "approved" or "rejected"
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -511,11 +511,11 @@ func (*UpdateDriverKYCRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *UpdateDriverKYCRequest) GetUserId() string {
+func (x *UpdateDriverKYCRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *UpdateDriverKYCRequest) GetKycStatus() string {
@@ -575,7 +575,7 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\n" +
 	",logistic/user_service/v1/user_messages.proto\x12\x18logistic.user_service.v1\"\xac\x01\n" +
 	"\x04User\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
 	"\x05phone\x18\x02 \x01(\tR\x05phone\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x12\n" +
 	"\x04role\x18\x04 \x01(\tR\x04role\x12\x16\n" +
@@ -585,14 +585,14 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\a \x01(\tR\tupdatedAt\"\x9f\x01\n" +
 	"\rDriverProfile\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12%\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12%\n" +
 	"\x0elicense_number\x18\x02 \x01(\tR\rlicenseNumber\x12\x17\n" +
 	"\aid_card\x18\x03 \x01(\tR\x06idCard\x12\x16\n" +
 	"\x06rating\x18\x04 \x01(\x02R\x06rating\x12\x1d\n" +
 	"\n" +
 	"kyc_status\x18\x05 \x01(\tR\tkycStatus\"g\n" +
 	"\x0eShipperProfile\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12!\n" +
 	"\fcompany_name\x18\x02 \x01(\tR\vcompanyName\x12\x19\n" +
 	"\btax_code\x18\x03 \x01(\tR\ataxCode\"q\n" +
 	"\x13RegisterUserRequest\x12\x14\n" +
@@ -601,16 +601,16 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\bpassword\x18\x03 \x01(\tR\bpassword\x12\x12\n" +
 	"\x04role\x18\x04 \x01(\tR\x04role\"@\n" +
 	"\x14RegisterUserResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\" \n" +
 	"\x0eGetUserRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xe8\x01\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\"\xe8\x01\n" +
 	"\x0fGetUserResponse\x122\n" +
 	"\x04user\x18\x01 \x01(\v2\x1e.logistic.user_service.v1.UserR\x04user\x12N\n" +
 	"\x0edriver_profile\x18\x02 \x01(\v2'.logistic.user_service.v1.DriverProfileR\rdriverProfile\x12Q\n" +
 	"\x0fshipper_profile\x18\x03 \x01(\v2(.logistic.user_service.v1.ShipperProfileR\x0eshipperProfile\"P\n" +
 	"\x16UpdateDriverKYCRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1d\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12\x1d\n" +
 	"\n" +
 	"kyc_status\x18\x02 \x01(\tR\tkycStatus\"3\n" +
 	"\x17UpdateDriverKYCResponse\x12\x18\n" +

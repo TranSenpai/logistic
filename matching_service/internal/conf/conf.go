@@ -12,6 +12,7 @@ type Config struct {
 	SlaveDatabase  SlaveDatabaseConfig
 	NatConfig      NatConfig
 	KafkaConfig    KafkaConfig
+	WalletService  WalletServiceConfig
 }
 
 type ServerConfig struct {
@@ -45,6 +46,10 @@ type NatConfig struct {
 type KafkaConfig struct {
 	ClusterId string `env:"KAFKA_KRAFT_CLUSTER_ID" env-required:"true"`
 	Brokers   string `env:"KAFKA_BROKERS" env-required:"true"`
+}
+
+type WalletServiceConfig struct {
+	GrpcAddr string `env:"MATCHING_WALLET_GRPC_ADDR" env-default:"wallet_service:9005"`
 }
 
 func (db *MasterDatabaseConfig) GetDataSource() string {

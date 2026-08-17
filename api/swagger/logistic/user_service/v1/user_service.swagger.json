@@ -70,7 +70,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -100,7 +101,8 @@
             "name": "userId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -159,7 +161,8 @@
       "type": "object",
       "properties": {
         "userId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "licenseNumber": {
           "type": "string"
@@ -214,7 +217,8 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "message": {
           "type": "string"
@@ -225,7 +229,8 @@
       "type": "object",
       "properties": {
         "userId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "companyName": {
           "type": "string"
@@ -247,7 +252,8 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "phone": {
           "type": "string"
