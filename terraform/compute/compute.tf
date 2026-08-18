@@ -28,13 +28,13 @@ resource "aws_security_group" "logistic_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["1.53.50.118/32"]
+    cidr_blocks = ["183.80.182.22/32"]
   }
 
   ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
+    from_port = 80
+    to_port   = 80
+    protocol  = "tcp"
     cidr_blocks = [
       "173.245.48.0/20",
       "103.21.244.0/22",
@@ -55,9 +55,9 @@ resource "aws_security_group" "logistic_sg" {
   }
 
   ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
+    from_port = 443
+    to_port   = 443
+    protocol  = "tcp"
     cidr_blocks = [
       "173.245.48.0/20",
       "103.21.244.0/22",
