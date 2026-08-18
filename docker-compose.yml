@@ -280,7 +280,7 @@ services:
     image: docker.io/provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     ports:
-      - "8081:8081"
+      - "8081:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: "Logistic-Cluster"
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "broker-1:19092,broker-2:19092,broker-3:19092"
