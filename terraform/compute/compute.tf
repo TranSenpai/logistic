@@ -28,7 +28,7 @@ resource "aws_security_group" "logistic_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["14.241.227.54/32"]
+    cidr_blocks = ["115.79.58.56/32"]
   }
 
   ingress {
