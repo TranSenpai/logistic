@@ -9,6 +9,20 @@ on:
       - 'terraform/**'
       - 'README.md'
       - 'docs/**'
+  # Trigger tay — cần cho 2 trường hợp paths-filter KHÔNG thể tự phát hiện được:
+  # (1) chỉ đổi giá trị 1 GitHub Secret (không có file nào đổi trong repo để diff),
+  # (2) muốn deploy lại đúng 1 service cụ thể (kể cả service không phải Go, ví dụ
+  #     elasticsearch/kibana — paths-filter phía dưới không theo dõi các service đó).
+  workflow_dispatch:
+    inputs:
+      service:
+        description: >-
+          Tên service trong docker-compose.yml muốn deploy (vd. "elasticsearch",
+          "auth-service"). Để "all" = reconcile toàn bộ stack theo compose file.
+          Để "auto" = theo diff so với commit trước (giống push, ít dùng khi chạy tay).
+        required: true
+        default: 'all'
+        type: string
 
 # Ngăn chặn đụng độ (Race Condition) nếu có nhiều người push code cùng lúc
 # Các luồng deploy app sẽ xếp hàng chạy lần lượt (cancel-in-progress: false)
@@ -49,13 +63,18 @@ jobs:
             - 'user_service/**'
           vehicle:
             - 'vehicle_service/**'
-          # Các file cấu hình dùng chung hoặc code thư viện (pkg, api)
-          shared:
+          # Code dùng chung (pkg, api) — chỉ được import bởi 6 service Go,
+          # nên đổi ở đây ép restart cả 6.
+          shared_code:
             - 'pkg/**'
             - 'api/**'
-            - 'docker-compose.yml'
             - '.env.example'
             - '.github/workflows/application.yml'
+          # docker-compose.yml đổi có thể ảnh hưởng BẤT KỲ service nào trong file,
+          # kể cả service không phải Go (elasticsearch, kibana, db...) — không đoán
+          # danh sách cố định, để compose tự đối chiếu toàn bộ (xem BƯỚC 7).
+          compose:
+            - 'docker-compose.yml'
 
     # -------------------------------------------------------------
     # BƯỚC 3: Đăng nhập AWS và Lấy IP của máy chủ EC2 đang chạy
@@ -160,8 +179,21 @@ jobs:
       id: set_services
       run: |
         SERVICES=""
-        # Nếu có sửa thư mục dùng chung (shared), ép buộc Restart TẤT CẢ
-        if [[ "${{ steps.filter.outputs.shared }}" == 'true' ]]; then
+        FULL_RECONCILE="false"
+
+        if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.service }}" != 'auto' ]]; then
+          # Trigger tay: dùng đúng giá trị người chạy chọn, bỏ qua paths-filter.
+          if [[ "${{ inputs.service }}" == 'all' ]]; then
+            FULL_RECONCILE="true"
+          else
+            SERVICES="${{ inputs.service }}"
+          fi
+        elif [[ "${{ steps.filter.outputs.compose }}" == 'true' ]]; then
+          # docker-compose.yml đổi: để podman-compose tự đối chiếu toàn bộ file,
+          # thay vì đoán thủ công service nào bị ảnh hưởng.
+          FULL_RECONCILE="true"
+        elif [[ "${{ steps.filter.outputs.shared_code }}" == 'true' ]]; then
+          # Code dùng chung (pkg/api) đổi: ép restart cả 6 service Go.
           SERVICES="auth-service gateway-service matching-service media-service user-service vehicle-service"
         else
           # Trái lại, soi từng nhánh, nhánh nào đổi thì nối tên nhánh đó vào chuỗi
@@ -172,8 +204,10 @@ jobs:
           if [[ "${{ steps.filter.outputs.user }}" == 'true' ]]; then SERVICES="$SERVICES user-service"; fi
           if [[ "${{ steps.filter.outputs.vehicle }}" == 'true' ]]; then SERVICES="$SERVICES vehicle-service"; fi
         fi
-        # Lưu danh sách chốt cuối cùng vào biến môi trường
+
+        # Lưu kết quả chốt cuối cùng vào biến môi trường cho bước SSH deploy
         echo "SERVICES_TO_RESTART=$SERVICES" >> $GITHUB_ENV
+        echo "FULL_RECONCILE=$FULL_RECONCILE" >> $GITHUB_ENV
 
     # -------------------------------------------------------------
     # BƯỚC 8: Kết nối SSH vào EC2 và thực thi Docker
@@ -184,7 +218,7 @@ jobs:
         host: ${{ env.EC2_IP }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-        envs: SERVICES_TO_RESTART
+        envs: SERVICES_TO_RESTART,FULL_RECONCILE
         script: |
           cd /home/ubuntu/logistic
           
@@ -247,6 +281,8 @@ jobs:
           VEHICLE_DB_REPLICATION_USER=${{ secrets.VEHICLE_DB_REPLICATION_USER }}
           VEHICLE_DB_REPLICATION_PASSWORD=${{ secrets.VEHICLE_DB_REPLICATION_PASSWORD }}
           OTEL_EXPORTER_OTLP_ENDPOINT=${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
+          KIBANA_PASSWORD=${{ secrets.KIBANA_PASSWORD }}
           EOF
           
           # Kích hoạt linger để các tiến trình của user ubuntu không bị kill khi SSH ngắt kết nối
@@ -265,8 +301,13 @@ jobs:
           sudo rm -f /etc/nginx/sites-enabled/default
           sudo nginx -t && sudo systemctl reload nginx
           
-          # Nếu list Service cần Restart rỗng => Nghĩa là bạn commit linh tinh không dính đến source code
-          if [ -z "$SERVICES_TO_RESTART" ]; then
+          if [ "$FULL_RECONCILE" = "true" ]; then
+            # Không truyền tên service nào => podman-compose tự đối chiếu TOÀN BỘ
+            # docker-compose.yml, chỉ recreate đúng service nào cấu hình thực sự đổi.
+            echo "Reconciling full stack against docker-compose.yml..."
+            podman-compose up -d --build
+          elif [ -z "$SERVICES_TO_RESTART" ]; then
+            # Nếu list Service cần Restart rỗng => Nghĩa là bạn commit linh tinh không dính đến source code
             echo "No service changes detected. Skipping container restarts."
           else
             # Khởi động lại duy nhất những Service có thay đổi!
