@@ -328,14 +328,12 @@ services:
     environment:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - KIBANA_PASSWORD=${KIBANA_PASSWORD}
+    # LƯU Ý: toàn bộ lệnh phải nằm trên 1 dòng YAML duy nhất. Với block scalar
+    # gấp nếp (`>`), dòng nào thụt lề sâu hơn dòng gốc sẽ KHÔNG bị gộp thành
+    # khoảng trắng — YAML giữ nguyên xuống dòng thật, khiến bash coi mỗi dòng
+    # là 1 lệnh riêng (đây chính là bug gây lỗi "-H: command not found" trước đó).
     command: >
-      bash -c "
-        curl -sf -u elastic:$$ELASTIC_PASSWORD -X POST
-          -H 'Content-Type: application/json'
-          http://elasticsearch:9200/_security/user/kibana_system/_password
-          -d '{\"password\":\"'\"$$KIBANA_PASSWORD\"'\"}'
-        && echo '[es-setup-kibana-user] kibana_system password configured'
-      "
+      bash -c "curl -sf -u elastic:$$ELASTIC_PASSWORD -X POST -H 'Content-Type: application/json' http://elasticsearch:9200/_security/user/kibana_system/_password -d '{\"password\":\"'\"$$KIBANA_PASSWORD\"'\"}' && echo '[es-setup-kibana-user] kibana_system password configured'"
     networks:
       - logistic_net
 
