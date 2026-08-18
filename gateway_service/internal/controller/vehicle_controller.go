@@ -51,7 +51,7 @@ func (c *VehicleController) RegisterVehicle(ctx *gin.Context) {
 	}
 
 	resp, err := c.vehicleClient.RegisterVehicle(ctx.Request.Context(), &pb.RegisterVehicleRequest{
-		DriverId:          req.DriverId,
+		DriverId:          []byte(req.DriverId),
 		LicensePlate:      req.LicensePlate,
 		Brand:             req.Brand,
 		Model:             req.Model,
@@ -89,7 +89,7 @@ func (c *VehicleController) GetVehicle(ctx *gin.Context) {
 	}
 
 	resp, err := c.vehicleClient.GetVehicle(ctx.Request.Context(), &pb.GetVehicleRequest{
-		Id: id,
+		Id: []byte(id),
 	})
 	if err != nil {
 		st, _ := status.FromError(err)
@@ -114,7 +114,7 @@ func (c *VehicleController) GetVehicle(ctx *gin.Context) {
 func (c *VehicleController) ListVehicles(ctx *gin.Context) {
 	driverId := ctx.Query("driver_id")
 	resp, err := c.vehicleClient.ListVehicles(ctx.Request.Context(), &pb.ListVehiclesRequest{
-		DriverId: driverId,
+		DriverId: []byte(driverId),
 	})
 	if err != nil {
 		st, _ := status.FromError(err)
@@ -153,7 +153,7 @@ func (c *VehicleController) UpdateVehicleStatus(ctx *gin.Context) {
 	}
 
 	resp, err := c.vehicleClient.UpdateVehicleStatus(ctx.Request.Context(), &pb.UpdateVehicleStatusRequest{
-		Id:     id,
+		Id:     []byte(id),
 		Status: req.Status,
 	})
 	if err != nil {
