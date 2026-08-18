@@ -84,7 +84,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	}
 
 	resp, err := c.userClient.GetUser(ctx.Request.Context(), &pb.GetUserRequest{
-		Id: id,
+		Id: []byte(id),
 	})
 	if err != nil {
 		st, _ := status.FromError(err)
@@ -93,8 +93,8 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"user": resp.User,
-		"driver_profile": resp.DriverProfile,
+		"user":            resp.User,
+		"driver_profile":  resp.DriverProfile,
 		"shipper_profile": resp.ShipperProfile,
 	})
 }
@@ -125,7 +125,7 @@ func (c *UserController) UpdateDriverKYC(ctx *gin.Context) {
 	}
 
 	resp, err := c.userClient.UpdateDriverKYC(ctx.Request.Context(), &pb.UpdateDriverKYCRequest{
-		UserId:    userID,
+		UserId:    []byte(userID),
 		KycStatus: req.KycStatus,
 	})
 	if err != nil {
