@@ -24,9 +24,15 @@ bộ qua gRPC**.
 ## Chạy nhanh
 
 ```bash
+make auth-keys       # BẮT BUỘC chạy trước: sinh cặp khoá RSA ký/kiểm JWT
 cp .env .env.local   # xem lại các giá trị bí mật trước khi chạy thật
 docker compose up -d
 ```
+
+`make auth-keys` tạo `secrets/jwt_private.pem` và `secrets/jwt_public.pem`.
+auth_service ký token bằng private key, gateway kiểm bằng public key; thiếu file
+thì cả hai service dừng ngay lúc khởi động. Thư mục `secrets/` nằm trong
+`.gitignore` nên mỗi máy tự sinh khoá riêng.
 
 Sau khi các container khoẻ:
 
@@ -34,6 +40,7 @@ Sau khi các container khoẻ:
 |---|---|
 | API Gateway | http://localhost:8080 |
 | Swagger UI | http://localhost:8080/swagger/index.html |
+| Jaeger (trace) | http://localhost:16686 |
 | RabbitMQ Management | http://localhost:15672 |
 | Kafka UI | http://localhost:8081 |
 | Kibana | http://localhost:5601 |
@@ -96,6 +103,20 @@ cd notification_service && go test -tags=integration ./... -v
 cd vehicle_service      && go test -tags=integration ./... -v
 cd user_service         && go test -tags=integration ./... -v
 ```
+
+```bash
+# Test API bằng Postman: import hai file này
+logistic.postman_collection.json
+logistic.postman_environment.json
+
+# hoặc chạy bằng dòng lệnh
+newman run logistic.postman_collection.json -e logistic.postman_environment.json
+```
+
+Chi tiết bốn tầng test, cách import Postman, và bốn test bất biến canh giữ hệ
+thống: [docs/guides/testing.md](docs/guides/testing.md).
+
+Chạy bằng Podman trên Windows: [docs/operations/podman-windows.md](docs/operations/podman-windows.md).
 
 Biến môi trường cho test tích hợp: xem
 [matching-notification-flow.md](docs/flows/matching-notification-flow.md#8-chạy-và-kiểm-thử).

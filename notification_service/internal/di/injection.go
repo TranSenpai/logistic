@@ -81,6 +81,8 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) (*Container, error) {
 		return nil, fmt.Errorf("notification_service: tạo schema thất bại: %w", err)
 	}
 
+	seedDefaultTemplates(context.Background(), entClient)
+
 	container := &Container{EntClient: entClient}
 
 	if cfg.Redis.Enabled {

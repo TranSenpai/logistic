@@ -50,6 +50,9 @@ services:
     image: ghcr.io/transenpai/logistic/auth-service:${IMAGE_TAG:-latest}
     env_file:
       - .env
+    depends_on:
+      auth-db-master:
+        condition: service_healthy
     volumes:
       - auth-data:/app/data
       # PRIVATE key chỉ mount vào auth_service, và chỉ đọc.
@@ -551,6 +554,12 @@ services:
       - ./scripts/auth_service/db/init-master.sql:/docker-entrypoint-initdb.d/init-master.sql
     networks:
       - logistic_net
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
 
   auth-db-slave:
     image: docker.io/library/mysql:8.0

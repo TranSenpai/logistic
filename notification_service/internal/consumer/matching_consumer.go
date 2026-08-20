@@ -43,7 +43,7 @@ func (c *MatchingConsumer) Handle(ctx context.Context, d mq.Delivery) error {
 		return nil
 	}
 
-	params, err := c.buildNotifications(d.RoutingKey, &env)
+	params, err := c.buildNotifications(ctx, d.RoutingKey, &env)
 	if err != nil {
 		log.Printf("[consumer] không dựng được thông báo cho %s (id=%s): %v", d.RoutingKey, eventID, err)
 		return nil
@@ -72,25 +72,25 @@ func isDuplicate(err error) bool {
 	return ok && appErr.Code == "EVENT_ALREADY_PROCESSED"
 }
 
-func (c *MatchingConsumer) buildNotifications(routingKey string, env *events.Envelope) ([]entity.CreateNotificationParam, error) {
+func (c *MatchingConsumer) buildNotifications(ctx context.Context, routingKey string, env *events.Envelope) ([]entity.CreateNotificationParam, error) {
 	switch routingKey {
 	case events.RoutingKeyDriverCandidatesFound:
-		return c.onDriverCandidatesFound(env)
+		return c.onDriverCandidatesFound(ctx, env)
 	case events.RoutingKeyMatchFound:
-		return c.onMatchFound(env)
+		return c.onMatchFound(ctx, env)
 	case events.RoutingKeyOfferReceived:
-		return c.onOfferReceived(env)
+		return c.onOfferReceived(ctx, env)
 	case events.RoutingKeyOfferRejected:
-		return c.onOfferRejected(env)
+		return c.onOfferRejected(ctx, env)
 	case events.RoutingKeyCargoSuggested:
-		return c.onCargoSuggested(env)
+		return c.onCargoSuggested(ctx, env)
 	default:
 
 		return nil, nil
 	}
 }
 
-func (c *MatchingConsumer) onDriverCandidatesFound(env *events.Envelope) ([]entity.CreateNotificationParam, error) {
+func (c *MatchingConsumer) onDriverCandidatesFound(ctx context.Context, env *events.Envelope) ([]entity.CreateNotificationParam, error) {
 	var payload events.DriverCandidatesFound
 	if err := decodeData(env.Data, &payload); err != nil {
 		return nil, err
@@ -104,19 +104,27 @@ func (c *MatchingConsumer) onDriverCandidatesFound(env *events.Envelope) ([]enti
 			continue
 		}
 
-		title := "Có đơn hàng phù hợp gần bạn"
-		body := fmt.Sprintf(
-			"Đơn hàng %.0f kg / %.1f m³ cách bạn %.1f km. Giá tối đa %.0f đ. Vào xem ngay để báo giá.",
-			payload.WeightKg, payload.VolumeM3, cand.DistanceKm, payload.MaxPrice,
-		)
+		vars := map[string]string{
+			"weight_kg":   formatNumber(payload.WeightKg),
+			"volume_m3":   formatDecimal(payload.VolumeM3),
+			"distance_km": formatDecimal(cand.DistanceKm),
+			"max_price":   formatNumber(payload.MaxPrice),
+		}
+		text := renderText(ctx, c.engine, codeDriverCandidate, entity.ChannelPush, vars, notificationText{
+			title: "Có đơn hàng phù hợp gần bạn",
+			body: fmt.Sprintf(
+				"Đơn hàng %.0f kg / %.1f m³ cách bạn %.1f km. Giá tối đa %.0f đ. Vào xem ngay để báo giá.",
+				payload.WeightKg, payload.VolumeM3, cand.DistanceKm, payload.MaxPrice,
+			),
+		})
 
 		params = append(params, entity.CreateNotificationParam{
 			UserID:        driverID,
 			RecipientRole: entity.RoleDriver,
 			Type:          entity.TypeDriverCandidate,
 			Channel:       entity.ChannelPush,
-			Title:         title,
-			Body:          body,
+			Title:         text.title,
+			Body:          text.body,
 			RefType:       entity.RefTypeBid,
 			RefID:         payload.BidID,
 			Data: biz.MarshalData(map[string]string{
@@ -132,7 +140,7 @@ func (c *MatchingConsumer) onDriverCandidatesFound(env *events.Envelope) ([]enti
 	return params, nil
 }
 
-func (c *MatchingConsumer) onMatchFound(env *events.Envelope) ([]entity.CreateNotificationParam, error) {
+func (c *MatchingConsumer) onMatchFound(ctx context.Context, env *events.Envelope) ([]entity.CreateNotificationParam, error) {
 	var payload events.MatchFound
 	if err := decodeData(env.Data, &payload); err != nil {
 		return nil, err
@@ -148,39 +156,55 @@ func (c *MatchingConsumer) onMatchFound(env *events.Envelope) ([]entity.CreateNo
 
 	params := make([]entity.CreateNotificationParam, 0, 2)
 
+	vars := map[string]string{
+		"price":       formatNumber(payload.ConsensusPrice),
+		"deposit":     formatNumber(payload.ConsensusDeposit),
+		"contract_id": payload.ContractID,
+	}
+
 	if shipperID, err := uuid.Parse(payload.ShipperID); err == nil {
+		text := renderText(ctx, c.engine, codeMatchFoundShipper, entity.ChannelPush, vars, notificationText{
+			title: "Đã tìm được xe cho đơn hàng của bạn",
+			body: fmt.Sprintf(
+				"Đơn hàng của bạn đã được ghép với một tài xế. Giá chốt %.0f đ, đặt cọc %.0f đ.",
+				payload.ConsensusPrice, payload.ConsensusDeposit,
+			),
+		})
+
 		params = append(params, entity.CreateNotificationParam{
 			UserID:        shipperID,
 			RecipientRole: entity.RoleShipper,
 			Type:          entity.TypeMatchFound,
 			Channel:       entity.ChannelPush,
-			Title:         "Đã tìm được xe cho đơn hàng của bạn",
-			Body: fmt.Sprintf(
-				"Đơn hàng của bạn đã được ghép với một tài xế. Giá chốt %.0f đ, đặt cọc %.0f đ.",
-				payload.ConsensusPrice, payload.ConsensusDeposit,
-			),
-			RefType: entity.RefTypeMatch,
-			RefID:   payload.ContractID,
-			Data:    data,
+			Title:         text.title,
+			Body:          text.body,
+			RefType:       entity.RefTypeMatch,
+			RefID:         payload.ContractID,
+			Data:          data,
 		})
 	} else {
 		log.Printf("[consumer] match %s có shipper_id không hợp lệ: %q", payload.ContractID, payload.ShipperID)
 	}
 
 	if driverID, err := uuid.Parse(payload.DriverID); err == nil {
+		text := renderText(ctx, c.engine, codeMatchFoundDriver, entity.ChannelPush, vars, notificationText{
+			title: "Bạn vừa nhận được một đơn hàng",
+			body: fmt.Sprintf(
+				"Chuyến hàng đã được xác nhận. Giá chốt %.0f đ. Mở app để xem điểm lấy hàng.",
+				payload.ConsensusPrice,
+			),
+		})
+
 		params = append(params, entity.CreateNotificationParam{
 			UserID:        driverID,
 			RecipientRole: entity.RoleDriver,
 			Type:          entity.TypeMatchFound,
 			Channel:       entity.ChannelPush,
-			Title:         "Bạn vừa nhận được một đơn hàng",
-			Body: fmt.Sprintf(
-				"Chuyến hàng đã được xác nhận. Giá chốt %.0f đ. Mở app để xem điểm lấy hàng.",
-				payload.ConsensusPrice,
-			),
-			RefType: entity.RefTypeMatch,
-			RefID:   payload.ContractID,
-			Data:    data,
+			Title:         text.title,
+			Body:          text.body,
+			RefType:       entity.RefTypeMatch,
+			RefID:         payload.ContractID,
+			Data:          data,
 		})
 	} else {
 		log.Printf("[consumer] match %s có driver_id không hợp lệ: %q", payload.ContractID, payload.DriverID)
@@ -189,7 +213,7 @@ func (c *MatchingConsumer) onMatchFound(env *events.Envelope) ([]entity.CreateNo
 	return params, nil
 }
 
-func (c *MatchingConsumer) onOfferReceived(env *events.Envelope) ([]entity.CreateNotificationParam, error) {
+func (c *MatchingConsumer) onOfferReceived(ctx context.Context, env *events.Envelope) ([]entity.CreateNotificationParam, error) {
 	var payload events.OfferReceived
 	if err := decodeData(env.Data, &payload); err != nil {
 		return nil, err
@@ -200,13 +224,21 @@ func (c *MatchingConsumer) onOfferReceived(env *events.Envelope) ([]entity.Creat
 		return nil, fmt.Errorf("shipper_id không hợp lệ: %w", err)
 	}
 
+	text := renderText(ctx, c.engine, codeOfferReceived, entity.ChannelPush, map[string]string{
+		"price":  formatNumber(payload.Price),
+		"bid_id": payload.BidID,
+	}, notificationText{
+		title: "Bạn nhận được một báo giá mới",
+		body:  fmt.Sprintf("Một tài xế vừa báo giá %.0f đ cho đơn hàng của bạn.", payload.Price),
+	})
+
 	return []entity.CreateNotificationParam{{
 		UserID:        shipperID,
 		RecipientRole: entity.RoleShipper,
 		Type:          entity.TypeOfferReceived,
 		Channel:       entity.ChannelPush,
-		Title:         "Bạn nhận được một báo giá mới",
-		Body:          fmt.Sprintf("Một tài xế vừa báo giá %.0f đ cho đơn hàng của bạn.", payload.Price),
+		Title:         text.title,
+		Body:          text.body,
 		RefType:       entity.RefTypeBid,
 		RefID:         payload.BidID,
 		Data: biz.MarshalData(map[string]string{
@@ -217,7 +249,7 @@ func (c *MatchingConsumer) onOfferReceived(env *events.Envelope) ([]entity.Creat
 	}}, nil
 }
 
-func (c *MatchingConsumer) onOfferRejected(env *events.Envelope) ([]entity.CreateNotificationParam, error) {
+func (c *MatchingConsumer) onOfferRejected(ctx context.Context, env *events.Envelope) ([]entity.CreateNotificationParam, error) {
 	var payload events.OfferRejected
 	if err := decodeData(env.Data, &payload); err != nil {
 		return nil, err
@@ -228,18 +260,26 @@ func (c *MatchingConsumer) onOfferRejected(env *events.Envelope) ([]entity.Creat
 		return nil, fmt.Errorf("driver_id không hợp lệ: %w", err)
 	}
 
-	body := "Chủ hàng đã chọn tài xế khác cho đơn này."
+	fallbackBody := "Chủ hàng đã chọn tài xế khác cho đơn này."
 	if payload.Reason != "" {
-		body = payload.Reason
+		fallbackBody = payload.Reason
 	}
+
+	text := renderText(ctx, c.engine, codeOfferRejected, entity.ChannelInApp, map[string]string{
+		"reason": payload.Reason,
+		"bid_id": payload.BidID,
+	}, notificationText{
+		title: "Báo giá của bạn không được chọn",
+		body:  fallbackBody,
+	})
 
 	return []entity.CreateNotificationParam{{
 		UserID:        driverID,
 		RecipientRole: entity.RoleDriver,
 		Type:          entity.TypeOfferRejected,
 		Channel:       entity.ChannelInApp,
-		Title:         "Báo giá của bạn không được chọn",
-		Body:          body,
+		Title:         text.title,
+		Body:          text.body,
 		RefType:       entity.RefTypeBid,
 		RefID:         payload.BidID,
 		Data: biz.MarshalData(map[string]string{
@@ -250,7 +290,7 @@ func (c *MatchingConsumer) onOfferRejected(env *events.Envelope) ([]entity.Creat
 	}}, nil
 }
 
-func (c *MatchingConsumer) onCargoSuggested(env *events.Envelope) ([]entity.CreateNotificationParam, error) {
+func (c *MatchingConsumer) onCargoSuggested(ctx context.Context, env *events.Envelope) ([]entity.CreateNotificationParam, error) {
 	var payload events.CargoSuggested
 	if err := decodeData(env.Data, &payload); err != nil {
 		return nil, err
@@ -261,16 +301,24 @@ func (c *MatchingConsumer) onCargoSuggested(env *events.Envelope) ([]entity.Crea
 		return nil, fmt.Errorf("driver_id không hợp lệ: %w", err)
 	}
 
+	text := renderText(ctx, c.engine, codeCargoSuggested, entity.ChannelPush, map[string]string{
+		"total_found": strconv.Itoa(int(payload.TotalFound)),
+		"ask_id":      payload.AskID,
+	}, notificationText{
+		title: "Có đơn hàng cho chuyến của bạn",
+		body: fmt.Sprintf("Tìm thấy %d đơn hàng phù hợp với chuyến bạn vừa đăng. Xem và báo giá ngay.",
+			payload.TotalFound),
+	})
+
 	return []entity.CreateNotificationParam{{
 		UserID:        driverID,
 		RecipientRole: entity.RoleDriver,
 		Type:          entity.TypeCargoSuggested,
 		Channel:       entity.ChannelPush,
-		Title:         "Có đơn hàng cho chuyến của bạn",
-		Body: fmt.Sprintf("Tìm thấy %d đơn hàng phù hợp với chuyến bạn vừa đăng. Xem và báo giá ngay.",
-			payload.TotalFound),
-		RefType: entity.RefTypeAsk,
-		RefID:   payload.AskID,
+		Title:         text.title,
+		Body:          text.body,
+		RefType:       entity.RefTypeAsk,
+		RefID:         payload.AskID,
 		Data: biz.MarshalData(map[string]any{
 			"ask_id":  payload.AskID,
 			"bid_ids": payload.BidIDs,

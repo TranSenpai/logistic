@@ -74,6 +74,17 @@ ent-new:
 auth-keys:
 	@bash scripts/generate-jwt-keys.sh
 
+# ==============================================================================
+# Postman
+# ==============================================================================
+
+.PHONY: postman
+
+## postman: Sinh lại logistic.postman_collection.json từ tools/postman
+postman:
+	@go run ./tools/postman -o logistic.postman_collection.json
+	@go test ./tools/postman/
+
 ## auth-keys-show: In dấu vân tay khoá để đối chiếu hai bên có khớp không
 # Triệu chứng khi lệch khoá là "mọi token bỗng dưng không hợp lệ" — rất khó đoán
 # nguyên nhân, nên có sẵn một lệnh đối chiếu là đáng.

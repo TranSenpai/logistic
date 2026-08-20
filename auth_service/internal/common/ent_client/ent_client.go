@@ -10,6 +10,7 @@ import (
 	"auth_service/ent"
 	_ "auth_service/ent/runtime"
 
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 )
 

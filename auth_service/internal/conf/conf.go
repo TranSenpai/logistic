@@ -19,6 +19,11 @@ type ServerConfig struct {
 	IsProduction bool   `env:"GLOBAL_IS_PRODUCTION" env-default:"false"`
 }
 
+const (
+	DriverMySQL    = "mysql"
+	DriverPostgres = "postgres"
+)
+
 type DatabaseConfig struct {
 	Driver   string `env:"AUTH_SERVICE_DB_DRIVER" env-required:"true"`
 	User     string `env:"AUTH_SERVICE_DB_USER" env-required:"true"`
@@ -41,6 +46,10 @@ type JWTConfig struct {
 }
 
 func (db *DatabaseConfig) GetDataSource() string {
+	if db.Driver == DriverMySQL {
+		return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=UTC",
+			db.User, db.Password, db.Host, db.Port, db.DBName)
+	}
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		db.Host, db.Port, db.User, db.Password, db.DBName)
 }

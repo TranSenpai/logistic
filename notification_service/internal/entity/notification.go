@@ -21,6 +21,11 @@ const (
 )
 
 const (
+	LocaleVI = "vi"
+	LocaleEN = "en"
+)
+
+const (
 	StatusPending = "pending"
 	StatusSent    = "sent"
 	StatusFailed  = "failed"
