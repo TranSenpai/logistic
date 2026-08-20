@@ -8,16 +8,16 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+	"github.com/logistic/pkg/uuidx"
 )
 
-// User là danh tính gốc. Mọi bảng khác trong user_service đều treo vào bảng này.
 type User struct {
 	ent.Schema
 }
 
 func (User) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
+		field.UUID("id", uuid.UUID{}).Default(uuidx.New).Unique(),
 		field.String("phone").Unique(),
 		field.String("email").Unique().Optional(),
 		field.String("full_name").Optional(),
@@ -40,7 +40,6 @@ func (User) Edges() []ent.Edge {
 	}
 }
 
-// Index trên (role, status) vì màn admin luôn lọc theo đúng cặp này.
 func (User) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("role", "status"),

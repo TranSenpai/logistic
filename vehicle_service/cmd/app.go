@@ -30,7 +30,6 @@ func NewApp(cfg *conf.Config) (*App, error) {
 		log.Printf("Failed to initialize tracer: %v", err)
 	}
 
-	// Recovery -> Logging -> Error: xem ghi chú ở pkg/middleware/grpc_error.go.
 	grpcServer := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		middleware.ChainForService("vehicle_service"),

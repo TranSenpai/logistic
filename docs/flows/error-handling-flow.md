@@ -7,9 +7,9 @@ mô tả từng lần, và vì sao chúng cần thiết.
 
 ---
 
-## Vấn đề của cách làm cũ
+## Vì sao cần bốn lần biến đổi
 
-Trước đây mỗi controller tự viết:
+Phương án đơn giản nhất là để mỗi controller tự dịch lỗi sang HTTP:
 
 ```go
 st, _ := status.FromError(err)
@@ -18,11 +18,13 @@ ctx.JSON(http.StatusInternalServerError, gin.H{
 })
 ```
 
-Ba hệ quả:
+Cách này có ba khuyết điểm, và mỗi lần biến đổi mô tả bên dưới sinh ra để chặn
+một trong số đó:
 
-1. **Mọi lỗi đều ra HTTP 500** — kể cả "không tìm thấy user" hay "sai mật khẩu".
-2. **Mã lỗi do từng người tự nghĩ ra** (`registration_failed`, `fetch_failed`,
-   `upload_failed`) nên client không thể xử lý theo mã một cách đáng tin.
+1. **Mã trạng thái phụ thuộc người viết handler** — "không tìm thấy user" và "sai
+   mật khẩu" đều dễ thành HTTP 500 nếu handler không phân biệt.
+2. **Mã lỗi không có danh mục chung** (`registration_failed`, `fetch_failed`,
+   `upload_failed`) nên client không xử lý theo mã một cách đáng tin được.
 3. **Chi tiết kỹ thuật lọt ra ngoài** — `st.Message()` có thể chứa nguyên văn câu
    `duplicate key value violates unique constraint "users_phone_key"`, để lộ tên
    bảng và tên cột cho bất kỳ ai gọi API.

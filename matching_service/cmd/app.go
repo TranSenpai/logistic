@@ -35,7 +35,6 @@ func NewApp(cfg *conf.Config) (*App, error) {
 		return nil, err
 	}
 
-	// Recovery -> Logging -> Error. Xem pkg/middleware/grpc_error.go.
 	grpcServer := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		middleware.ChainForService("matching_service"),

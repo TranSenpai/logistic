@@ -1,7 +1,9 @@
 package controller
 
 import (
-	"gateway_service/internal/middleware"
+	"context"
+	"time"
+
 	"gateway_service/internal/response"
 
 	"github.com/gin-gonic/gin"
@@ -16,12 +18,7 @@ func NewVehicleController(vehicleClient pb.VehicleServiceClient) *VehicleControl
 	return &VehicleController{vehicleClient: vehicleClient}
 }
 
-// ===========================================================================
-// CLIENT — PHƯƠNG TIỆN
-// ===========================================================================
-
 type RegisterVehicleReq struct {
-	DriverID          string  `json:"driver_id"`
 	LicensePlate      string  `json:"license_plate" binding:"required"`
 	Brand             string  `json:"brand"`
 	Model             string  `json:"model"`
@@ -33,6 +30,7 @@ type RegisterVehicleReq struct {
 
 // RegisterVehicle godoc
 // @Summary      Đăng ký phương tiện
+// @Description  Xe luôn được đăng ký cho CHÍNH tài xế đang đăng nhập.
 // @Tags         Vehicle
 // @Accept       json
 // @Produce      json
@@ -45,13 +43,8 @@ func (c *VehicleController) RegisterVehicle(ctx *gin.Context) {
 		return
 	}
 
-	driverID := req.DriverID
-	if driverID == "" {
-		driverID = middleware.CurrentUserID(ctx)
-	}
-
 	resp, err := c.vehicleClient.RegisterVehicle(ctx.Request.Context(), &pb.RegisterVehicleRequest{
-		DriverId:          driverID,
+		DriverId:          selfID(ctx),
 		LicensePlate:      req.LicensePlate,
 		Brand:             req.Brand,
 		Model:             req.Model,
@@ -64,7 +57,10 @@ func (c *VehicleController) RegisterVehicle(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.Created(ctx, gin.H{"id": resp.Id, "vehicle": resp.Vehicle}, resp.Message)
+	response.Created(ctx, gin.H{
+		"id":      uuidString(resp.Id),
+		"vehicle": toVehicleDTO(resp.Vehicle),
+	}, resp.Message)
 }
 
 // GetVehicle godoc
@@ -75,12 +71,17 @@ func (c *VehicleController) RegisterVehicle(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/vehicles/{id} [get]
 func (c *VehicleController) GetVehicle(ctx *gin.Context) {
-	resp, err := c.vehicleClient.GetVehicle(ctx.Request.Context(), &pb.GetVehicleRequest{Id: ctx.Param("id")})
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
+	resp, err := c.vehicleClient.GetVehicle(ctx.Request.Context(), &pb.GetVehicleRequest{Id: id})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, resp.Vehicle)
+	response.OK(ctx, gin.H{"vehicle": toVehicleDTO(resp.Vehicle)})
 }
 
 // ListVehicles godoc
@@ -90,9 +91,15 @@ func (c *VehicleController) GetVehicle(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/vehicles [get]
 func (c *VehicleController) ListVehicles(ctx *gin.Context) {
-	driverID := ctx.Query("driver_id")
-	if driverID == "" {
-		driverID = middleware.CurrentUserID(ctx)
+	driverID, ok := queryID(ctx, "driver_id")
+	if !ok {
+		return
+	}
+	if driverID == nil {
+		driverID = selfID(ctx)
+	}
+	if !requireSelfOrAdmin(ctx, driverID) {
+		return
 	}
 
 	resp, err := c.vehicleClient.ListVehicles(ctx.Request.Context(), &pb.ListVehiclesRequest{
@@ -106,7 +113,10 @@ func (c *VehicleController) ListVehicles(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, gin.H{"vehicles": resp.Vehicles, "pagination": resp.Pagination})
+	response.OK(ctx, gin.H{
+		"vehicles":   toVehicleDTOs(resp.Vehicles),
+		"pagination": toVehiclePaginationDTO(resp.Pagination),
+	})
 }
 
 type UpdateVehicleReq struct {
@@ -127,6 +137,11 @@ type UpdateVehicleReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/vehicles/{id} [put]
 func (c *VehicleController) UpdateVehicle(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	var req UpdateVehicleReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -134,7 +149,7 @@ func (c *VehicleController) UpdateVehicle(ctx *gin.Context) {
 	}
 
 	resp, err := c.vehicleClient.UpdateVehicle(ctx.Request.Context(), &pb.UpdateVehicleRequest{
-		Id:                ctx.Param("id"),
+		Id:                id,
 		Brand:             req.Brand,
 		Model:             req.Model,
 		ManufactureYear:   req.ManufactureYear,
@@ -146,7 +161,7 @@ func (c *VehicleController) UpdateVehicle(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.Vehicle, resp.Message)
+	response.OKMessage(ctx, gin.H{"vehicle": toVehicleDTO(resp.Vehicle)}, resp.Message)
 }
 
 // DeleteVehicle godoc
@@ -157,9 +172,14 @@ func (c *VehicleController) UpdateVehicle(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/vehicles/{id} [delete]
 func (c *VehicleController) DeleteVehicle(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	resp, err := c.vehicleClient.DeleteVehicle(ctx.Request.Context(), &pb.DeleteVehicleRequest{
-		Id:       ctx.Param("id"),
-		DriverId: middleware.CurrentUserID(ctx),
+		Id:       id,
+		DriverId: selfID(ctx),
 	})
 	if err != nil {
 		response.Error(ctx, err)
@@ -181,6 +201,11 @@ type UpdateVehicleStatusReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/vehicles/{id}/status [put]
 func (c *VehicleController) UpdateVehicleStatus(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	var req UpdateVehicleStatusReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -188,19 +213,15 @@ func (c *VehicleController) UpdateVehicleStatus(ctx *gin.Context) {
 	}
 
 	resp, err := c.vehicleClient.UpdateVehicleStatus(ctx.Request.Context(), &pb.UpdateVehicleStatusRequest{
-		Id:     ctx.Param("id"),
+		Id:     id,
 		Status: req.Status,
 	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.Vehicle, resp.Message)
+	response.OKMessage(ctx, gin.H{"vehicle": toVehicleDTO(resp.Vehicle)}, resp.Message)
 }
-
-// ===========================================================================
-// CLIENT — GIẤY TỜ
-// ===========================================================================
 
 type UploadDocumentReq struct {
 	DocumentType   string `json:"document_type" binding:"required,oneof=registration inspection insurance license"`
@@ -217,6 +238,11 @@ type UploadDocumentReq struct {
 // @Success      201 {object} response.Envelope
 // @Router       /api/v1/vehicles/{id}/documents [post]
 func (c *VehicleController) UploadVehicleDocument(ctx *gin.Context) {
+	vehicleID, ok := pathID(ctx, "vehicle_id", "id")
+	if !ok {
+		return
+	}
+
 	var req UploadDocumentReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -224,7 +250,7 @@ func (c *VehicleController) UploadVehicleDocument(ctx *gin.Context) {
 	}
 
 	resp, err := c.vehicleClient.UploadVehicleDocument(ctx.Request.Context(), &pb.UploadVehicleDocumentRequest{
-		VehicleId:      vehicleIDParam(ctx),
+		VehicleId:      vehicleID,
 		DocumentType:   req.DocumentType,
 		DocumentNumber: req.DocumentNumber,
 		FileUrl:        req.FileURL,
@@ -233,7 +259,7 @@ func (c *VehicleController) UploadVehicleDocument(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.Created(ctx, resp.Document, resp.Message)
+	response.Created(ctx, gin.H{"document": toVehicleDocumentDTO(resp.Document)}, resp.Message)
 }
 
 // ListVehicleDocuments godoc
@@ -244,15 +270,20 @@ func (c *VehicleController) UploadVehicleDocument(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/vehicles/{id}/documents [get]
 func (c *VehicleController) ListVehicleDocuments(ctx *gin.Context) {
+	vehicleID, ok := pathID(ctx, "vehicle_id", "id")
+	if !ok {
+		return
+	}
+
 	resp, err := c.vehicleClient.ListVehicleDocuments(ctx.Request.Context(), &pb.ListVehicleDocumentsRequest{
-		VehicleId:    vehicleIDParam(ctx),
+		VehicleId:    vehicleID,
 		ReviewStatus: ctx.Query("review_status"),
 	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, gin.H{"documents": resp.Documents})
+	response.OK(ctx, gin.H{"documents": toVehicleDocumentDTOs(resp.Documents)})
 }
 
 // DeleteVehicleDocument godoc
@@ -263,8 +294,13 @@ func (c *VehicleController) ListVehicleDocuments(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/vehicle-documents/{id} [delete]
 func (c *VehicleController) DeleteVehicleDocument(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	resp, err := c.vehicleClient.DeleteVehicleDocument(ctx.Request.Context(), &pb.DeleteVehicleDocumentRequest{
-		Id: ctx.Param("id"),
+		Id: id,
 	})
 	if err != nil {
 		response.Error(ctx, err)
@@ -273,17 +309,14 @@ func (c *VehicleController) DeleteVehicleDocument(ctx *gin.Context) {
 	response.OKMessage(ctx, nil, resp.Message)
 }
 
-// ===========================================================================
-// CLIENT — VỊ TRÍ & SẴN SÀNG NHẬN ĐƠN
-// ===========================================================================
-
 type ReportLocationReq struct {
-	DriverID  string  `json:"driver_id"`
 	Latitude  float64 `json:"latitude" binding:"required,latitude"`
 	Longitude float64 `json:"longitude" binding:"required,longitude"`
 	Heading   float64 `json:"heading"`
 	SpeedKph  float64 `json:"speed_kph"`
 }
+
+const locationTimeout = 2 * time.Second
 
 // ReportLocation godoc
 // @Summary      Tài xế báo vị trí GPS
@@ -295,20 +328,23 @@ type ReportLocationReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/vehicles/{id}/location [post]
 func (c *VehicleController) ReportLocation(ctx *gin.Context) {
+	vehicleID, ok := pathID(ctx, "vehicle_id", "id")
+	if !ok {
+		return
+	}
+
 	var req ReportLocationReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
 		return
 	}
 
-	driverID := req.DriverID
-	if driverID == "" {
-		driverID = middleware.CurrentUserID(ctx)
-	}
+	callCtx, cancel := context.WithTimeout(ctx.Request.Context(), locationTimeout)
+	defer cancel()
 
-	resp, err := c.vehicleClient.ReportLocation(ctx.Request.Context(), &pb.ReportLocationRequest{
-		VehicleId: vehicleIDParam(ctx),
-		DriverId:  driverID,
+	resp, err := c.vehicleClient.ReportLocation(callCtx, &pb.ReportLocationRequest{
+		VehicleId: vehicleID,
+		DriverId:  selfID(ctx),
 		Latitude:  req.Latitude,
 		Longitude: req.Longitude,
 		Heading:   req.Heading,
@@ -329,14 +365,22 @@ func (c *VehicleController) ReportLocation(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/vehicles/{id}/location [get]
 func (c *VehicleController) GetVehicleLocation(ctx *gin.Context) {
-	resp, err := c.vehicleClient.GetVehicleLocation(ctx.Request.Context(), &pb.GetVehicleLocationRequest{
-		VehicleId: vehicleIDParam(ctx),
+	vehicleID, ok := pathID(ctx, "vehicle_id", "id")
+	if !ok {
+		return
+	}
+
+	callCtx, cancel := context.WithTimeout(ctx.Request.Context(), locationTimeout)
+	defer cancel()
+
+	resp, err := c.vehicleClient.GetVehicleLocation(callCtx, &pb.GetVehicleLocationRequest{
+		VehicleId: vehicleID,
 	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, resp.Location)
+	response.OK(ctx, gin.H{"location": toVehicleLocationDTO(resp.Location)})
 }
 
 type SetAvailabilityReq struct {
@@ -358,20 +402,28 @@ type SetAvailabilityReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/drivers/{driver_id}/availability [post]
 func (c *VehicleController) SetDriverAvailability(ctx *gin.Context) {
+	driverID, ok := resolveOwnID(ctx, "driver_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, driverID) {
+		return
+	}
+
 	var req SetAvailabilityReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
 		return
 	}
 
-	driverID := ctx.Param("driver_id")
-	if driverID == "" {
-		driverID = middleware.CurrentUserID(ctx)
+	vehicleID, ok := bodyID(ctx, "vehicle_id", req.VehicleID, true)
+	if !ok {
+		return
 	}
 
 	resp, err := c.vehicleClient.SetDriverAvailability(ctx.Request.Context(), &pb.SetDriverAvailabilityRequest{
 		DriverId:           driverID,
-		VehicleId:          req.VehicleID,
+		VehicleId:          vehicleID,
 		IsOnline:           req.IsOnline,
 		AvailableWeightKg:  req.AvailableWeightKg,
 		AvailableVolumeCbm: req.AvailableVolumeCbm,
@@ -382,7 +434,7 @@ func (c *VehicleController) SetDriverAvailability(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.Availability, resp.Message)
+	response.OKMessage(ctx, gin.H{"availability": toDriverAvailabilityDTO(resp.Availability)}, resp.Message)
 }
 
 // GetDriverAvailability godoc
@@ -393,9 +445,12 @@ func (c *VehicleController) SetDriverAvailability(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/drivers/{driver_id}/availability [get]
 func (c *VehicleController) GetDriverAvailability(ctx *gin.Context) {
-	driverID := ctx.Param("driver_id")
-	if driverID == "" {
-		driverID = middleware.CurrentUserID(ctx)
+	driverID, ok := resolveOwnID(ctx, "driver_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, driverID) {
+		return
 	}
 
 	resp, err := c.vehicleClient.GetDriverAvailability(ctx.Request.Context(), &pb.GetDriverAvailabilityRequest{
@@ -405,7 +460,7 @@ func (c *VehicleController) GetDriverAvailability(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, resp.Availability)
+	response.OK(ctx, gin.H{"availability": toDriverAvailabilityDTO(resp.Availability)})
 }
 
 type SearchNearbyReq struct {
@@ -433,7 +488,10 @@ func (c *VehicleController) SearchNearbyVehicles(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := c.vehicleClient.SearchNearbyVehicles(ctx.Request.Context(), &pb.SearchNearbyVehiclesRequest{
+	callCtx, cancel := context.WithTimeout(ctx.Request.Context(), locationTimeout)
+	defer cancel()
+
+	resp, err := c.vehicleClient.SearchNearbyVehicles(callCtx, &pb.SearchNearbyVehiclesRequest{
 		Latitude:     req.Latitude,
 		Longitude:    req.Longitude,
 		RadiusKm:     req.RadiusKm,
@@ -446,12 +504,11 @@ func (c *VehicleController) SearchNearbyVehicles(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, gin.H{"vehicles": resp.Vehicles, "total_found": resp.TotalFound})
+	response.OK(ctx, gin.H{
+		"vehicles":    toNearbyVehicleDTOs(resp.Vehicles),
+		"total_found": resp.TotalFound,
+	})
 }
-
-// ===========================================================================
-// ADMIN
-// ===========================================================================
 
 // AdminListVehicles godoc
 // @Summary      [Admin] Danh sách toàn bộ phương tiện
@@ -472,7 +529,10 @@ func (c *VehicleController) AdminListVehicles(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, gin.H{"vehicles": resp.Vehicles, "pagination": resp.Pagination})
+	response.OK(ctx, gin.H{
+		"vehicles":   toVehicleDTOs(resp.Vehicles),
+		"pagination": toVehiclePaginationDTO(resp.Pagination),
+	})
 }
 
 type AdminReviewReq struct {
@@ -489,6 +549,11 @@ type AdminReviewReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/admin/vehicles/{id}/verify [put]
 func (c *VehicleController) AdminVerifyVehicle(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	var req AdminReviewReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -496,16 +561,16 @@ func (c *VehicleController) AdminVerifyVehicle(ctx *gin.Context) {
 	}
 
 	resp, err := c.vehicleClient.AdminVerifyVehicle(ctx.Request.Context(), &pb.AdminVerifyVehicleRequest{
-		Id:         ctx.Param("id"),
+		Id:         id,
 		Approved:   req.Approved,
 		Note:       req.Note,
-		ReviewerId: middleware.CurrentUserID(ctx),
+		ReviewerId: selfID(ctx),
 	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.Vehicle, resp.Message)
+	response.OKMessage(ctx, gin.H{"vehicle": toVehicleDTO(resp.Vehicle)}, resp.Message)
 }
 
 // AdminListPendingDocuments godoc
@@ -523,7 +588,10 @@ func (c *VehicleController) AdminListPendingDocuments(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, gin.H{"documents": resp.Documents, "pagination": resp.Pagination})
+	response.OK(ctx, gin.H{
+		"documents":  toVehicleDocumentDTOs(resp.Documents),
+		"pagination": toVehiclePaginationDTO(resp.Pagination),
+	})
 }
 
 // AdminReviewDocument godoc
@@ -535,6 +603,11 @@ func (c *VehicleController) AdminListPendingDocuments(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/admin/vehicle-documents/{id}/review [put]
 func (c *VehicleController) AdminReviewDocument(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	var req AdminReviewReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -542,16 +615,16 @@ func (c *VehicleController) AdminReviewDocument(ctx *gin.Context) {
 	}
 
 	resp, err := c.vehicleClient.AdminReviewDocument(ctx.Request.Context(), &pb.AdminReviewDocumentRequest{
-		Id:         ctx.Param("id"),
+		Id:         id,
 		Approved:   req.Approved,
 		Note:       req.Note,
-		ReviewerId: middleware.CurrentUserID(ctx),
+		ReviewerId: selfID(ctx),
 	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.Document, resp.Message)
+	response.OKMessage(ctx, gin.H{"document": toVehicleDocumentDTO(resp.Document)}, resp.Message)
 }
 
 // AdminGetVehicleStats godoc
@@ -566,17 +639,12 @@ func (c *VehicleController) AdminGetVehicleStats(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, resp)
-}
-
-// vehicleIDParam đọc id phương tiện từ đường dẫn.
-//
-// Route đăng ký "/vehicles/:id/documents" nên tham số tên là "id"; nhưng proto
-// và swagger gọi nó là vehicle_id. Thử cả hai để đổi tên route không làm hỏng
-// handler.
-func vehicleIDParam(ctx *gin.Context) string {
-	if v := ctx.Param("vehicle_id"); v != "" {
-		return v
-	}
-	return ctx.Param("id")
+	response.OK(ctx, gin.H{
+		"total_vehicles":       resp.TotalVehicles,
+		"active_vehicles":      resp.ActiveVehicles,
+		"maintenance_vehicles": resp.MaintenanceVehicles,
+		"pending_verification": resp.PendingVerification,
+		"online_drivers":       resp.OnlineDrivers,
+		"pending_documents":    resp.PendingDocuments,
+	})
 }

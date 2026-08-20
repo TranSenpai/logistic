@@ -1,11 +1,3 @@
-// Package repo là tầng truy cập dữ liệu của notification_service.
-//
-// Redis ở đây giữ đúng MỘT thứ: bộ đếm số thông báo chưa đọc.
-//
-// Vì sao riêng con số đó đáng cache: app mobile hỏi nó ở MỌI màn hình để vẽ
-// chấm đỏ trên chuông. Nếu mỗi lần hỏi là một câu COUNT(*) trên bảng
-// notifications đang bị consumer ghi liên tục thì đây sẽ là truy vấn nóng nhất
-// hệ thống — trong khi câu trả lời chỉ là một số nguyên nhỏ.
 package repo
 
 import (
@@ -62,10 +54,6 @@ func (r *notificationRepoImpl) invalidateUnread(ctx context.Context, userIDs ...
 	}
 }
 
-// ---------------------------------------------------------------------------
-// NOTIFICATIONS
-// ---------------------------------------------------------------------------
-
 func (r *notificationRepoImpl) Create(ctx context.Context, param *entity.CreateNotificationParam) (*entity.Notification, error) {
 	dao, err := r.buildCreate(r.client.Notification.Create(), param).Save(ctx)
 	if err != nil {
@@ -88,13 +76,9 @@ func (r *notificationRepoImpl) buildCreate(b *ent.NotificationCreate, param *ent
 		SetData(param.Data).
 		SetRefType(param.RefType).
 		SetRefID(param.RefID).
-		// Ghi xuống DB đã là "gửi xong" đối với kênh in_app. Các kênh khác
-		// (push/email/sms) sẽ do dispatcher cập nhật lại trạng thái sau.
 		SetStatus(notification.StatusSent)
 }
 
-// CreateBatch dùng CreateBulk: một câu INSERT nhiều VALUES thay vì N câu.
-// Với sự kiện fan-out tới 50 tài xế, đây là khác biệt giữa 1 và 50 round-trip.
 func (r *notificationRepoImpl) CreateBatch(ctx context.Context, params []entity.CreateNotificationParam) (int64, error) {
 	if len(params) == 0 {
 		return 0, nil
@@ -116,21 +100,6 @@ func (r *notificationRepoImpl) CreateBatch(ctx context.Context, params []entity.
 	return int64(len(created)), nil
 }
 
-// CreateWithEventGuard là trái tim của tính idempotent.
-//
-// Cả việc ghi dấu event_id lẫn việc tạo thông báo nằm trong CÙNG một
-// transaction. Hai kết cục có thể xảy ra, và cả hai đều đúng:
-//
-//	commit thành công -> thông báo đã tạo VÀ dấu đã ghi, không thể lệch nhau.
-//	event_id trùng    -> transaction rollback, không sinh thông báo trùng.
-//
-// Nếu tách hai bước ra ngoài transaction, một lần service chết đúng khe giữa
-// chúng là đủ để tài xế nhận hai lần cùng một thông báo (hoặc tệ hơn: dấu đã
-// ghi nhưng thông báo thì chưa, và message bị coi như đã xử lý xong).
-// params rỗng vẫn được xử lý bình thường (chỉ ghi dấu, không tạo thông báo):
-// đó là trường hợp mọi người nhận đều đã tắt loại thông báo này. Nếu bỏ qua sớm
-// thì event không được ghi dấu, và mỗi lần broker giao lại ta lại đi hỏi cài đặt
-// của từng người rồi đi tới cùng kết luận — tốn công mà không đổi kết quả.
 func (r *notificationRepoImpl) CreateWithEventGuard(
 	ctx context.Context,
 	eventID, routingKey, source string,
@@ -142,21 +111,17 @@ func (r *notificationRepoImpl) CreateWithEventGuard(
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// Ghi dấu TRƯỚC: unique index trên event_id sẽ chặn ngay tại đây nếu trùng,
-	// khỏi tốn công dựng hàng loạt bản ghi thông báo rồi mới phát hiện.
 	if _, err := tx.ProcessedEvent.Create().
 		SetEventID(eventID).
 		SetRoutingKey(routingKey).
 		SetSource(source).
 		Save(ctx); err != nil {
-		return 0, wrapError(err, nil) // trùng -> ErrDuplicateEvent
+		return 0, wrapError(err, nil)
 	}
 
 	var createdCount int
 	userIDs := make([]uuid.UUID, 0, len(params))
 
-	// Bỏ qua CreateBulk khi không có thông báo nào: dấu event đã ghi ở trên là
-	// đủ, và ta không phụ thuộc vào việc ent xử lý bulk rỗng ra sao.
 	if len(params) > 0 {
 		builders := make([]*ent.NotificationCreate, 0, len(params))
 		for i := range params {
@@ -289,7 +254,6 @@ func (r *notificationRepoImpl) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// CountUnread đọc từ Redis trước; miss thì đếm ở DB rồi ghi lại.
 func (r *notificationRepoImpl) CountUnread(ctx context.Context, userID uuid.UUID) (int64, error) {
 	key := r.keyUnread(userID)
 
@@ -343,10 +307,6 @@ func (r *notificationRepoImpl) CountSentToday(ctx context.Context) (int64, error
 	}
 	return int64(n), nil
 }
-
-// ---------------------------------------------------------------------------
-// TEMPLATES
-// ---------------------------------------------------------------------------
 
 func (r *notificationRepoImpl) CreateTemplate(ctx context.Context, param *entity.CreateTemplateParam) (*entity.NotificationTemplate, error) {
 	locale := param.Locale
@@ -445,10 +405,6 @@ func (r *notificationRepoImpl) CountTemplates(ctx context.Context) (int64, error
 	return int64(n), nil
 }
 
-// ---------------------------------------------------------------------------
-// PREFERENCES
-// ---------------------------------------------------------------------------
-
 func (r *notificationRepoImpl) GetOrCreatePreference(ctx context.Context, userID uuid.UUID) (*entity.NotificationPreference, error) {
 	dao, err := r.client.NotificationPreference.Query().
 		Where(notificationpreference.UserIDEQ(userID)).
@@ -472,8 +428,6 @@ func (r *notificationRepoImpl) GetOrCreatePreference(ctx context.Context, userID
 		SetPromotionEnabled(def.PromotionEnabled).
 		Save(ctx)
 	if cErr != nil {
-		// Hai request đồng thời cho cùng một user mới: một cái thắng, cái kia
-		// đụng unique index. Đọc lại là có ngay bản ghi vừa được tạo.
 		if ent.IsConstraintError(cErr) {
 			existing, rErr := r.client.NotificationPreference.Query().
 				Where(notificationpreference.UserIDEQ(userID)).
@@ -491,7 +445,6 @@ func (r *notificationRepoImpl) GetOrCreatePreference(ctx context.Context, userID
 }
 
 func (r *notificationRepoImpl) UpdatePreference(ctx context.Context, param *entity.UpdatePreferenceParam) (*entity.NotificationPreference, error) {
-	// Bảo đảm bản ghi tồn tại trước khi update.
 	if _, err := r.GetOrCreatePreference(ctx, param.UserID); err != nil {
 		return nil, err
 	}
@@ -515,11 +468,6 @@ func (r *notificationRepoImpl) UpdatePreference(ctx context.Context, param *enti
 	return r.GetOrCreatePreference(ctx, param.UserID)
 }
 
-// CountUnreadAll đếm thông báo chưa đọc trên toàn hệ thống.
-//
-// KHÔNG cache: con số này chỉ dùng cho màn thống kê admin (vài lượt xem mỗi
-// ngày), trong khi giá trị của nó thay đổi liên tục. Cache ở đây chỉ tổ trả về
-// số cũ mà không tiết kiệm được gì đáng kể.
 func (r *notificationRepoImpl) CountUnreadAll(ctx context.Context) (int64, error) {
 	n, err := r.client.Notification.Query().
 		Where(notification.IsReadEQ(false)).

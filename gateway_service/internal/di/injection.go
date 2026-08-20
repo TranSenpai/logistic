@@ -1,15 +1,12 @@
-// Package di dựng các kết nối gRPC xuống service nội bộ rồi giao cho tầng route.
-//
-// Gateway KHÔNG có database và KHÔNG có luật nghiệp vụ: nó chỉ dịch HTTP <-> gRPC,
-// chuẩn hoá lỗi và chặn quyền. Mọi thứ khác nằm ở service phía sau.
 package di
 
 import (
 	"fmt"
 	"log"
-	"os"
 
+	"gateway_service/internal/conf"
 	"gateway_service/internal/delivery/http"
+	"gateway_service/internal/middleware"
 
 	pbauth "github.com/logistic/api/logistic/auth_service/v1"
 	pbmatching "github.com/logistic/api/logistic/matching_service/v1"
@@ -17,6 +14,7 @@ import (
 	pbnotification "github.com/logistic/api/logistic/notification_service/v1"
 	pbuser "github.com/logistic/api/logistic/user_service/v1"
 	pbvehicle "github.com/logistic/api/logistic/vehicle_service/v1"
+	"github.com/logistic/pkg/authn"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -24,7 +22,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// Container giữ các kết nối gRPC để đóng gọn lúc tắt gateway.
 type Container struct {
 	conns []*grpc.ClientConn
 }
@@ -43,51 +40,56 @@ func (c *Container) Close() {
 	}
 }
 
-// dial mở kết nối gRPC tới một service nội bộ.
-//
-// grpc.NewClient là lazy: nó KHÔNG bắt tay ngay, mà kết nối ở lần gọi đầu tiên.
-// Nhờ vậy gateway khởi động được kể cả khi một service phía sau chưa sẵn sàng —
-// điều bình thường khi cả cụm cùng bật lên trong docker-compose.
-func dial(name, envKey, fallback string) (*grpc.ClientConn, error) {
-	addr := os.Getenv(envKey)
-	if addr == "" {
-		addr = fallback
-	}
+const roundRobinConfig = `{
+  "loadBalancingConfig": [{"round_robin":{}}],
+  "healthCheckConfig": {"serviceName": ""}
+}`
 
+func dial(cfg *conf.Config, name, addr string) (*grpc.ClientConn, error) {
 	conn, err := grpc.NewClient(
-		addr,
+		"dns:///"+addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultServiceConfig(roundRobinConfig),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+		grpc.WithChainUnaryInterceptor(
+			concurrencyLimiter(cfg.Upstreams.MaxConcurrentPerUpstream),
+			timeoutInterceptor(cfg.Upstreams.CallTimeout),
+			authn.OutgoingIdentityInterceptor(),
+		),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("gateway: không tạo được client gRPC tới %s (%s): %w", name, addr, err)
 	}
 
-	log.Printf("[gateway] client gRPC %s -> %s", name, addr)
+	log.Printf("[gateway] client gRPC %s -> %s (round_robin, timeout=%s, max_inflight=%d)",
+		name, addr, cfg.Upstreams.CallTimeout, cfg.Upstreams.MaxConcurrentPerUpstream)
 	return conn, nil
 }
 
-func Injection(ginEngine *gin.Engine) (*Container, error) {
+func Injection(ginEngine *gin.Engine, cfg *conf.Config) (*Container, error) {
 	container := &Container{}
 
-	type target struct {
-		name     string
-		envKey   string
-		fallback string
+	verifier, err := buildVerifier(cfg.Auth)
+	if err != nil {
+		return nil, err
 	}
+	authenticator := middleware.NewAuthenticator(verifier)
 
-	targets := []target{
-		{"auth_service", "GATEWAY_AUTH_GRPC_ADDR", "auth-service:9001"},
-		{"media_service", "GATEWAY_MEDIA_GRPC_ADDR", "media-service:9002"},
-		{"matching_service", "GATEWAY_MATCHING_GRPC_ADDR", "matching-service:9003"},
-		{"user_service", "GATEWAY_USER_GRPC_ADDR", "user-service:9004"},
-		{"vehicle_service", "GATEWAY_VEHICLE_GRPC_ADDR", "vehicle-service:9005"},
-		{"notification_service", "GATEWAY_NOTIFICATION_GRPC_ADDR", "notification-service:9006"},
+	targets := []struct {
+		name string
+		addr string
+	}{
+		{"auth_service", cfg.Upstreams.Auth},
+		{"media_service", cfg.Upstreams.Media},
+		{"matching_service", cfg.Upstreams.Matching},
+		{"user_service", cfg.Upstreams.User},
+		{"vehicle_service", cfg.Upstreams.Vehicle},
+		{"notification_service", cfg.Upstreams.Notification},
 	}
 
 	conns := make([]*grpc.ClientConn, 0, len(targets))
 	for _, t := range targets {
-		conn, err := dial(t.name, t.envKey, t.fallback)
+		conn, err := dial(cfg, t.name, t.addr)
 		if err != nil {
 			container.Close()
 			return nil, err
@@ -103,7 +105,32 @@ func Injection(ginEngine *gin.Engine) (*Container, error) {
 		User:         pbuser.NewUserServiceClient(conns[3]),
 		Vehicle:      pbvehicle.NewVehicleServiceClient(conns[4]),
 		Notification: pbnotification.NewNotificationServiceClient(conns[5]),
-	})
+	}, authenticator, cfg)
 
 	return container, nil
+}
+
+func buildVerifier(cfg conf.AuthConfig) (*authn.Verifier, error) {
+	pub, err := authn.LoadPublicKey(cfg.PublicKey)
+	if err != nil {
+		return nil, fmt.Errorf("gateway: nạp public key: %w", err)
+	}
+
+	verifier, err := authn.NewVerifier(pub)
+	if err != nil {
+		return nil, fmt.Errorf("gateway: dựng verifier: %w", err)
+	}
+
+	if cfg.PreviousPublicKey != "" {
+		prev, err := authn.LoadPublicKey(cfg.PreviousPublicKey)
+		if err != nil {
+			return nil, fmt.Errorf("gateway: nạp public key cũ: %w", err)
+		}
+		if err := verifier.AddKey(prev); err != nil {
+			return nil, fmt.Errorf("gateway: thêm public key cũ: %w", err)
+		}
+		log.Println("[gateway] đang xoay khoá: chấp nhận cả khoá cũ và khoá mới")
+	}
+
+	return verifier, nil
 }

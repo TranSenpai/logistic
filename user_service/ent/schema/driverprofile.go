@@ -8,24 +8,19 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+	"github.com/logistic/pkg/uuidx"
 )
 
-// DriverProfile là phần hồ sơ chỉ tài xế mới có: bằng lái, CCCD, điểm đánh giá,
-// trạng thái KYC.
 type DriverProfile struct {
 	ent.Schema
 }
 
 func (DriverProfile) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
-		// user_id khai báo tường minh để làm edge-field: entity có sẵn UserID,
-		// repo lọc thẳng bằng WHERE user_id = ? thay vì phải JOIN sang bảng users.
+		field.UUID("id", uuid.UUID{}).Default(uuidx.New).Unique(),
+
 		field.UUID("user_id", uuid.UUID{}),
 
-		// Optional + Nillable: lúc đăng ký tài xế chưa có bằng lái, để NULL.
-		// Nếu để "" thì unique index sẽ nổ ngay ở tài xế thứ hai — Postgres coi
-		// nhiều NULL là khác nhau, nhưng nhiều chuỗi rỗng là trùng.
 		field.String("license_number").Optional().Nillable().Unique(),
 		field.String("id_card").Optional().Nillable().Unique(),
 
@@ -48,7 +43,6 @@ func (DriverProfile) Edges() []ent.Edge {
 
 func (DriverProfile) Indexes() []ent.Index {
 	return []ent.Index{
-		// Hàng đợi duyệt KYC của admin quét theo cột này.
 		index.Fields("kyc_status"),
 		index.Fields("user_id").Unique(),
 	}

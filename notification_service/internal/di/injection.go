@@ -1,7 +1,3 @@
-// Package di ráp các tầng của notification_service.
-//
-// Service này có hai "cửa vào" nên DI cũng dựng hai thứ: gRPC server (đọc inbox)
-// và consumer RabbitMQ (sinh thông báo từ sự kiện matching).
 package di
 
 import (
@@ -33,10 +29,6 @@ type Container struct {
 	handler *consumer.MatchingConsumer
 }
 
-// StartConsumer chạy vòng lặp tiêu thụ RabbitMQ.
-//
-// Được gọi trong goroutine riêng ở tầng App: nó block cho tới khi ctx bị huỷ,
-// nên không thể nằm chung luồng với gRPC server.
 func (c *Container) StartConsumer(ctx context.Context) error {
 	if c == nil || c.Consumer == nil || c.handler == nil {
 		return nil
@@ -91,7 +83,6 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) (*Container, error) {
 
 	container := &Container{EntClient: entClient}
 
-	// --- Redis (bộ đếm chưa đọc) ---
 	if cfg.Redis.Enabled {
 		redisClient, rErr := cache.New(cache.Config{
 			Host:     cfg.Redis.Host,
@@ -116,12 +107,8 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) (*Container, error) {
 
 	pb.RegisterNotificationServiceServer(grpcServer, notifController)
 
-	// --- RabbitMQ (nguồn sinh thông báo) ---
 	if cfg.RabbitMQ.Enabled {
 		if err := setupConsumer(container, cfg, notifEngine); err != nil {
-			// Không dừng service: API đọc inbox vẫn phải phục vụ được. Nhưng đây
-			// là sự cố NGHIÊM TRỌNG vì không thông báo mới nào được sinh ra, nên
-			// log phải đủ to để hệ thống giám sát bắt được.
 			log.Printf("[notification_service] NGHIÊM TRỌNG: không dựng được consumer RabbitMQ (%v) — "+
 				"sẽ KHÔNG có thông báo mới nào được tạo cho tới khi kết nối lại", err)
 		}

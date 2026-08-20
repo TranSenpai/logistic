@@ -1,5 +1,3 @@
-// Package mapper khai báo hợp đồng chuyển đổi dao <-> entity <-> dto của
-// notification_service. Thân hàm do goverter sinh.
 package mapper
 
 import (
@@ -7,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	pb "github.com/logistic/api/logistic/notification_service/v1"
+	"github.com/logistic/pkg/uuidx"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"notification_service/ent"
@@ -20,8 +19,10 @@ import (
 // goverter:useZeroValueOnPointerInconsistency
 // goverter:ignoreUnexported
 // goverter:extend IdentityTime
-// goverter:extend UUIDToString
-// goverter:extend StringToUUID
+// goverter:extend UUIDToBytes
+// goverter:extend BytesToUUID
+// goverter:extend RefIDToBytes
+// goverter:extend BytesToRefID
 // goverter:extend TimeToTimestamp
 // goverter:extend TimestampToTime
 // goverter:extend TimePtrToTime
@@ -31,11 +32,8 @@ import (
 // goverter:extend EntNotifChannelToString
 // goverter:extend EntNotifStatusToString
 // goverter:extend EntTemplateChannelToString
-//
 //go:generate go run github.com/jmattheis/goverter/cmd/goverter@v1.9.4 gen ./
 type AppMapper interface {
-	// ==================== DAO -> ENTITY ====================
-
 	EntNotificationToEntity(source *ent.Notification) entity.Notification
 	EntNotificationListToEntityList(source []*ent.Notification) []entity.Notification
 
@@ -43,8 +41,6 @@ type AppMapper interface {
 	EntTemplateListToEntityList(source []*ent.NotificationTemplate) []entity.NotificationTemplate
 
 	EntPreferenceToEntity(source *ent.NotificationPreference) entity.NotificationPreference
-
-	// ==================== ENTITY -> DTO ====================
 
 	EntityNotificationToPb(source entity.Notification) *pb.Notification
 	EntityNotificationListToPbList(source []entity.Notification) []*pb.Notification
@@ -55,8 +51,6 @@ type AppMapper interface {
 	EntityPreferenceToPb(source entity.NotificationPreference) *pb.NotificationPreference
 
 	EntityPaginationToPb(source entity.Pagination) *pb.Pagination
-
-	// ==================== DTO -> ENTITY ====================
 
 	PbListNotificationsToParam(req *pb.ListNotificationsRequest) (entity.ListNotificationsParam, error)
 
@@ -72,24 +66,17 @@ type AppMapper interface {
 	PbUpdateTemplateToParam(req *pb.AdminUpdateTemplateRequest) (entity.UpdateTemplateParam, error)
 }
 
-// ===========================================================================
-// HELPERS
-// ===========================================================================
-
 func IdentityTime(t time.Time) time.Time { return t }
 
-func UUIDToString(u uuid.UUID) string {
+func UUIDToBytes(u uuid.UUID) []byte {
 	if u == uuid.Nil {
-		return ""
+		return nil
 	}
-	return u.String()
+	return uuidx.ToBytes(u)
 }
 
-func StringToUUID(s string) (uuid.UUID, error) {
-	if s == "" {
-		return uuid.Nil, nil
-	}
-	return uuid.Parse(s)
+func BytesToUUID(b []byte) (uuid.UUID, error) {
+	return uuidx.FromBytes(b)
 }
 
 func TimeToTimestamp(t time.Time) *timestamppb.Timestamp {
@@ -106,7 +93,6 @@ func TimestampToTime(ts *timestamppb.Timestamp) time.Time {
 	return time.Time{}
 }
 
-// TimePtrToTime: read_at là cột nullable (chưa đọc thì NULL).
 func TimePtrToTime(t *time.Time) time.Time {
 	if t == nil {
 		return time.Time{}
@@ -122,4 +108,16 @@ func EntNotifChannelToString(c notification.Channel) string        { return stri
 func EntNotifStatusToString(s notification.Status) string          { return string(s) }
 func EntTemplateChannelToString(c notificationtemplate.Channel) string {
 	return string(c)
+}
+
+func RefIDToBytes(s string) []byte {
+	b, err := uuidx.Parse(s)
+	if err != nil {
+		return nil
+	}
+	return b
+}
+
+func BytesToRefID(b []byte) string {
+	return uuidx.String(b)
 }

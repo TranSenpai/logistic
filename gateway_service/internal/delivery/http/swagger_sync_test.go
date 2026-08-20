@@ -8,30 +8,15 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-
-	"github.com/gin-gonic/gin"
 )
 
-// TestSwaggerAnnotationsMatchRoutes đối chiếu annotation `@Router` trong các
-// controller với cây route thật.
-//
-// Vì sao cần: annotation là comment, trình biên dịch không kiểm tra. Đổi đường
-// dẫn trong gateway_route.go mà quên sửa comment thì Swagger UI vẫn hiển thị
-// đường dẫn cũ — người dùng API gọi theo tài liệu và nhận 404, còn ta thì không
-// hay biết. Đây đúng là thứ đã xảy ra ở repo này: tài liệu còn ghi
-// `/api/user/v1/register` trong khi route thật đã là `/api/v1/users/register`.
-//
-// Test so khớp theo dạng chuẩn hoá: `{id}` của swagger và `:id` của gin đều
-// được quy về `{}` vì tên tham số không ảnh hưởng tới việc định tuyến.
 func TestSwaggerAnnotationsMatchRoutes(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	engine := gin.New()
-	RegisterGatewayRoutes(engine, Clients{})
+	engine := newTestEngine()
 
-	realRoutes := make(map[string]string) // dạng chuẩn hoá -> đường dẫn gốc
+	realRoutes := make(map[string]string)
 	for _, r := range engine.Routes() {
 		if !strings.HasPrefix(r.Path, "/api/") {
-			continue // bỏ qua /healthz và /swagger
+			continue
 		}
 		realRoutes[normalizePath(r.Method, r.Path)] = r.Method + " " + r.Path
 	}
@@ -54,11 +39,8 @@ func TestSwaggerAnnotationsMatchRoutes(t *testing.T) {
 	t.Logf("đã đối chiếu %d annotation với %d route thật", len(annotations), len(realRoutes))
 }
 
-// TestEveryRouteIsDocumented bắt chiều ngược lại: có route mà quên viết tài liệu.
 func TestEveryRouteIsDocumented(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	engine := gin.New()
-	RegisterGatewayRoutes(engine, Clients{})
+	engine := newTestEngine()
 
 	annotations, err := collectRouterAnnotations("../../controller")
 	if err != nil {
@@ -79,8 +61,6 @@ func TestEveryRouteIsDocumented(t *testing.T) {
 		}
 	}
 }
-
-// ---------------------------------------------------------------------------
 
 type routerAnnotation struct {
 	method     string
@@ -138,8 +118,6 @@ func collectRouterAnnotations(dir string) ([]routerAnnotation, error) {
 	return out, nil
 }
 
-// normalizePath quy cả hai cú pháp tham số về một dạng, vì "/users/{id}" và
-// "/users/:user_id" định tuyến giống hệt nhau — chỉ khác tên biến.
 var (
 	swaggerParam = regexp.MustCompile(`\{[^}]+\}`)
 	ginParam     = regexp.MustCompile(`:[^/]+`)

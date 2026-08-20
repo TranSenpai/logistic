@@ -35,12 +35,6 @@ type RedisConfig struct {
 	Enabled  bool   `env:"NOTIFICATION_REDIS_ENABLED" env-default:"true"`
 }
 
-// RabbitMQConfig KHÁC các cấu hình khác ở một điểm: nếu không kết nối được thì
-// service vẫn khởi động (API đọc inbox vẫn phục vụ được), nhưng sẽ KHÔNG có
-// thông báo mới nào được sinh ra. Vì vậy DI log ở mức cảnh báo rất rõ.
-//
-// Queue và BindingKeys để ở env để có thể chạy nhiều consumer group khác nhau
-// (vd: một queue riêng cho môi trường staging) mà không phải sửa code.
 type RabbitMQConfig struct {
 	Host     string `env:"RABBITMQ_HOST" env-default:"rabbitmq"`
 	Port     string `env:"RABBITMQ_PORT" env-default:"5672"`
@@ -49,8 +43,7 @@ type RabbitMQConfig struct {
 	VHost    string `env:"RABBITMQ_VHOST" env-default:"/"`
 	Exchange string `env:"RABBITMQ_EXCHANGE" env-default:"logistic.events"`
 	Queue    string `env:"NOTIFICATION_MQ_QUEUE" env-default:"notification.events"`
-	// Binding "matching.#" bắt mọi sự kiện của miền matching, kể cả những loại
-	// được thêm sau này — không phải deploy lại chỉ để nghe thêm một routing key.
+
 	BindingKeys string `env:"NOTIFICATION_MQ_BINDINGS" env-default:"matching.#"`
 	Prefetch    int    `env:"NOTIFICATION_MQ_PREFETCH" env-default:"20"`
 	Enabled     bool   `env:"NOTIFICATION_MQ_ENABLED" env-default:"true"`

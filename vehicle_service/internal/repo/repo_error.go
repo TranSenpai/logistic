@@ -11,8 +11,6 @@ import (
 	"github.com/logistic/pkg/apperr"
 )
 
-// wrapError dịch lỗi ent/Postgres sang mã lỗi nghiệp vụ.
-// Xem ghi chú đầy đủ ở user_service/internal/repo/repo_error.go.
 func wrapError(err error, notFound *apperr.Error) error {
 	if err == nil {
 		return nil

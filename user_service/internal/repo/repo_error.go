@@ -11,21 +11,11 @@ import (
 	"github.com/logistic/pkg/apperr"
 )
 
-// wrapError dịch lỗi của ent/Postgres sang mã lỗi nghiệp vụ.
-//
-// Đây là RANH GIỚI: từ đây trở lên (biz, controller) không ai còn phải biết
-// *ent.NotFoundError hay chuỗi "duplicate key value violates unique constraint"
-// trông như thế nào. Nếu không có lớp dịch này, một lỗi trùng số điện thoại sẽ
-// đi thẳng ra client thành HTTP 500 kèm nguyên văn câu SQL của Postgres.
-//
-// notFound: mã lỗi trả về khi ent báo không tìm thấy — mỗi bảng một mã riêng nên
-// caller truyền vào, ví dụ ErrUserNotFound hoặc ErrAddressNotFound.
 func wrapError(err error, notFound *apperr.Error) error {
 	if err == nil {
 		return nil
 	}
 
-	// Context bị huỷ (client bỏ request, deadline hết) không phải lỗi của ta.
 	if errors.Is(err, context.Canceled) {
 		return apperr.New(apperr.KindTimeout, "REQUEST_CANCELLED", "yêu cầu đã bị huỷ").WithCause(err)
 	}
@@ -55,9 +45,6 @@ func wrapError(err error, notFound *apperr.Error) error {
 	return cerr.ErrDatabase.WithCause(err)
 }
 
-// mapConstraint đọc tên constraint trong thông báo lỗi để biết CỘT NÀO bị trùng.
-// Postgres nhét tên index vào message (vd: "users_phone_key"), nên khớp chuỗi là
-// cách duy nhất mà không phải cài thêm driver-specific error parsing.
 func mapConstraint(err error) error {
 	msg := strings.ToLower(err.Error())
 

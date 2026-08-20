@@ -3,17 +3,12 @@ package controller
 import (
 	"strconv"
 
-	"gateway_service/internal/middleware"
 	"gateway_service/internal/response"
 
 	"github.com/gin-gonic/gin"
 	pb "github.com/logistic/api/logistic/user_service/v1"
 )
 
-// UserController là lớp mỏng: bind JSON -> gọi gRPC -> trả JSON.
-//
-// Không có `if err != nil { ctx.JSON(500, ...) }` nào ở đây nữa: response.Error
-// đọc gRPC status + ErrorInfo do user_service gắn và tự chọn đúng HTTP status.
 type UserController struct {
 	userClient pb.UserServiceClient
 }
@@ -22,7 +17,6 @@ func NewUserController(userClient pb.UserServiceClient) *UserController {
 	return &UserController{userClient: userClient}
 }
 
-// queryInt đọc tham số phân trang từ query string, bỏ qua giá trị rác.
 func queryInt(ctx *gin.Context, key string) int32 {
 	raw := ctx.Query(key)
 	if raw == "" {
@@ -40,32 +34,9 @@ func queryBool(ctx *gin.Context, key string) bool {
 	return v
 }
 
-// resolveUserID lấy user_id theo thứ tự: tham số đường dẫn -> query -> danh tính
-// của người đang đăng nhập. Nhờ vậy app gọi /me không cần tự truyền id.
-func resolveUserID(ctx *gin.Context, pathKey string) string {
-	if v := ctx.Param(pathKey); v != "" {
-		return v
-	}
-	// Route đăng ký tham số là :user_id, nhưng một số handler dùng chung được gọi
-	// từ đường dẫn có :id. Thử cả hai để controller không phụ thuộc tên tham số.
-	for _, key := range []string{"user_id", "id"} {
-		if v := ctx.Param(key); v != "" {
-			return v
-		}
-	}
-	if v := ctx.Query("user_id"); v != "" {
-		return v
-	}
-	return middleware.CurrentUserID(ctx)
-}
-
-// ===========================================================================
-// CLIENT
-// ===========================================================================
-
 type RegisterUserReq struct {
 	Email    string `json:"email" binding:"omitempty,email"`
-	Password string `json:"password" binding:"required,min=6"`
+	Password string `json:"password" binding:"required,min=8"`
 	Phone    string `json:"phone" binding:"required"`
 	Role     string `json:"role" binding:"required,oneof=driver shipper"`
 	FullName string `json:"full_name"`
@@ -98,7 +69,10 @@ func (c *UserController) RegisterUser(ctx *gin.Context) {
 		return
 	}
 
-	response.Created(ctx, gin.H{"id": resp.Id, "user": resp.User}, resp.Message)
+	response.Created(ctx, gin.H{
+		"id":   uuidString(resp.Id),
+		"user": toUserDTO(resp.User),
+	}, resp.Message)
 }
 
 // GetUser godoc
@@ -109,18 +83,24 @@ func (c *UserController) RegisterUser(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id} [get]
 func (c *UserController) GetUser(ctx *gin.Context) {
-	resp, err := c.userClient.GetUser(ctx.Request.Context(), &pb.GetUserRequest{
-		Id: resolveUserID(ctx, "id"),
-	})
+	userID, ok := resolveOwnID(ctx, "user_id", "id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
+	resp, err := c.userClient.GetUser(ctx.Request.Context(), &pb.GetUserRequest{Id: userID})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
 
 	response.OK(ctx, gin.H{
-		"user":            resp.User,
-		"driver_profile":  resp.DriverProfile,
-		"shipper_profile": resp.ShipperProfile,
+		"user":            toUserDTO(resp.User),
+		"driver_profile":  toDriverProfileDTO(resp.DriverProfile),
+		"shipper_profile": toShipperProfileDTO(resp.ShipperProfile),
 	})
 }
 
@@ -139,6 +119,14 @@ type UpdateUserReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id} [put]
 func (c *UserController) UpdateUser(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id", "id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	var req UpdateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -146,7 +134,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 	}
 
 	resp, err := c.userClient.UpdateUser(ctx.Request.Context(), &pb.UpdateUserRequest{
-		Id:        resolveUserID(ctx, "id"),
+		Id:        userID,
 		FullName:  req.FullName,
 		Email:     req.Email,
 		AvatarUrl: req.AvatarURL,
@@ -156,7 +144,7 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	response.OKMessage(ctx, resp.User, resp.Message)
+	response.OKMessage(ctx, gin.H{"user": toUserDTO(resp.User)}, resp.Message)
 }
 
 // GetDriverProfile godoc
@@ -167,14 +155,22 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/driver-profile [get]
 func (c *UserController) GetDriverProfile(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	resp, err := c.userClient.GetDriverProfile(ctx.Request.Context(), &pb.GetDriverProfileRequest{
-		UserId: resolveUserID(ctx, "user_id"),
+		UserId: userID,
 	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, resp.DriverProfile)
+	response.OK(ctx, gin.H{"driver_profile": toDriverProfileDTO(resp.DriverProfile)})
 }
 
 type UpdateDriverProfileReq struct {
@@ -191,6 +187,14 @@ type UpdateDriverProfileReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/driver-profile [put]
 func (c *UserController) UpdateDriverProfile(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	var req UpdateDriverProfileReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -198,7 +202,7 @@ func (c *UserController) UpdateDriverProfile(ctx *gin.Context) {
 	}
 
 	resp, err := c.userClient.UpdateDriverProfile(ctx.Request.Context(), &pb.UpdateDriverProfileRequest{
-		UserId:        resolveUserID(ctx, "user_id"),
+		UserId:        userID,
 		LicenseNumber: req.LicenseNumber,
 		IdCard:        req.IDCard,
 	})
@@ -206,7 +210,7 @@ func (c *UserController) UpdateDriverProfile(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.DriverProfile, resp.Message)
+	response.OKMessage(ctx, gin.H{"driver_profile": toDriverProfileDTO(resp.DriverProfile)}, resp.Message)
 }
 
 // GetShipperProfile godoc
@@ -217,14 +221,22 @@ func (c *UserController) UpdateDriverProfile(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/shipper-profile [get]
 func (c *UserController) GetShipperProfile(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	resp, err := c.userClient.GetShipperProfile(ctx.Request.Context(), &pb.GetShipperProfileRequest{
-		UserId: resolveUserID(ctx, "user_id"),
+		UserId: userID,
 	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, resp.ShipperProfile)
+	response.OK(ctx, gin.H{"shipper_profile": toShipperProfileDTO(resp.ShipperProfile)})
 }
 
 type UpdateShipperProfileReq struct {
@@ -242,6 +254,14 @@ type UpdateShipperProfileReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/shipper-profile [put]
 func (c *UserController) UpdateShipperProfile(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	var req UpdateShipperProfileReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -249,7 +269,7 @@ func (c *UserController) UpdateShipperProfile(ctx *gin.Context) {
 	}
 
 	resp, err := c.userClient.UpdateShipperProfile(ctx.Request.Context(), &pb.UpdateShipperProfileRequest{
-		UserId:          resolveUserID(ctx, "user_id"),
+		UserId:          userID,
 		CompanyName:     req.CompanyName,
 		TaxCode:         req.TaxCode,
 		BusinessAddress: req.BusinessAddress,
@@ -258,7 +278,7 @@ func (c *UserController) UpdateShipperProfile(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.ShipperProfile, resp.Message)
+	response.OKMessage(ctx, gin.H{"shipper_profile": toShipperProfileDTO(resp.ShipperProfile)}, resp.Message)
 }
 
 type UpdateDriverKYCReq struct {
@@ -267,7 +287,8 @@ type UpdateDriverKYCReq struct {
 }
 
 // UpdateDriverKYC godoc
-// @Summary      Cập nhật trạng thái KYC
+// @Summary      Nộp hồ sơ KYC
+// @Description  Tài xế nộp/cập nhật hồ sơ KYC của chính mình. Việc DUYỆT nằm ở /admin/kyc và cần vai trò admin.
 // @Tags         User
 // @Accept       json
 // @Produce      json
@@ -275,6 +296,15 @@ type UpdateDriverKYCReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/kyc [put]
 func (c *UserController) UpdateDriverKYC(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	var req UpdateDriverKYCReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -282,7 +312,7 @@ func (c *UserController) UpdateDriverKYC(ctx *gin.Context) {
 	}
 
 	resp, err := c.userClient.UpdateDriverKYC(ctx.Request.Context(), &pb.UpdateDriverKYCRequest{
-		UserId:    resolveUserID(ctx, "user_id"),
+		UserId:    userID,
 		KycStatus: req.KycStatus,
 		Note:      req.Note,
 	})
@@ -290,7 +320,7 @@ func (c *UserController) UpdateDriverKYC(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.DriverProfile, resp.Message)
+	response.OKMessage(ctx, gin.H{"driver_profile": toDriverProfileDTO(resp.DriverProfile)}, resp.Message)
 }
 
 type AddressReq struct {
@@ -316,6 +346,14 @@ type AddressReq struct {
 // @Success      201 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/addresses [post]
 func (c *UserController) CreateAddress(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	var req AddressReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -323,7 +361,7 @@ func (c *UserController) CreateAddress(ctx *gin.Context) {
 	}
 
 	resp, err := c.userClient.CreateAddress(ctx.Request.Context(), &pb.CreateAddressRequest{
-		UserId:       resolveUserID(ctx, "user_id"),
+		UserId:       userID,
 		Label:        req.Label,
 		ContactName:  req.ContactName,
 		ContactPhone: req.ContactPhone,
@@ -340,7 +378,7 @@ func (c *UserController) CreateAddress(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.Created(ctx, resp.Address, resp.Message)
+	response.Created(ctx, gin.H{"address": toAddressDTO(resp.Address)}, resp.Message)
 }
 
 // ListAddresses godoc
@@ -351,8 +389,16 @@ func (c *UserController) CreateAddress(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/addresses [get]
 func (c *UserController) ListAddresses(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	resp, err := c.userClient.ListAddresses(ctx.Request.Context(), &pb.ListAddressesRequest{
-		UserId:      resolveUserID(ctx, "user_id"),
+		UserId:      userID,
 		AddressType: ctx.Query("address_type"),
 		Page:        queryInt(ctx, "page"),
 		PageSize:    queryInt(ctx, "page_size"),
@@ -361,7 +407,10 @@ func (c *UserController) ListAddresses(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, gin.H{"addresses": resp.Addresses, "pagination": resp.Pagination})
+	response.OK(ctx, gin.H{
+		"addresses":  toAddressDTOs(resp.Addresses),
+		"pagination": toUserPaginationDTO(resp.Pagination),
+	})
 }
 
 // UpdateAddress godoc
@@ -373,6 +422,11 @@ func (c *UserController) ListAddresses(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/addresses/{id} [put]
 func (c *UserController) UpdateAddress(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	var req AddressReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -380,8 +434,8 @@ func (c *UserController) UpdateAddress(ctx *gin.Context) {
 	}
 
 	resp, err := c.userClient.UpdateAddress(ctx.Request.Context(), &pb.UpdateAddressRequest{
-		Id:           ctx.Param("id"),
-		UserId:       middleware.CurrentUserID(ctx),
+		Id:           id,
+		UserId:       selfID(ctx),
 		Label:        req.Label,
 		ContactName:  req.ContactName,
 		ContactPhone: req.ContactPhone,
@@ -398,7 +452,7 @@ func (c *UserController) UpdateAddress(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.Address, resp.Message)
+	response.OKMessage(ctx, gin.H{"address": toAddressDTO(resp.Address)}, resp.Message)
 }
 
 // DeleteAddress godoc
@@ -409,9 +463,14 @@ func (c *UserController) UpdateAddress(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/addresses/{id} [delete]
 func (c *UserController) DeleteAddress(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	resp, err := c.userClient.DeleteAddress(ctx.Request.Context(), &pb.DeleteAddressRequest{
-		Id:     ctx.Param("id"),
-		UserId: middleware.CurrentUserID(ctx),
+		Id:     id,
+		UserId: selfID(ctx),
 	})
 	if err != nil {
 		response.Error(ctx, err)
@@ -435,6 +494,15 @@ type RegisterDeviceReq struct {
 // @Success      201 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/devices [post]
 func (c *UserController) RegisterDevice(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	var req RegisterDeviceReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -442,7 +510,7 @@ func (c *UserController) RegisterDevice(ctx *gin.Context) {
 	}
 
 	resp, err := c.userClient.RegisterDevice(ctx.Request.Context(), &pb.RegisterDeviceRequest{
-		UserId:      resolveUserID(ctx, "user_id"),
+		UserId:      userID,
 		DeviceToken: req.DeviceToken,
 		Platform:    req.Platform,
 		DeviceName:  req.DeviceName,
@@ -451,7 +519,7 @@ func (c *UserController) RegisterDevice(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.Created(ctx, resp.Device, resp.Message)
+	response.Created(ctx, gin.H{"device": toUserDeviceDTO(resp.Device)}, resp.Message)
 }
 
 // ListDevices godoc
@@ -462,14 +530,22 @@ func (c *UserController) RegisterDevice(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/devices [get]
 func (c *UserController) ListDevices(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	resp, err := c.userClient.ListDevices(ctx.Request.Context(), &pb.ListDevicesRequest{
-		UserId: resolveUserID(ctx, "user_id"),
+		UserId: userID,
 	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, gin.H{"devices": resp.Devices})
+	response.OK(ctx, gin.H{"devices": toUserDeviceDTOs(resp.Devices)})
 }
 
 // DeleteDevice godoc
@@ -480,9 +556,14 @@ func (c *UserController) ListDevices(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/devices/{id} [delete]
 func (c *UserController) DeleteDevice(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	resp, err := c.userClient.DeleteDevice(ctx.Request.Context(), &pb.DeleteDeviceRequest{
-		Id:     ctx.Param("id"),
-		UserId: middleware.CurrentUserID(ctx),
+		Id:     id,
+		UserId: selfID(ctx),
 	})
 	if err != nil {
 		response.Error(ctx, err)
@@ -490,10 +571,6 @@ func (c *UserController) DeleteDevice(ctx *gin.Context) {
 	}
 	response.OKMessage(ctx, nil, resp.Message)
 }
-
-// ===========================================================================
-// ADMIN
-// ===========================================================================
 
 // AdminListUsers godoc
 // @Summary      [Admin] Danh sách người dùng
@@ -513,7 +590,10 @@ func (c *UserController) AdminListUsers(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, gin.H{"users": resp.Users, "pagination": resp.Pagination})
+	response.OK(ctx, gin.H{
+		"users":      toUserDTOs(resp.Users),
+		"pagination": toUserPaginationDTO(resp.Pagination),
+	})
 }
 
 type AdminUpdateUserStatusReq struct {
@@ -526,10 +606,15 @@ type AdminUpdateUserStatusReq struct {
 // @Tags         Admin-User
 // @Accept       json
 // @Produce      json
-// @Param        user_id path string true "User ID"
+// @Param        id path string true "User ID"
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/admin/users/{id}/status [put]
 func (c *UserController) AdminUpdateUserStatus(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	var req AdminUpdateUserStatusReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -537,7 +622,7 @@ func (c *UserController) AdminUpdateUserStatus(ctx *gin.Context) {
 	}
 
 	resp, err := c.userClient.AdminUpdateUserStatus(ctx.Request.Context(), &pb.AdminUpdateUserStatusRequest{
-		Id:     ctx.Param("id"),
+		Id:     id,
 		Status: req.Status,
 		Reason: req.Reason,
 	})
@@ -545,7 +630,7 @@ func (c *UserController) AdminUpdateUserStatus(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.User, resp.Message)
+	response.OKMessage(ctx, gin.H{"user": toUserDTO(resp.User)}, resp.Message)
 }
 
 // AdminListPendingKYC godoc
@@ -563,7 +648,10 @@ func (c *UserController) AdminListPendingKYC(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, gin.H{"driver_profiles": resp.DriverProfiles, "pagination": resp.Pagination})
+	response.OK(ctx, gin.H{
+		"driver_profiles": toDriverProfileDTOs(resp.DriverProfiles),
+		"pagination":      toUserPaginationDTO(resp.Pagination),
+	})
 }
 
 type AdminReviewKYCReq struct {
@@ -580,6 +668,11 @@ type AdminReviewKYCReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/admin/kyc/{user_id}/review [put]
 func (c *UserController) AdminReviewKYC(ctx *gin.Context) {
+	userID, ok := pathID(ctx, "user_id")
+	if !ok {
+		return
+	}
+
 	var req AdminReviewKYCReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -587,16 +680,16 @@ func (c *UserController) AdminReviewKYC(ctx *gin.Context) {
 	}
 
 	resp, err := c.userClient.AdminReviewKYC(ctx.Request.Context(), &pb.AdminReviewKYCRequest{
-		UserId:     ctx.Param("user_id"),
+		UserId:     userID,
 		Approved:   req.Approved,
 		Note:       req.Note,
-		ReviewerId: middleware.CurrentUserID(ctx),
+		ReviewerId: selfID(ctx),
 	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.DriverProfile, resp.Message)
+	response.OKMessage(ctx, gin.H{"driver_profile": toDriverProfileDTO(resp.DriverProfile)}, resp.Message)
 }
 
 // AdminGetUserStats godoc
@@ -611,20 +704,30 @@ func (c *UserController) AdminGetUserStats(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, resp)
+	response.OK(ctx, gin.H{
+		"total_users":    resp.TotalUsers,
+		"total_drivers":  resp.TotalDrivers,
+		"total_shippers": resp.TotalShippers,
+		"active_users":   resp.ActiveUsers,
+		"banned_users":   resp.BannedUsers,
+		"pending_kyc":    resp.PendingKyc,
+	})
 }
 
 // AdminDeleteUser godoc
 // @Summary      [Admin] Xoá người dùng
 // @Tags         Admin-User
 // @Produce      json
-// @Param        user_id path string true "User ID"
+// @Param        id path string true "User ID"
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/admin/users/{id} [delete]
 func (c *UserController) AdminDeleteUser(ctx *gin.Context) {
-	resp, err := c.userClient.AdminDeleteUser(ctx.Request.Context(), &pb.AdminDeleteUserRequest{
-		Id: ctx.Param("id"),
-	})
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
+	resp, err := c.userClient.AdminDeleteUser(ctx.Request.Context(), &pb.AdminDeleteUserRequest{Id: id})
 	if err != nil {
 		response.Error(ctx, err)
 		return

@@ -8,20 +8,16 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+	"github.com/logistic/pkg/uuidx"
 )
 
-// UserDevice lưu push token của từng thiết bị người dùng đăng nhập.
-//
-// notification_service gọi sang đây để biết gửi push tới đâu. device_token là
-// unique: cùng một máy cài lại app sẽ nhận token mới, còn nếu người khác đăng
-// nhập trên chính máy đó thì bản ghi được chuyển chủ chứ không nhân bản.
 type UserDevice struct {
 	ent.Schema
 }
 
 func (UserDevice) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
+		field.UUID("id", uuid.UUID{}).Default(uuidx.New).Unique(),
 		field.UUID("user_id", uuid.UUID{}),
 		field.String("device_token").Unique(),
 		field.Enum("platform").Values("android", "ios", "web").Default("android"),

@@ -1,16 +1,3 @@
-// Package mq bọc amqp091-go thành Publisher/Consumer đủ dùng cho hệ thống.
-//
-// Vì sao chọn RabbitMQ cho luồng notification (trong khi repo đã có Kafka/NATS)?
-//   - Kafka ở đây đang gánh event-sourcing/analytics: đọc theo offset, giữ log lâu.
-//   - Notification cần thứ khác: fan-out theo routing key, retry từng message,
-//     dead-letter khi xử lý hỏng. Đó đúng là thế mạnh của RabbitMQ topic exchange.
-//
-// Topology dựng sẵn:
-//
-//	logistic.events (topic exchange)
-//	   +-- binding "matching.#" --> notification.events (queue)
-//	                                   |  (x-dead-letter-exchange)
-//	                                   +--> logistic.events.dlx --> notification.events.dlq
 package mq
 
 import (
@@ -47,10 +34,8 @@ func trimLeadingSlash(s string) string {
 	return s
 }
 
-// DLXSuffix: hậu tố của exchange chứa message xử lý hỏng.
 const DLXSuffix = ".dlx"
 
-// Connection giữ 1 kết nối TCP + tự kết nối lại khi rớt.
 type Connection struct {
 	cfg     Config
 	mu      sync.RWMutex
@@ -81,8 +66,6 @@ func (c *Connection) dial() error {
 	return nil
 }
 
-// watch nghe sự kiện đóng kết nối rồi quay lại dial theo backoff.
-// Không có nó thì RabbitMQ restart một lần là service câm tới lúc deploy lại.
 func (c *Connection) watch() {
 	for {
 		c.mu.RLock()
@@ -146,8 +129,6 @@ func (c *Connection) Close() error {
 	return conn.Close()
 }
 
-// DeclareTopology tạo exchange chính + exchange dead-letter. Idempotent, nên cả
-// publisher lẫn consumer đều gọi lúc khởi động mà không sợ xung đột.
 func (c *Connection) DeclareTopology(exchange string) error {
 	ch, err := c.channel()
 	if err != nil {
@@ -163,10 +144,6 @@ func (c *Connection) DeclareTopology(exchange string) error {
 	}
 	return nil
 }
-
-// ---------------------------------------------------------------------------
-// PUBLISHER
-// ---------------------------------------------------------------------------
 
 type Publisher struct {
 	conn     *Connection
@@ -192,8 +169,7 @@ func (p *Publisher) refreshChannel() error {
 	if err != nil {
 		return err
 	}
-	// Publisher confirm: broker phải xác nhận đã nhận message. Thiếu bước này,
-	// message có thể bay vào hư không mà code vẫn tưởng gửi thành công.
+
 	if err := ch.Confirm(false); err != nil {
 		_ = ch.Close()
 		return fmt.Errorf("mq: enable confirm mode: %w", err)
@@ -202,8 +178,6 @@ func (p *Publisher) refreshChannel() error {
 	return nil
 }
 
-// Publish gửi payload dạng JSON với routing key cho trước.
-// eventID trở thành MessageId để consumer khử trùng lặp.
 func (p *Publisher) Publish(ctx context.Context, routingKey, eventID string, payload any) error {
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -221,7 +195,7 @@ func (p *Publisher) Publish(ctx context.Context, routingKey, eventID string, pay
 
 	confirm, err := p.ch.PublishWithDeferredConfirmWithContext(ctx, p.exchange, routingKey, false, false, amqp.Publishing{
 		ContentType:  "application/json",
-		DeliveryMode: amqp.Persistent, // ghi xuống đĩa: broker restart không mất message
+		DeliveryMode: amqp.Persistent,
 		MessageId:    eventID,
 		Timestamp:    time.Now().UTC(),
 		AppId:        p.source,
@@ -253,11 +227,6 @@ func (p *Publisher) Close() error {
 	return nil
 }
 
-// ---------------------------------------------------------------------------
-// CONSUMER
-// ---------------------------------------------------------------------------
-
-// Delivery là message đã bóc vỏ amqp, để handler không phải import amqp.
 type Delivery struct {
 	RoutingKey  string
 	MessageID   string
@@ -265,17 +234,13 @@ type Delivery struct {
 	Redelivered bool
 }
 
-// Handler xử lý 1 message.
-//   - trả nil   -> ACK, message coi như xong.
-//   - trả error -> NACK. Lần đầu requeue để thử lại; nếu đã redelivered thì đẩy
-//     sang DLQ, tránh vòng lặp vô tận "lỗi -> requeue -> lỗi".
 type Handler func(ctx context.Context, d Delivery) error
 
 type ConsumerConfig struct {
 	Exchange    string
 	Queue       string
 	BindingKeys []string
-	// Prefetch giới hạn số message chưa ACK mà broker đẩy xuống 1 consumer.
+
 	Prefetch int
 }
 
@@ -299,7 +264,7 @@ func NewConsumer(conn *Connection, cfg ConsumerConfig) (*Consumer, error) {
 	}
 
 	dlqName := cfg.Queue + ".dlq"
-	// Queue chính: message hỏng rơi sang DLX với routing key riêng.
+
 	if _, err := ch.QueueDeclare(cfg.Queue, true, false, false, false, amqp.Table{
 		"x-dead-letter-exchange":    cfg.Exchange + DLXSuffix,
 		"x-dead-letter-routing-key": dlqName,
@@ -332,9 +297,6 @@ func NewConsumer(conn *Connection, cfg ConsumerConfig) (*Consumer, error) {
 	return &Consumer{conn: conn, cfg: cfg, ch: ch}, nil
 }
 
-// Start chạy vòng lặp tiêu thụ cho tới khi ctx bị huỷ.
-// autoAck=false: tự tay ACK sau khi handler chạy xong, để message không biến mất
-// khi service chết giữa chừng.
 func (c *Consumer) Start(ctx context.Context, handler Handler) error {
 	deliveries, err := c.ch.Consume(c.cfg.Queue, "", false, false, false, false, nil)
 	if err != nil {
@@ -367,8 +329,6 @@ func (c *Consumer) Start(ctx context.Context, handler Handler) error {
 				continue
 			}
 
-			// Đã thử lại 1 lần mà vẫn hỏng -> cho sang DLQ để người trực hệ thống
-			// xem, thay vì quay vòng làm nghẽn queue.
 			requeue := !msg.Redelivered
 			log.Printf("[mq] handler failed (routing=%s id=%s requeue=%v): %v",
 				msg.RoutingKey, msg.MessageId, requeue, err)

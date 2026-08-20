@@ -1,16 +1,3 @@
-// Package repo là tầng duy nhất được phép chạm vào ent (dao) và Redis.
-//
-// Chiến lược cache dùng ở đây là cache-aside + invalidate-on-write:
-//
-//	ĐỌC : thử Redis -> miss thì xuống Postgres -> ghi ngược lên Redis kèm TTL.
-//	GHI : ghi Postgres trước, XOÁ key liên quan sau (không ghi đè cache).
-//
-// Vì sao xoá chứ không ghi đè? Ghi đè tạo ra khoảng thời gian hai request đồng
-// thời có thể ghi lộn thứ tự, để lại bản cũ đè lên bản mới trong cache. Xoá thì
-// tệ nhất chỉ là một lần cache miss — luôn đúng, chỉ tốn thêm một truy vấn.
-//
-// TTL vẫn được đặt kể cả khi đã invalidate chủ động: nếu một luồng ghi nào đó
-// quên xoá key, dữ liệu bẩn cũng tự hết hạn sau vài phút thay vì nằm lại mãi.
 package repo
 
 import (
@@ -49,15 +36,9 @@ type userRepoImpl struct {
 
 var _ biz.UserRepo = (*userRepoImpl)(nil)
 
-// NewUserRepo nhận cache có thể là nil — khi Redis không dựng được, service vẫn
-// chạy bình thường, chỉ là mọi truy vấn đều xuống thẳng Postgres.
 func NewUserRepo(client *ent.Client, redis *cache.Client, appMapper mapper.AppMapper) biz.UserRepo {
 	return &userRepoImpl{client: client, cache: redis, mapper: appMapper}
 }
-
-// ---------------------------------------------------------------------------
-// KHOÁ CACHE
-// ---------------------------------------------------------------------------
 
 func (r *userRepoImpl) keyUser(id uuid.UUID) string    { return r.cache.Key("user", id.String()) }
 func (r *userRepoImpl) keyPhone(phone string) string   { return r.cache.Key("phone", phone) }
@@ -70,9 +51,6 @@ func (r *userRepoImpl) keyDeviceList(userID uuid.UUID) string {
 	return r.cache.Key("devices", userID.String())
 }
 
-// invalidateUser xoá mọi thứ liên quan tới một user sau khi ghi.
-// Lỗi Redis ở đây chỉ log chứ không làm hỏng request: dữ liệu trong Postgres đã
-// đúng rồi, cache bẩn nhiều nhất chỉ sống tới khi hết TTL.
 func (r *userRepoImpl) invalidateUser(ctx context.Context, id uuid.UUID, phone string) {
 	if r.cache == nil {
 		return
@@ -85,10 +63,6 @@ func (r *userRepoImpl) invalidateUser(ctx context.Context, id uuid.UUID, phone s
 		log.Printf("[repo] invalidate user %s failed: %v", id, err)
 	}
 }
-
-// ---------------------------------------------------------------------------
-// USERS
-// ---------------------------------------------------------------------------
 
 func (r *userRepoImpl) CreateUser(ctx context.Context, u *entity.User) (*entity.User, error) {
 	builder := r.client.User.Create().
@@ -157,8 +131,6 @@ func (r *userRepoImpl) GetUserByPhone(ctx context.Context, phone string) (*entit
 	return &e, nil
 }
 
-// ExistsByPhone dùng COUNT thay vì lấy cả bản ghi: rẻ hơn và không kéo
-// password_hash ra khỏi DB một cách không cần thiết.
 func (r *userRepoImpl) ExistsByPhone(ctx context.Context, phone string) (bool, error) {
 	n, err := r.client.User.Query().Where(user.PhoneEQ(phone)).Count(ctx)
 	if err != nil {
@@ -181,8 +153,6 @@ func (r *userRepoImpl) ExistsByEmail(ctx context.Context, email string) (bool, e
 func (r *userRepoImpl) UpdateUser(ctx context.Context, param *entity.UpdateUserParam) (*entity.User, error) {
 	builder := r.client.User.UpdateOneID(param.ID)
 
-	// Chỉ ghi đè field mà client thực sự gửi lên. Nếu gán cả chuỗi rỗng thì một
-	// request chỉ muốn đổi avatar sẽ vô tình xoá sạch họ tên của người dùng.
 	if param.FullName != "" {
 		builder = builder.SetFullName(param.FullName)
 	}
@@ -218,13 +188,11 @@ func (r *userRepoImpl) UpdateUserStatus(ctx context.Context, id uuid.UUID, statu
 }
 
 func (r *userRepoImpl) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	// Lấy phone trước khi xoá để còn biết key cache nào cần dọn.
 	dao, err := r.client.User.Get(ctx, id)
 	if err != nil {
 		return wrapError(err, cerr.ErrUserNotFound)
 	}
 
-	// Xoá con trước rồi mới tới cha: Postgres sẽ chặn nếu còn bản ghi tham chiếu.
 	tx, err := r.client.Tx(ctx)
 	if err != nil {
 		return wrapError(err, nil)
@@ -258,8 +226,6 @@ func (r *userRepoImpl) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// ListUsers KHÔNG cache: kết quả phụ thuộc tổ hợp filter + trang, số biến thể là
-// vô hạn nên cache chỉ tổ làm đầy Redis mà tỉ lệ trúng gần bằng không.
 func (r *userRepoImpl) ListUsers(ctx context.Context, filter *entity.ListUsersFilter) ([]entity.User, int64, error) {
 	_, pageSize, offset := entity.NormalizePaging(filter.Page, filter.PageSize)
 
@@ -310,14 +276,9 @@ func (r *userRepoImpl) CountUsers(ctx context.Context, role, status string) (int
 	return int64(n), nil
 }
 
-// ---------------------------------------------------------------------------
-// DRIVER PROFILE
-// ---------------------------------------------------------------------------
-
 func (r *userRepoImpl) CreateDriverProfile(ctx context.Context, userID uuid.UUID, dp *entity.DriverProfile) (*entity.DriverProfile, error) {
 	builder := r.client.DriverProfile.Create().SetUserID(userID)
 
-	// Để NULL khi chưa có dữ liệu — xem ghi chú unique index trong ent/schema.
 	if dp.LicenseNumber != "" {
 		builder = builder.SetLicenseNumber(dp.LicenseNumber)
 	}
@@ -421,7 +382,7 @@ func (r *userRepoImpl) ListPendingKYC(ctx context.Context, page, pageSize int) (
 	}
 
 	daos, err := q.
-		Order(ent.Asc(driverprofile.FieldCreatedAt)). // hàng đợi duyệt: ai nộp trước xét trước
+		Order(ent.Asc(driverprofile.FieldCreatedAt)).
 		Offset(offset).
 		Limit(pageSize).
 		All(ctx)
@@ -441,10 +402,6 @@ func (r *userRepoImpl) CountPendingKYC(ctx context.Context) (int64, error) {
 	}
 	return int64(n), nil
 }
-
-// ---------------------------------------------------------------------------
-// SHIPPER PROFILE
-// ---------------------------------------------------------------------------
 
 func (r *userRepoImpl) CreateShipperProfile(ctx context.Context, userID uuid.UUID, sp *entity.ShipperProfile) (*entity.ShipperProfile, error) {
 	dao, err := r.client.ShipperProfile.Create().
@@ -512,10 +469,6 @@ func (r *userRepoImpl) UpdateShipperProfile(ctx context.Context, param *entity.U
 	return &e, nil
 }
 
-// ---------------------------------------------------------------------------
-// ADDRESSES
-// ---------------------------------------------------------------------------
-
 func (r *userRepoImpl) CreateAddress(ctx context.Context, param *entity.CreateAddressParam) (*entity.Address, error) {
 	dao, err := r.client.Address.Create().
 		SetUserID(param.UserID).
@@ -554,8 +507,6 @@ func (r *userRepoImpl) GetAddress(ctx context.Context, id uuid.UUID) (*entity.Ad
 func (r *userRepoImpl) ListAddresses(ctx context.Context, param *entity.ListAddressesParam) ([]entity.Address, int64, error) {
 	page, pageSize, offset := entity.NormalizePaging(param.Page, param.PageSize)
 
-	// Chỉ cache trang đầu không lọc — đó là thứ app gọi ở màn hình tạo đơn,
-	// chiếm gần như toàn bộ lưu lượng của endpoint này.
 	cacheable := r.cache != nil && param.AddressType == "" && page == 1
 	if cacheable {
 		var cached []entity.Address
@@ -575,7 +526,6 @@ func (r *userRepoImpl) ListAddresses(ctx context.Context, param *entity.ListAddr
 	}
 
 	daos, err := q.
-		// Địa chỉ mặc định luôn đứng đầu để app chọn sẵn cho người dùng.
 		Order(ent.Desc(address.FieldIsDefault), ent.Desc(address.FieldCreatedAt)).
 		Offset(offset).
 		Limit(pageSize).
@@ -662,14 +612,6 @@ func (r *userRepoImpl) ClearDefaultAddress(ctx context.Context, userID uuid.UUID
 	return nil
 }
 
-// ---------------------------------------------------------------------------
-// DEVICES
-// ---------------------------------------------------------------------------
-
-// UpsertDevice: cùng một device_token có thể được đăng ký lại sau khi người dùng
-// đăng xuất rồi đăng nhập bằng tài khoản khác trên chính máy đó. Khi ấy phải
-// CHUYỂN CHỦ bản ghi, không được tạo thêm dòng mới — nếu không thì push của tài
-// khoản cũ vẫn bắn vào máy của người dùng mới.
 func (r *userRepoImpl) UpsertDevice(ctx context.Context, param *entity.RegisterDeviceParam) (*entity.UserDevice, error) {
 	existing, err := r.client.UserDevice.Query().
 		Where(userdevice.DeviceTokenEQ(param.DeviceToken)).

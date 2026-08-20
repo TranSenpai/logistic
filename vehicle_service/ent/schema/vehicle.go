@@ -8,21 +8,17 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+	"github.com/logistic/pkg/uuidx"
 )
 
-// Vehicle là phương tiện do tài xế đăng ký.
-//
-// Tách "status" (tài xế tự đổi: đang chạy / bảo dưỡng) khỏi "verification_status"
-// (chỉ admin đổi được sau khi soi giấy tờ) là có chủ ý: tài xế không được phép
-// tự tuyên bố xe mình đã hợp lệ.
 type Vehicle struct {
 	ent.Schema
 }
 
 func (Vehicle) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
-		field.UUID("driver_id", uuid.UUID{}), // User ID lấy từ user_service
+		field.UUID("id", uuid.UUID{}).Default(uuidx.New).Unique(),
+		field.UUID("driver_id", uuid.UUID{}),
 		field.String("license_plate").Unique(),
 		field.String("brand").Optional(),
 		field.String("model").Optional(),

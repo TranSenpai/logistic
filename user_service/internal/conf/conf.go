@@ -25,11 +25,6 @@ type DatabaseConfig struct {
 	DBName   string `env:"USER_DB_NAME" env-required:"true"`
 }
 
-// RedisConfig KHÔNG có env-required: Redis chỉ là lớp tăng tốc. Thiếu cấu hình
-// hoặc Redis chết thì service vẫn phải phục vụ được, chỉ chậm hơn.
-//
-// Prefix tách không gian khoá để user_service, vehicle_service và
-// notification_service dùng chung một Redis mà không đè key của nhau.
 type RedisConfig struct {
 	Host     string `env:"REDIS_HOST" env-default:"redis"`
 	Port     string `env:"REDIS_PORT" env-default:"6379"`

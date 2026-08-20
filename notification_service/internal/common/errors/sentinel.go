@@ -1,10 +1,8 @@
-// Package errors liệt kê toàn bộ lỗi nghiệp vụ của notification_service.
 package errors
 
 import "github.com/logistic/pkg/apperr"
 
 var (
-	// --- Tham số đầu vào ---
 	ErrInvalidUserID     = apperr.InvalidArgument("INVALID_USER_ID", "user id không hợp lệ")
 	ErrInvalidNotifID    = apperr.InvalidArgument("INVALID_NOTIFICATION_ID", "notification id không hợp lệ")
 	ErrInvalidTemplateID = apperr.InvalidArgument("INVALID_TEMPLATE_ID", "template id không hợp lệ")
@@ -16,18 +14,14 @@ var (
 	ErrCodeRequired      = apperr.InvalidArgument("TEMPLATE_CODE_REQUIRED", "mã template là bắt buộc")
 	ErrNoRecipient       = apperr.InvalidArgument("NO_RECIPIENT", "phải chỉ định user_ids hoặc broadcast_role")
 
-	// --- Không tìm thấy ---
 	ErrNotificationNotFound = apperr.NotFound("NOTIFICATION_NOT_FOUND", "không tìm thấy thông báo")
 	ErrTemplateNotFound     = apperr.NotFound("TEMPLATE_NOT_FOUND", "không tìm thấy template")
 	ErrPreferenceNotFound   = apperr.NotFound("PREFERENCE_NOT_FOUND", "không tìm thấy cài đặt thông báo")
 
-	// --- Trùng lặp ---
 	ErrTemplateCodeExists = apperr.AlreadyExists("TEMPLATE_CODE_EXISTS", "mã template đã tồn tại cho kênh và ngôn ngữ này")
 
-	// --- Quyền ---
 	ErrNotificationNotOwned = apperr.PermissionDenied("NOTIFICATION_NOT_OWNED", "thông báo không thuộc về người dùng này")
 
-	// --- Hạ tầng ---
 	ErrDatabase = apperr.Internal("DATABASE_ERROR", "lỗi truy cập cơ sở dữ liệu")
 	ErrBroker   = apperr.Unavailable("BROKER_UNAVAILABLE", "hàng đợi thông báo tạm thời không khả dụng")
 )

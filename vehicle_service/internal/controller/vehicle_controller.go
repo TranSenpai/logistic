@@ -1,6 +1,3 @@
-// Package controller là lớp vỏ gRPC của vehicle_service.
-// Không có luật nghiệp vụ, không có xử lý lỗi transport — xem ghi chú ở
-// user_service/internal/controller/user_controller.go.
 package controller
 
 import (
@@ -12,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	pb "github.com/logistic/api/logistic/vehicle_service/v1"
+	"github.com/logistic/pkg/uuidx"
 )
 
 type vehicleController struct {
@@ -24,29 +22,20 @@ func NewVehicleController(engine biz.VehicleEngine, appMapper mapper.AppMapper) 
 	return &vehicleController{engine: engine, mapper: appMapper}
 }
 
-func parseID(raw string, invalid error) (uuid.UUID, error) {
-	if raw == "" {
-		return uuid.Nil, invalid
-	}
-	id, err := uuid.Parse(raw)
-	if err != nil {
+func parseID(raw []byte, invalid error) (uuid.UUID, error) {
+	id, err := uuidx.FromBytes(raw)
+	if err != nil || id == uuid.Nil {
 		return uuid.Nil, invalid
 	}
 	return id, nil
 }
 
-// parseOptionalID: id rỗng là hợp lệ (nghĩa là "bỏ qua kiểm tra sở hữu"),
-// nhưng id có mà sai định dạng thì vẫn phải báo lỗi.
-func parseOptionalID(raw string, invalid error) (uuid.UUID, error) {
-	if raw == "" {
+func parseOptionalID(raw []byte, invalid error) (uuid.UUID, error) {
+	if len(raw) == 0 {
 		return uuid.Nil, nil
 	}
 	return parseID(raw, invalid)
 }
-
-// ===========================================================================
-// CLIENT — PHƯƠNG TIỆN
-// ===========================================================================
 
 func (c *vehicleController) RegisterVehicle(ctx context.Context, req *pb.RegisterVehicleRequest) (*pb.RegisterVehicleResponse, error) {
 	param, err := c.mapper.PbRegisterVehicleToParam(req)
@@ -60,7 +49,7 @@ func (c *vehicleController) RegisterVehicle(ctx context.Context, req *pb.Registe
 	}
 
 	return &pb.RegisterVehicleResponse{
-		Id:      v.ID.String(),
+		Id:      uuidx.ToBytes(v.ID),
 		Message: "Đăng ký phương tiện thành công",
 		Vehicle: c.mapper.EntityVehicleToPbVehicle(*v),
 	}, nil
@@ -146,10 +135,6 @@ func (c *vehicleController) UpdateVehicleStatus(ctx context.Context, req *pb.Upd
 	}, nil
 }
 
-// ===========================================================================
-// CLIENT — GIẤY TỜ
-// ===========================================================================
-
 func (c *vehicleController) UploadVehicleDocument(ctx context.Context, req *pb.UploadVehicleDocumentRequest) (*pb.UploadVehicleDocumentResponse, error) {
 	param, err := c.mapper.PbUploadDocumentToParam(req)
 	if err != nil {
@@ -190,10 +175,6 @@ func (c *vehicleController) DeleteVehicleDocument(ctx context.Context, req *pb.D
 	}
 	return &pb.DeleteVehicleDocumentResponse{Message: "Xoá giấy tờ thành công"}, nil
 }
-
-// ===========================================================================
-// CLIENT — VỊ TRÍ & SẴN SÀNG NHẬN ĐƠN
-// ===========================================================================
 
 func (c *vehicleController) ReportLocation(ctx context.Context, req *pb.ReportLocationRequest) (*pb.ReportLocationResponse, error) {
 	param, err := c.mapper.PbReportLocationToParam(req)
@@ -260,7 +241,6 @@ func (c *vehicleController) GetDriverAvailability(ctx context.Context, req *pb.G
 	return &pb.GetDriverAvailabilityResponse{Availability: c.mapper.EntityAvailabilityToPb(*avail)}, nil
 }
 
-// SearchNearbyVehicles là endpoint matching_service gọi sang khi có đơn hàng mới.
 func (c *vehicleController) SearchNearbyVehicles(ctx context.Context, req *pb.SearchNearbyVehiclesRequest) (*pb.SearchNearbyVehiclesResponse, error) {
 	param := c.mapper.PbSearchNearbyToParam(req)
 
@@ -274,10 +254,6 @@ func (c *vehicleController) SearchNearbyVehicles(ctx context.Context, req *pb.Se
 		TotalFound: int32(len(list)),
 	}, nil
 }
-
-// ===========================================================================
-// ADMIN
-// ===========================================================================
 
 func (c *vehicleController) AdminListVehicles(ctx context.Context, req *pb.AdminListVehiclesRequest) (*pb.AdminListVehiclesResponse, error) {
 	param := c.mapper.PbAdminListVehiclesToParam(req)
@@ -298,8 +274,6 @@ func (c *vehicleController) AdminVerifyVehicle(ctx context.Context, req *pb.Admi
 	if err != nil {
 		return nil, cerr.ErrInvalidVehicleID.WithCause(err)
 	}
-	// ReviewerID được mapper bỏ qua (goverter:ignore) vì cần parse riêng —
-	// admin id có thể trống khi thao tác từ script nội bộ.
 	if param.ReviewerID, err = parseOptionalID(req.ReviewerId, cerr.ErrInvalidDriverID); err != nil {
 		return nil, err
 	}

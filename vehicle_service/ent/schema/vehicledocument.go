@@ -8,17 +8,16 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+	"github.com/logistic/pkg/uuidx"
 )
 
-// VehicleDocument là giấy tờ của xe: đăng ký, đăng kiểm, bảo hiểm, bằng lái.
-// expires_at cho phép hệ thống chủ động nhắc trước khi giấy tờ hết hạn.
 type VehicleDocument struct {
 	ent.Schema
 }
 
 func (VehicleDocument) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
+		field.UUID("id", uuid.UUID{}).Default(uuidx.New).Unique(),
 		field.UUID("vehicle_id", uuid.UUID{}),
 		field.Enum("document_type").Values("registration", "inspection", "insurance", "license"),
 		field.String("document_number").Optional(),

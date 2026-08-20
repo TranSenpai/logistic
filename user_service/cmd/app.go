@@ -30,10 +30,6 @@ func NewApp(cfg *conf.Config) (*App, error) {
 		log.Printf("Failed to initialize tracer: %v", err)
 	}
 
-	// middleware.ChainForService gắn Recovery -> Logging -> Error.
-	// Nhờ nó, controller không cần một dòng xử lý lỗi transport nào: lỗi nghiệp
-	// vụ tự thành NOT_FOUND/INVALID_ARGUMENT, còn panic thành INTERNAL thay vì
-	// giết cả process.
 	grpcServer := grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		middleware.ChainForService("user_service"),

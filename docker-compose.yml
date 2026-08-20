@@ -1,3 +1,18 @@
+# ============================================================================
+# RANH GIỚI MẠNG — điều kiện tiên quyết của mô hình xác thực
+# ============================================================================
+# CHỈ gateway-service publish cổng ra máy chủ. Sáu service nội bộ chỉ nghe trong
+# mạng logistic_net, không có ánh xạ cổng nào.
+#
+# Đây KHÔNG phải chuyện dọn dẹp cho gọn. Gateway verify JWT rồi chuyển danh tính
+# xuống dưới qua gRPC metadata, còn service nội bộ TIN metadata đó mà không kiểm
+# lại (xem pkg/authn/grpcmeta.go để biết vì sao). Giả định này chỉ đúng khi không
+# ai gọi thẳng vào được. Trước đây mỗi service đều publish cổng gRPC của mình,
+# nên bất kỳ ai chạm tới máy chủ đều bỏ qua được gateway và tự xưng là admin.
+#
+# Cần gỡ lỗi một service? Dùng `docker compose exec` hoặc mở cổng tạm thời trong
+# một file override riêng cho máy local — đừng thêm `ports:` lại vào đây.
+# ============================================================================
 networks:
   logistic_net:
     driver: bridge
@@ -18,6 +33,9 @@ services:
       - .env
     volumes:
       - gateway-data:/app/data
+      # Gateway chỉ được gắn PUBLIC key. Nếu ai đó vô tình mount nhầm private
+      # key vào đây, gateway sẽ ký được token — mất trắng ranh giới đặc quyền.
+      - ./secrets/jwt_public.pem:/run/secrets/jwt_public.pem:ro
     networks:
       - logistic_net
 
@@ -30,12 +48,12 @@ services:
     # Image do GitHub Actions build sẵn và đẩy lên GHCR. EC2 chỉ pull, không compile.
     # IMAGE_TAG được CI ghi vào .env (= git sha) => pin đúng phiên bản, dễ rollback.
     image: ghcr.io/transenpai/logistic/auth-service:${IMAGE_TAG:-latest}
-    ports: 
-      - "9001:9001"
     env_file:
       - .env
     volumes:
       - auth-data:/app/data
+      # PRIVATE key chỉ mount vào auth_service, và chỉ đọc.
+      - ./secrets/jwt_private.pem:/run/secrets/jwt_private.pem:ro
     networks:
       - logistic_net
   
@@ -48,8 +66,6 @@ services:
     # Image do GitHub Actions build sẵn và đẩy lên GHCR. EC2 chỉ pull, không compile.
     # IMAGE_TAG được CI ghi vào .env (= git sha) => pin đúng phiên bản, dễ rollback.
     image: ghcr.io/transenpai/logistic/media-service:${IMAGE_TAG:-latest}
-    ports:
-      - "9002:9002"
     env_file:
       - .env
     volumes:
@@ -66,8 +82,6 @@ services:
     # Image do GitHub Actions build sẵn và đẩy lên GHCR. EC2 chỉ pull, không compile.
     # IMAGE_TAG được CI ghi vào .env (= git sha) => pin đúng phiên bản, dễ rollback.
     image: ghcr.io/transenpai/logistic/matching-service:${IMAGE_TAG:-latest}
-    ports:
-      - "9003:9003"
     env_file:
       - .env
     volumes:
@@ -84,8 +98,6 @@ services:
     # Image do GitHub Actions build sẵn và đẩy lên GHCR. EC2 chỉ pull, không compile.
     # IMAGE_TAG được CI ghi vào .env (= git sha) => pin đúng phiên bản, dễ rollback.
     image: ghcr.io/transenpai/logistic/user-service:${IMAGE_TAG:-latest}
-    ports:
-      - "9004:9004"
     env_file:
       - .env
     volumes:
@@ -102,8 +114,6 @@ services:
     # Image do GitHub Actions build sẵn và đẩy lên GHCR. EC2 chỉ pull, không compile.
     # IMAGE_TAG được CI ghi vào .env (= git sha) => pin đúng phiên bản, dễ rollback.
     image: ghcr.io/transenpai/logistic/vehicle-service:${IMAGE_TAG:-latest}
-    ports:
-      - "9005:9005"
     env_file:
       - .env
     volumes:
@@ -118,8 +128,6 @@ services:
       context: .
       dockerfile: notification_service/Dockerfile
     image: ghcr.io/transenpai/logistic/notification-service:${IMAGE_TAG:-latest}
-    ports:
-      - "9006:9006"
     env_file:
       - .env
     # Consumer chỉ bind được queue khi RabbitMQ đã sẵn sàng. Không có
@@ -136,6 +144,37 @@ services:
       - notification-data:/app/data
     networks:
       - logistic_net
+
+  # ==========================================================================
+  # JAEGER — nơi trace thực sự XEM ĐƯỢC
+  # ==========================================================================
+  # Trước đây mọi service đều đã gắn OpenTelemetry, nhưng KHÔNG có gì nhận trace
+  # và OTEL_EXPORTER_OTLP_ENDPOINT thì để trống — SDK rơi về localhost:4317, bên
+  # trong container không có ai nghe. BatchSpanProcessor nuốt lỗi gửi trong im
+  # lặng, nên nhìn log thì tưởng mọi thứ vẫn ổn: cả hệ thống có đủ mã trace mà
+  # không xem được cái nào.
+  #
+  # Container này đóng đúng lỗ đó. Đặt OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317
+  # trong .env là trace bắt đầu chảy về.
+  #
+  # all-in-one giữ trace TRONG BỘ NHỚ và mất sạch khi restart — hoàn toàn ổn cho
+  # môi trường phát triển. Lên production thì thay bằng OTel Collector đứng
+  # trước một backend có lưu trữ, và bật lấy mẫu; giữ 100% trace ở nhịp GPS thật
+  # sẽ tốn hơn cả chính hệ thống đang được đo.
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686" # giao diện web: http://localhost:16686
+      - "4317:4317"   # OTLP gRPC — cổng mà pkg/tracer gửi tới
+    networks:
+      - logistic_net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # ==========================================================================
   # REDIS — cache đọc + CHỈ MỤC GEO cho "tìm xe đang chạy"

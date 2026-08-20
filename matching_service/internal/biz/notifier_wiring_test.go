@@ -11,11 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// ---------------------------------------------------------------------------
-// FAKES
-// ---------------------------------------------------------------------------
-
-// fakeNotifier ghi lại mọi lần engine muốn báo cho người dùng.
 type fakeNotifier struct {
 	mu               sync.Mutex
 	driverCandidates int
@@ -30,7 +25,6 @@ type fakeNotifier struct {
 	lastBid      *entity.Bid
 	lastAsk      *entity.Ask
 
-	// err mô phỏng RabbitMQ hỏng.
 	err error
 }
 
@@ -82,7 +76,6 @@ func (f *fakeNotifier) counts() (int, int, int, int, int) {
 	return f.driverCandidates, f.matchFound, f.offerReceived, f.offerRejected, f.cargoSuggested
 }
 
-// fakeRepo giữ bid/ask trong bộ nhớ.
 type fakeRepo struct {
 	mu   sync.Mutex
 	bids map[uuid.UUID]*entity.Bid
@@ -170,7 +163,6 @@ func (r *fakeRepo) CreateMatchContract(_ context.Context, c *entity.MatchContrac
 	return nil
 }
 
-// fakeSpatial trả zone cố định.
 type fakeSpatial struct{}
 
 func (fakeSpatial) GetZoneId(context.Context, float64, float64) (string, error) {
@@ -180,7 +172,6 @@ func (fakeSpatial) GetNeighborZones(context.Context, string) ([]string, error) {
 	return []string{"VN-HCM-Q1"}, nil
 }
 
-// fakePublisher nuốt mọi event Kafka/NATS.
 type fakePublisher struct {
 	mu    sync.Mutex
 	count int
@@ -196,10 +187,6 @@ func (p *fakePublisher) Publish(context.Context, *EventMessage) error {
 func newTestEngine(repo MatchingRepo, notifier Notifier) MatchingEngine {
 	return NewMatchingEngine(repo, fakeSpatial{}, NewMockWalletClient(), &fakePublisher{}, &fakePublisher{}, notifier)
 }
-
-// ---------------------------------------------------------------------------
-// NGHIỆP VỤ (1): chủ hàng đăng đơn -> báo cho tài xế tiềm năng
-// ---------------------------------------------------------------------------
 
 func TestSubmitBidNotifiesCandidateDrivers(t *testing.T) {
 	repo := newFakeRepo()
@@ -235,8 +222,6 @@ func TestSubmitBidNotifiesCandidateDrivers(t *testing.T) {
 	}
 }
 
-// TestSubmitBidWithNoCandidatesDoesNotNotify: không có tài xế nào phù hợp thì
-// đừng phát event rỗng — notification_service sẽ tốn một vòng xử lý vô ích.
 func TestSubmitBidWithNoCandidatesDoesNotNotify(t *testing.T) {
 	repo := newFakeRepo()
 	repo.asksForBid = nil
@@ -257,10 +242,6 @@ func TestSubmitBidWithNoCandidatesDoesNotNotify(t *testing.T) {
 	}
 }
 
-// TestSubmitBidSucceedsWhenNotifierFails là bất biến quan trọng nhất của thiết
-// kế này: RabbitMQ chết KHÔNG được làm hỏng việc đăng đơn. Đơn đã vào DB thì
-// vẫn ghép được qua các luồng khác; mất thông báo là chuyện nhỏ hơn nhiều so
-// với mất đơn hàng.
 func TestSubmitBidSucceedsWhenNotifierFails(t *testing.T) {
 	repo := newFakeRepo()
 	repo.asksForBid = []entity.Ask{{ID: uuid.New(), DriverID: uuid.New()}}
@@ -283,10 +264,6 @@ func TestSubmitBidSucceedsWhenNotifierFails(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// NGHIỆP VỤ (2): ghép được xe -> báo cả hai phía
-// ---------------------------------------------------------------------------
-
 func TestAcceptOfferNotifiesMatchFound(t *testing.T) {
 	repo := newFakeRepo()
 	notifier := &fakeNotifier{}
@@ -296,7 +273,6 @@ func TestAcceptOfferNotifiesMatchFound(t *testing.T) {
 	bidID := uuid.Must(uuid.NewV7())
 	askID := uuid.Must(uuid.NewV7())
 
-	// AcceptOffer chỉ chạy khi bid đang ở trạng thái NEGOTIATING.
 	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusNegotiating}
 	repo.asks[askID] = &entity.Ask{ID: askID, DriverID: uuid.New(), VehicleID: uuid.New(), MinPrice: 1000}
 
@@ -312,8 +288,7 @@ func TestAcceptOfferNotifiesMatchFound(t *testing.T) {
 	if notifier.lastContract == nil || notifier.lastContract.ID != contract.ID {
 		t.Error("contract gửi cho notifier không khớp contract trả về")
 	}
-	// Cả bid lẫn ask phải được truyền sang, vì notification_service cần cả
-	// shipper_id lẫn driver_id để sinh hai thông báo.
+
 	if notifier.lastBid == nil || notifier.lastAsk == nil {
 		t.Error("notifier phải nhận được cả bid và ask để báo cho hai phía")
 	}
@@ -336,10 +311,6 @@ func TestAcceptOfferRejectsNonNegotiatingBid(t *testing.T) {
 		t.Errorf("chốt thất bại mà vẫn báo ghép đơn %d lần", matchFound)
 	}
 }
-
-// ---------------------------------------------------------------------------
-// CHIỀU NGƯỢC LẠI: tài xế đăng chuyến rỗng -> gợi ý đơn hàng
-// ---------------------------------------------------------------------------
 
 func TestSubmitAskNotifiesCargoSuggested(t *testing.T) {
 	repo := newFakeRepo()
@@ -370,10 +341,6 @@ func TestSubmitAskNotifiesCargoSuggested(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// VÒNG THƯƠNG LƯỢNG
-// ---------------------------------------------------------------------------
-
 func TestRejectOfferNotifiesDriverAndReopensBid(t *testing.T) {
 	repo := newFakeRepo()
 	notifier := &fakeNotifier{}
@@ -391,16 +358,13 @@ func TestRejectOfferNotifiesDriverAndReopensBid(t *testing.T) {
 	if _, _, _, rejected, _ := notifier.counts(); rejected != 1 {
 		t.Errorf("mong đợi 1 lần báo từ chối, nhận %d", rejected)
 	}
-	// Đơn phải quay lại PENDING để tài xế khác tiếp tục ra giá.
+
 	if repo.bids[bidID].Status != entity.BidStatusPending {
 		t.Errorf("bid sau khi từ chối có status %d, mong đợi PENDING (%d)",
 			repo.bids[bidID].Status, entity.BidStatusPending)
 	}
 }
 
-// TestRejectOfferWithMissingAskDoesNotPanic khoá lại một lỗi thật đã sửa: đoạn
-// log cuối hàm dùng ask.DriverID nằm NGOÀI nhánh kiểm tra lỗi, nên khi không
-// đọc được ask thì ask == nil và cả tiến trình panic.
 func TestRejectOfferWithMissingAskDoesNotPanic(t *testing.T) {
 	repo := newFakeRepo()
 	notifier := &fakeNotifier{}
@@ -408,7 +372,6 @@ func TestRejectOfferWithMissingAskDoesNotPanic(t *testing.T) {
 
 	bidID := uuid.Must(uuid.NewV7())
 	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusNegotiating}
-	// Cố tình KHÔNG tạo ask.
 
 	err := engine.RejectOffer(context.Background(), bidID, uuid.Must(uuid.NewV7()))
 	if err != nil {
@@ -422,8 +385,6 @@ func TestRejectOfferWithMissingAskDoesNotPanic(t *testing.T) {
 func TestNewMatchingEngineAcceptsNilNotifier(t *testing.T) {
 	repo := newFakeRepo()
 
-	// nil notifier (RabbitMQ dựng không được) phải rơi về NoopNotifier
-	// thay vì làm engine panic ở lần publish đầu tiên.
 	engine := NewMatchingEngine(repo, fakeSpatial{}, NewMockWalletClient(), &fakePublisher{}, &fakePublisher{}, nil)
 
 	repo.asksForBid = []entity.Ask{{ID: uuid.New(), DriverID: uuid.New()}}

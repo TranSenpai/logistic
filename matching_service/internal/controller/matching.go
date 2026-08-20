@@ -69,10 +69,6 @@ func (c *matchingController) SubmitAsk(ctx context.Context, req *pb.SubmitAskReq
 	}, nil
 }
 
-// AcceptMatch chốt hợp đồng giữa một đơn hàng và một tài xế đã báo giá.
-//
-// Đây là điểm cuối của vòng thương lượng, và cũng là nơi phát sự kiện
-// matching.match.found để notification_service báo cho CẢ HAI phía.
 func (c *matchingController) AcceptMatch(ctx context.Context, req *pb.AcceptMatchRequest) (*pb.AcceptMatchResponse, error) {
 	bidID, err := uuid.FromBytes(req.BidId)
 	if err != nil {
@@ -100,7 +96,6 @@ func (c *matchingController) AcceptMatch(ctx context.Context, req *pb.AcceptMatc
 	}, nil
 }
 
-// SubmitOffer: tài xế ra giá cho một đơn hàng.
 func (c *matchingController) SubmitOffer(ctx context.Context, req *pb.SubmitOfferRequest) (*pb.SubmitOfferResponse, error) {
 	bidID, err := uuid.FromBytes(req.BidId)
 	if err != nil {
@@ -124,7 +119,6 @@ func (c *matchingController) SubmitOffer(ctx context.Context, req *pb.SubmitOffe
 	}, nil
 }
 
-// RejectOffer: chủ hàng từ chối báo giá, đơn quay lại PENDING.
 func (c *matchingController) RejectOffer(ctx context.Context, req *pb.RejectOfferRequest) (*pb.RejectOfferResponse, error) {
 	bidID, err := uuid.FromBytes(req.BidId)
 	if err != nil {

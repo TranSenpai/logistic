@@ -1,9 +1,3 @@
-// Package rabbitmq cài đặt biz.Notifier bằng RabbitMQ topic exchange.
-//
-// Đây là đầu PHÁT của luồng thông báo; đầu nhận nằm ở
-// notification_service/internal/consumer. Hợp đồng dữ liệu giữa hai bên là
-// package github.com/logistic/pkg/events, nên hai service không thể lệch nhau
-// về tên trường mà vẫn biên dịch được.
 package rabbitmq
 
 import (
@@ -31,12 +25,6 @@ func NewNotifier(pub *mq.Publisher) biz.Notifier {
 	return &notifier{pub: pub, source: "matching_service"}
 }
 
-// publish gói payload vào Envelope rồi đẩy đi.
-//
-// event_id sinh mới cho MỖI lần phát và trở thành MessageId của message.
-// notification_service dùng chính id này làm khoá chống trùng, nên hai lần
-// publish khác nhau của cùng một nghiệp vụ sẽ được coi là hai sự kiện — đúng
-// như mong muốn, còn một message được broker giao lại thì không.
 func (n *notifier) publish(ctx context.Context, routingKey string, data map[string]any) error {
 	env := events.Envelope{
 		EventID:    uuid.Must(uuid.NewV7()).String(),
@@ -54,10 +42,6 @@ func (n *notifier) publish(ctx context.Context, routingKey string, data map[stri
 	return nil
 }
 
-// NotifyDriverCandidates — luồng "chủ hàng tìm xe".
-//
-// engine đã lọc ra các ask phù hợp; ta quy chúng thành danh sách ứng viên kèm
-// khoảng cách để notification_service dựng câu chữ "cách bạn X km".
 func (n *notifier) NotifyDriverCandidates(ctx context.Context, bid *entity.Bid, asks []entity.Ask) error {
 	if bid == nil || len(asks) == 0 {
 		return nil
@@ -95,7 +79,6 @@ func (n *notifier) NotifyDriverCandidates(ctx context.Context, bid *entity.Bid, 
 	return n.publish(ctx, events.RoutingKeyDriverCandidatesFound, toMap(payload))
 }
 
-// NotifyMatchFound — luồng "đã tìm được xe".
 func (n *notifier) NotifyMatchFound(ctx context.Context, contract *entity.MatchContract, bid *entity.Bid, ask *entity.Ask) error {
 	if contract == nil || bid == nil || ask == nil {
 		return nil

@@ -99,8 +99,8 @@ func (c *AppMapperImpl) EntityNotificationListToPbList(source []entity.Notificat
 }
 func (c *AppMapperImpl) EntityNotificationToPb(source entity.Notification) *v1.Notification {
 	var notificationv1Notification v1.Notification
-	notificationv1Notification.Id = mapper.UUIDToString(source.ID)
-	notificationv1Notification.UserId = mapper.UUIDToString(source.UserID)
+	notificationv1Notification.Id = mapper.UUIDToBytes(source.ID)
+	notificationv1Notification.UserId = mapper.UUIDToBytes(source.UserID)
 	notificationv1Notification.RecipientRole = source.RecipientRole
 	notificationv1Notification.Type = source.Type
 	notificationv1Notification.Channel = source.Channel
@@ -108,7 +108,7 @@ func (c *AppMapperImpl) EntityNotificationToPb(source entity.Notification) *v1.N
 	notificationv1Notification.Body = source.Body
 	notificationv1Notification.Data = source.Data
 	notificationv1Notification.RefType = source.RefType
-	notificationv1Notification.RefId = source.RefID
+	notificationv1Notification.RefId = mapper.RefIDToBytes(source.RefID)
 	notificationv1Notification.IsRead = source.IsRead
 	notificationv1Notification.Status = source.Status
 	notificationv1Notification.ReadAt = mapper.TimeToTimestamp(source.ReadAt)
@@ -125,8 +125,8 @@ func (c *AppMapperImpl) EntityPaginationToPb(source entity.Pagination) *v1.Pagin
 }
 func (c *AppMapperImpl) EntityPreferenceToPb(source entity.NotificationPreference) *v1.NotificationPreference {
 	var notificationv1NotificationPreference v1.NotificationPreference
-	notificationv1NotificationPreference.Id = mapper.UUIDToString(source.ID)
-	notificationv1NotificationPreference.UserId = mapper.UUIDToString(source.UserID)
+	notificationv1NotificationPreference.Id = mapper.UUIDToBytes(source.ID)
+	notificationv1NotificationPreference.UserId = mapper.UUIDToBytes(source.UserID)
 	notificationv1NotificationPreference.InAppEnabled = source.InAppEnabled
 	notificationv1NotificationPreference.PushEnabled = source.PushEnabled
 	notificationv1NotificationPreference.EmailEnabled = source.EmailEnabled
@@ -150,7 +150,7 @@ func (c *AppMapperImpl) EntityTemplateListToPbList(source []entity.NotificationT
 }
 func (c *AppMapperImpl) EntityTemplateToPb(source entity.NotificationTemplate) *v1.NotificationTemplate {
 	var notificationv1NotificationTemplate v1.NotificationTemplate
-	notificationv1NotificationTemplate.Id = mapper.UUIDToString(source.ID)
+	notificationv1NotificationTemplate.Id = mapper.UUIDToBytes(source.ID)
 	notificationv1NotificationTemplate.Code = source.Code
 	notificationv1NotificationTemplate.Name = source.Name
 	notificationv1NotificationTemplate.Channel = source.Channel
@@ -165,7 +165,7 @@ func (c *AppMapperImpl) EntityTemplateToPb(source entity.NotificationTemplate) *
 func (c *AppMapperImpl) PbAdminListNotificationsToParam(source *v1.AdminListNotificationsRequest) (entity.AdminListNotificationsParam, error) {
 	var entityAdminListNotificationsParam entity.AdminListNotificationsParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).UserId)
+		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
 		if err != nil {
 			return entityAdminListNotificationsParam, err
 		}
@@ -193,7 +193,7 @@ func (c *AppMapperImpl) PbCreateTemplateToParam(source *v1.AdminCreateTemplateRe
 func (c *AppMapperImpl) PbListNotificationsToParam(source *v1.ListNotificationsRequest) (entity.ListNotificationsParam, error) {
 	var entityListNotificationsParam entity.ListNotificationsParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).UserId)
+		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
 		if err != nil {
 			return entityListNotificationsParam, err
 		}
@@ -216,7 +216,7 @@ func (c *AppMapperImpl) PbListTemplatesToParam(source *v1.AdminListTemplatesRequ
 func (c *AppMapperImpl) PbUpdatePreferencesToParam(source *v1.UpdatePreferencesRequest) (entity.UpdatePreferenceParam, error) {
 	var entityUpdatePreferenceParam entity.UpdatePreferenceParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).UserId)
+		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
 		if err != nil {
 			return entityUpdatePreferenceParam, err
 		}
@@ -235,7 +235,7 @@ func (c *AppMapperImpl) PbUpdatePreferencesToParam(source *v1.UpdatePreferencesR
 func (c *AppMapperImpl) PbUpdateTemplateToParam(source *v1.AdminUpdateTemplateRequest) (entity.UpdateTemplateParam, error) {
 	var entityUpdateTemplateParam entity.UpdateTemplateParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).Id)
+		uuidUUID, err := mapper.BytesToUUID((*source).Id)
 		if err != nil {
 			return entityUpdateTemplateParam, err
 		}

@@ -9,10 +9,6 @@ import (
 
 const earthRadiusKm = 6371.0
 
-// haversineKm tính khoảng cách đường chim bay giữa hai toạ độ.
-//
-// Chỉ dùng cho đường dự phòng khi Redis hỏng — ở đường chính, Redis GEO đã trả
-// sẵn khoảng cách nên không cần tính lại.
 func haversineKm(lat1, lng1, lat2, lng2 float64) float64 {
 	dLat := toRadians(lat2 - lat1)
 	dLng := toRadians(lng2 - lng1)
@@ -26,17 +22,11 @@ func haversineKm(lat1, lng1, lat2, lng2 float64) float64 {
 
 func toRadians(deg float64) float64 { return deg * math.Pi / 180 }
 
-// neighborZones liệt kê các ô lưới cần quét để phủ hết bán kính radiusKm.
-//
-// Bán kính lớn thì số ô tăng theo bình phương, nên có trần 2 ô mỗi chiều
-// (tối đa 25 ô): quá ngưỡng đó thì trả về nil và để caller quét không lọc zone
-// — dù sao đây cũng chỉ là đường dự phòng hiếm khi chạm tới.
 func neighborZones(lat, lng, radiusKm float64) []string {
 	if !entity.IsValidCoordinate(lat, lng) {
 		return nil
 	}
 
-	// 1 độ vĩ tuyến xấp xỉ 111 km; quy bán kính ra số ô lưới cần lan ra.
 	cellsNeeded := int(math.Ceil(radiusKm / (entity.ZoneSize * 111.0)))
 	if cellsNeeded < 1 {
 		cellsNeeded = 1

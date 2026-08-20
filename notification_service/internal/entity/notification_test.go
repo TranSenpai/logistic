@@ -7,10 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// TestIsQuietHourOvernight: khung yên lặng qua đêm (22:00 -> 07:00) là trường
-// hợp dễ viết sai nhất — nếu dùng điều kiện VÀ thay vì HOẶC thì khoảng thời
-// gian "gấp qua nửa đêm" sẽ luôn trả về false, và tài xế bị đánh thức lúc 2 giờ
-// sáng đúng như khi không có tính năng này.
 func TestIsQuietHourOvernight(t *testing.T) {
 	p := &NotificationPreference{QuietHoursStart: "22:00", QuietHoursEnd: "07:00"}
 
@@ -18,13 +14,13 @@ func TestIsQuietHourOvernight(t *testing.T) {
 		hour, minute int
 		want         bool
 	}{
-		{23, 30, true},  // sau 22:00, trước nửa đêm
-		{2, 0, true},    // qua nửa đêm, vẫn trong khung
-		{6, 59, true},   // sát mốc kết thúc
-		{7, 0, false},   // đúng mốc kết thúc -> đã hết yên lặng
-		{12, 0, false},  // giữa trưa
-		{21, 59, false}, // sát mốc bắt đầu, chưa tới
-		{22, 0, true},   // đúng mốc bắt đầu
+		{23, 30, true},
+		{2, 0, true},
+		{6, 59, true},
+		{7, 0, false},
+		{12, 0, false},
+		{21, 59, false},
+		{22, 0, true},
 	}
 
 	for _, tc := range cases {
@@ -35,7 +31,6 @@ func TestIsQuietHourOvernight(t *testing.T) {
 	}
 }
 
-// TestIsQuietHourSameDay: khung trong ngày (13:00 -> 15:00) dùng điều kiện VÀ.
 func TestIsQuietHourSameDay(t *testing.T) {
 	p := &NotificationPreference{QuietHoursStart: "13:00", QuietHoursEnd: "15:00"}
 
@@ -59,17 +54,15 @@ func TestIsQuietHourSameDay(t *testing.T) {
 	}
 }
 
-// TestIsQuietHourInvalidInput: chuỗi giờ hỏng KHÔNG được im lặng chặn thông báo.
-// Thà gửi nhầm giờ còn hơn nuốt mất thông báo ghép đơn.
 func TestIsQuietHourInvalidInput(t *testing.T) {
 	at := time.Date(2026, 8, 20, 23, 0, 0, 0, time.UTC)
 
 	for _, p := range []*NotificationPreference{
-		{},                         // chưa cấu hình
-		{QuietHoursStart: "22:00"}, // thiếu vế kết thúc
-		{QuietHoursStart: "hai mươi hai", QuietHoursEnd: "7"}, // chữ thay vì số
-		{QuietHoursStart: "25:00", QuietHoursEnd: "07:00"},    // giờ ngoài khoảng
-		{QuietHoursStart: "22:70", QuietHoursEnd: "07:00"},    // phút ngoài khoảng
+		{},
+		{QuietHoursStart: "22:00"},
+		{QuietHoursStart: "hai mươi hai", QuietHoursEnd: "7"},
+		{QuietHoursStart: "25:00", QuietHoursEnd: "07:00"},
+		{QuietHoursStart: "22:70", QuietHoursEnd: "07:00"},
 	} {
 		if p.IsQuietHour(at) {
 			t.Errorf("cấu hình hỏng %+v không được coi là giờ yên lặng", p)
@@ -91,8 +84,6 @@ func TestAllowsChannel(t *testing.T) {
 	}
 }
 
-// TestAllowsTypeSystemAlwaysPasses: thông báo hệ thống (khoá tài khoản, bảo trì)
-// phải tới được người dùng kể cả khi họ tắt hết mọi thứ.
 func TestAllowsTypeSystemAlwaysPasses(t *testing.T) {
 	p := &NotificationPreference{MatchEventsEnabled: false, PromotionEnabled: false}
 
@@ -114,18 +105,16 @@ func TestDefaultPreferenceEnablesMatchEvents(t *testing.T) {
 	if p.UserID != uid {
 		t.Errorf("UserID = %s, mong đợi %s", p.UserID, uid)
 	}
-	// Người mới cài app phải nhận được thông báo ghép đơn ngay — đó là lý do
-	// chính họ cài app.
+
 	if !p.MatchEventsEnabled || !p.PushEnabled || !p.InAppEnabled {
 		t.Errorf("mặc định phải bật thông báo ghép đơn: %+v", p)
 	}
-	// Email/SMS tốn tiền và phiền, mặc định tắt.
+
 	if p.EmailEnabled || p.SMSEnabled {
 		t.Errorf("email/sms phải tắt mặc định: %+v", p)
 	}
 }
 
-// TestTemplateRender kiểm tra việc thay placeholder.
 func TestTemplateRender(t *testing.T) {
 	tpl := &NotificationTemplate{
 		TitleTemplate: "Chào {{name}}",
@@ -147,8 +136,6 @@ func TestTemplateRender(t *testing.T) {
 	}
 }
 
-// TestTemplateRenderLeavesUnknownPlaceholder: thiếu biến thì giữ nguyên
-// placeholder chứ không panic — người vận hành nhìn output là biết thiếu gì.
 func TestTemplateRenderLeavesUnknownPlaceholder(t *testing.T) {
 	tpl := &NotificationTemplate{TitleTemplate: "Xin chào {{missing}}"}
 

@@ -1,18 +1,13 @@
 package controller
 
 import (
-	"gateway_service/internal/middleware"
 	"gateway_service/internal/response"
 
 	"github.com/gin-gonic/gin"
 	pb "github.com/logistic/api/logistic/notification_service/v1"
+	"github.com/logistic/pkg/uuidx"
 )
 
-// NotificationController phơi phần ĐỌC của hộp thư thông báo ra HTTP.
-//
-// Không có endpoint "tạo thông báo" cho client — thông báo được sinh ra bởi
-// consumer RabbitMQ khi matching_service phát sự kiện. Chỉ admin mới gửi thủ
-// công được, qua nhóm /admin.
 type NotificationController struct {
 	notifClient pb.NotificationServiceClient
 }
@@ -20,20 +15,6 @@ type NotificationController struct {
 func NewNotificationController(notifClient pb.NotificationServiceClient) *NotificationController {
 	return &NotificationController{notifClient: notifClient}
 }
-
-func notifUserID(ctx *gin.Context) string {
-	if v := ctx.Param("user_id"); v != "" {
-		return v
-	}
-	if v := ctx.Query("user_id"); v != "" {
-		return v
-	}
-	return middleware.CurrentUserID(ctx)
-}
-
-// ===========================================================================
-// CLIENT
-// ===========================================================================
 
 // ListNotifications godoc
 // @Summary      Hộp thư thông báo
@@ -43,8 +24,17 @@ func notifUserID(ctx *gin.Context) string {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/notifications [get]
 func (c *NotificationController) ListNotifications(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	resp, err := c.notifClient.ListNotifications(ctx.Request.Context(), &pb.ListNotificationsRequest{
-		UserId:     notifUserID(ctx),
+		UserId:     userID,
 		Type:       ctx.Query("type"),
 		UnreadOnly: queryBool(ctx, "unread_only"),
 		Page:       queryInt(ctx, "page"),
@@ -56,8 +46,8 @@ func (c *NotificationController) ListNotifications(ctx *gin.Context) {
 	}
 
 	response.OK(ctx, gin.H{
-		"notifications": resp.Notifications,
-		"pagination":    resp.Pagination,
+		"notifications": toNotificationDTOs(resp.Notifications),
+		"pagination":    toNotifPaginationDTO(resp.Pagination),
 		"unread_count":  resp.UnreadCount,
 	})
 }
@@ -70,15 +60,20 @@ func (c *NotificationController) ListNotifications(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/notifications/{id} [get]
 func (c *NotificationController) GetNotification(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	resp, err := c.notifClient.GetNotification(ctx.Request.Context(), &pb.GetNotificationRequest{
-		Id:     ctx.Param("id"),
-		UserId: middleware.CurrentUserID(ctx),
+		Id:     id,
+		UserId: selfID(ctx),
 	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, resp.Notification)
+	response.OK(ctx, gin.H{"notification": toNotificationDTO(resp.Notification)})
 }
 
 // MarkAsRead godoc
@@ -89,9 +84,14 @@ func (c *NotificationController) GetNotification(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/notifications/{id}/read [put]
 func (c *NotificationController) MarkAsRead(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	resp, err := c.notifClient.MarkAsRead(ctx.Request.Context(), &pb.MarkAsReadRequest{
-		Id:     ctx.Param("id"),
-		UserId: middleware.CurrentUserID(ctx),
+		Id:     id,
+		UserId: selfID(ctx),
 	})
 	if err != nil {
 		response.Error(ctx, err)
@@ -108,8 +108,16 @@ func (c *NotificationController) MarkAsRead(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/notifications/read-all [put]
 func (c *NotificationController) MarkAllAsRead(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	resp, err := c.notifClient.MarkAllAsRead(ctx.Request.Context(), &pb.MarkAllAsReadRequest{
-		UserId: notifUserID(ctx),
+		UserId: userID,
 	})
 	if err != nil {
 		response.Error(ctx, err)
@@ -126,9 +134,14 @@ func (c *NotificationController) MarkAllAsRead(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/notifications/{id} [delete]
 func (c *NotificationController) DeleteNotification(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	resp, err := c.notifClient.DeleteNotification(ctx.Request.Context(), &pb.DeleteNotificationRequest{
-		Id:     ctx.Param("id"),
-		UserId: middleware.CurrentUserID(ctx),
+		Id:     id,
+		UserId: selfID(ctx),
 	})
 	if err != nil {
 		response.Error(ctx, err)
@@ -146,8 +159,16 @@ func (c *NotificationController) DeleteNotification(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/notifications/unread-count [get]
 func (c *NotificationController) GetUnreadCount(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	resp, err := c.notifClient.GetUnreadCount(ctx.Request.Context(), &pb.GetUnreadCountRequest{
-		UserId: notifUserID(ctx),
+		UserId: userID,
 	})
 	if err != nil {
 		response.Error(ctx, err)
@@ -164,14 +185,22 @@ func (c *NotificationController) GetUnreadCount(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/notification-preferences [get]
 func (c *NotificationController) GetPreferences(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	resp, err := c.notifClient.GetPreferences(ctx.Request.Context(), &pb.GetPreferencesRequest{
-		UserId: notifUserID(ctx),
+		UserId: userID,
 	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, resp.Preference)
+	response.OK(ctx, gin.H{"preference": toNotificationPreferenceDTO(resp.Preference)})
 }
 
 type UpdatePreferencesReq struct {
@@ -194,6 +223,14 @@ type UpdatePreferencesReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/users/{user_id}/notification-preferences [put]
 func (c *NotificationController) UpdatePreferences(ctx *gin.Context) {
+	userID, ok := resolveOwnID(ctx, "user_id")
+	if !ok {
+		return
+	}
+	if !requireSelfOrAdmin(ctx, userID) {
+		return
+	}
+
 	var req UpdatePreferencesReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -201,7 +238,7 @@ func (c *NotificationController) UpdatePreferences(ctx *gin.Context) {
 	}
 
 	resp, err := c.notifClient.UpdatePreferences(ctx.Request.Context(), &pb.UpdatePreferencesRequest{
-		UserId:             notifUserID(ctx),
+		UserId:             userID,
 		InAppEnabled:       req.InAppEnabled,
 		PushEnabled:        req.PushEnabled,
 		EmailEnabled:       req.EmailEnabled,
@@ -215,12 +252,8 @@ func (c *NotificationController) UpdatePreferences(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.Preference, resp.Message)
+	response.OKMessage(ctx, gin.H{"preference": toNotificationPreferenceDTO(resp.Preference)}, resp.Message)
 }
-
-// ===========================================================================
-// ADMIN
-// ===========================================================================
 
 type AdminSendNotificationReq struct {
 	UserIDs       []string `json:"user_ids"`
@@ -246,8 +279,18 @@ func (c *NotificationController) AdminSendNotification(ctx *gin.Context) {
 		return
 	}
 
+	userIDs := make([][]byte, 0, len(req.UserIDs))
+	for _, raw := range req.UserIDs {
+		id, err := uuidx.ParseRequired(raw)
+		if err != nil {
+			response.BadRequest(ctx, "INVALID_USER_ID", "user_ids chứa giá trị không phải UUID: "+raw)
+			return
+		}
+		userIDs = append(userIDs, id)
+	}
+
 	resp, err := c.notifClient.AdminSendNotification(ctx.Request.Context(), &pb.AdminSendNotificationRequest{
-		UserIds:       req.UserIDs,
+		UserIds:       userIDs,
 		BroadcastRole: req.BroadcastRole,
 		Type:          req.Type,
 		Channel:       req.Channel,
@@ -269,8 +312,13 @@ func (c *NotificationController) AdminSendNotification(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/admin/notifications [get]
 func (c *NotificationController) AdminListNotifications(ctx *gin.Context) {
+	userID, ok := queryID(ctx, "user_id")
+	if !ok {
+		return
+	}
+
 	resp, err := c.notifClient.AdminListNotifications(ctx.Request.Context(), &pb.AdminListNotificationsRequest{
-		UserId:   ctx.Query("user_id"),
+		UserId:   userID,
 		Type:     ctx.Query("type"),
 		Status:   ctx.Query("status"),
 		Page:     queryInt(ctx, "page"),
@@ -280,7 +328,10 @@ func (c *NotificationController) AdminListNotifications(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, gin.H{"notifications": resp.Notifications, "pagination": resp.Pagination})
+	response.OK(ctx, gin.H{
+		"notifications": toNotificationDTOs(resp.Notifications),
+		"pagination":    toNotifPaginationDTO(resp.Pagination),
+	})
 }
 
 // AdminListTemplates godoc
@@ -298,7 +349,7 @@ func (c *NotificationController) AdminListTemplates(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, gin.H{"templates": resp.Templates})
+	response.OK(ctx, gin.H{"templates": toNotificationTemplateDTOs(resp.Templates)})
 }
 
 type CreateTemplateReq struct {
@@ -338,7 +389,7 @@ func (c *NotificationController) AdminCreateTemplate(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.Created(ctx, resp.Template, resp.Message)
+	response.Created(ctx, gin.H{"template": toNotificationTemplateDTO(resp.Template)}, resp.Message)
 }
 
 type UpdateTemplateReq struct {
@@ -357,6 +408,11 @@ type UpdateTemplateReq struct {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/admin/notification-templates/{id} [put]
 func (c *NotificationController) AdminUpdateTemplate(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	var req UpdateTemplateReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
@@ -364,7 +420,7 @@ func (c *NotificationController) AdminUpdateTemplate(ctx *gin.Context) {
 	}
 
 	resp, err := c.notifClient.AdminUpdateTemplate(ctx.Request.Context(), &pb.AdminUpdateTemplateRequest{
-		Id:            ctx.Param("id"),
+		Id:            id,
 		Name:          req.Name,
 		TitleTemplate: req.TitleTemplate,
 		BodyTemplate:  req.BodyTemplate,
@@ -374,7 +430,7 @@ func (c *NotificationController) AdminUpdateTemplate(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OKMessage(ctx, resp.Template, resp.Message)
+	response.OKMessage(ctx, gin.H{"template": toNotificationTemplateDTO(resp.Template)}, resp.Message)
 }
 
 // AdminDeleteTemplate godoc
@@ -385,8 +441,13 @@ func (c *NotificationController) AdminUpdateTemplate(ctx *gin.Context) {
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/admin/notification-templates/{id} [delete]
 func (c *NotificationController) AdminDeleteTemplate(ctx *gin.Context) {
+	id, ok := pathID(ctx, "id")
+	if !ok {
+		return
+	}
+
 	resp, err := c.notifClient.AdminDeleteTemplate(ctx.Request.Context(), &pb.AdminDeleteTemplateRequest{
-		Id: ctx.Param("id"),
+		Id: id,
 	})
 	if err != nil {
 		response.Error(ctx, err)
@@ -407,5 +468,12 @@ func (c *NotificationController) AdminGetNotificationStats(ctx *gin.Context) {
 		response.Error(ctx, err)
 		return
 	}
-	response.OK(ctx, resp)
+
+	response.OK(ctx, gin.H{
+		"total_notifications":  resp.TotalNotifications,
+		"unread_notifications": resp.UnreadNotifications,
+		"sent_today":           resp.SentToday,
+		"failed_notifications": resp.FailedNotifications,
+		"total_templates":      resp.TotalTemplates,
+	})
 }

@@ -8,21 +8,16 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+	"github.com/logistic/pkg/uuidx"
 )
 
-// VehicleLocation giữ vị trí GPS MỚI NHẤT của xe — mỗi xe đúng một dòng.
-//
-// Vì sao không lưu lịch sử ở đây: tài xế ping GPS vài giây một lần, nhân với
-// hàng nghìn xe là hàng triệu dòng/ngày. Bảng này chỉ cần trả lời "xe đang ở
-// đâu", nên ghi đè tại chỗ. Toạ độ nóng phục vụ tìm kiếm nằm trên Redis GEO;
-// bảng này là bản lưu bền để khởi động lại vẫn dựng lại được index.
 type VehicleLocation struct {
 	ent.Schema
 }
 
 func (VehicleLocation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
+		field.UUID("id", uuid.UUID{}).Default(uuidx.New).Unique(),
 		field.UUID("vehicle_id", uuid.UUID{}).Unique(),
 		field.UUID("driver_id", uuid.UUID{}),
 		field.Float("latitude"),

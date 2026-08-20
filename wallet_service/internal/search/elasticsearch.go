@@ -13,8 +13,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// ─── Document Models (dữ liệu đẩy vào ES) ────────────────────────────────────
-
 type WalletDocument struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"user_id"`
@@ -37,22 +35,20 @@ type TransactionDocument struct {
 	CreatedAt       time.Time `json:"created_at"`
 }
 
-// ─── Search Params & Results ───────────────────────────────────────────────────
-
 type SearchWalletParams struct {
-	Query    string // Full-text search trên user_id, currency
-	UserType *uint8 // Lọc theo loại user (optional)
-	Status   *uint8 // Lọc theo trạng thái (optional)
+	Query    string
+	UserType *uint8
+	Status   *uint8
 	Page     int
 	PageSize int
 }
 
 type SearchTransactionParams struct {
-	Query           string     // Full-text search trên reference_id, description
-	WalletID        *uuid.UUID // Lọc theo wallet cụ thể (optional)
-	TransactionType *uint8     // Lọc theo loại giao dịch (optional)
+	Query           string
+	WalletID        *uuid.UUID
+	TransactionType *uint8
 	Status          *uint8
-	From            *time.Time // Lọc theo khoảng thời gian
+	From            *time.Time
 	To              *time.Time
 	Page            int
 	PageSize        int
@@ -65,22 +61,15 @@ type SearchResult[T any] struct {
 	PageSize int   `json:"page_size"`
 }
 
-// ─── Interface ─────────────────────────────────────────────────────────────────
-
 type WalletSearchEngine interface {
-	// Index methods: đẩy dữ liệu vào ES sau khi ghi DB xong
 	IndexWallet(ctx context.Context, doc *WalletDocument) error
 	IndexTransaction(ctx context.Context, doc *TransactionDocument) error
 
-	// Search methods: full-text search
 	SearchWallets(ctx context.Context, params *SearchWalletParams) (*SearchResult[WalletDocument], error)
 	SearchTransactions(ctx context.Context, params *SearchTransactionParams) (*SearchResult[TransactionDocument], error)
 
-	// Setup: tạo index + mapping khi khởi động
 	EnsureIndices(ctx context.Context) error
 }
-
-// ─── Implementation ────────────────────────────────────────────────────────────
 
 const (
 	WalletIndex      = "wallets"
@@ -103,7 +92,6 @@ func NewElasticSearchEngine(addresses []string, username, password string) (Wall
 		return nil, fmt.Errorf("failed to create elasticsearch client: %w", err)
 	}
 
-	// Ping
 	res, err := client.Info()
 	if err != nil {
 		return nil, fmt.Errorf("elasticsearch connection failed: %w", err)
@@ -116,8 +104,6 @@ func NewElasticSearchEngine(addresses []string, username, password string) (Wall
 	log.Printf("[ES] Connected to Elasticsearch cluster")
 	return &elasticSearchEngine{client: client}, nil
 }
-
-// ─── EnsureIndices ─────────────────────────────────────────────────────────────
 
 func (e *elasticSearchEngine) EnsureIndices(ctx context.Context) error {
 	walletMapping := `{
@@ -186,8 +172,6 @@ func (e *elasticSearchEngine) createIndexIfNotExists(ctx context.Context, index,
 	return nil
 }
 
-// ─── Index (Ghi dữ liệu) ─────────────────────────────────────────────────────
-
 func (e *elasticSearchEngine) IndexWallet(ctx context.Context, doc *WalletDocument) error {
 	return e.indexDocument(ctx, WalletIndex, doc.ID, doc)
 }
@@ -221,8 +205,6 @@ func (e *elasticSearchEngine) indexDocument(ctx context.Context, index, id strin
 
 	return nil
 }
-
-// ─── Search Wallets ────────────────────────────────────────────────────────────
 
 func (e *elasticSearchEngine) SearchWallets(ctx context.Context, params *SearchWalletParams) (*SearchResult[WalletDocument], error) {
 	if params.PageSize <= 0 {
@@ -265,8 +247,6 @@ func buildWalletQuery(params *SearchWalletParams) map[string]any {
 	return map[string]any{"query": map[string]any{"bool": map[string]any{"must": must}}}
 }
 
-// ─── Search Transactions ───────────────────────────────────────────────────────
-
 func (e *elasticSearchEngine) SearchTransactions(ctx context.Context, params *SearchTransactionParams) (*SearchResult[TransactionDocument], error) {
 	if params.PageSize <= 0 {
 		params.PageSize = 20
@@ -307,7 +287,6 @@ func buildTransactionQuery(params *SearchTransactionParams) map[string]any {
 		})
 	}
 
-	// Date range filter
 	if params.From != nil || params.To != nil {
 		rangeFilter := map[string]any{}
 		if params.From != nil {
@@ -326,8 +305,6 @@ func buildTransactionQuery(params *SearchTransactionParams) map[string]any {
 	}
 	return map[string]any{"query": map[string]any{"bool": map[string]any{"must": must}}}
 }
-
-// ─── Generic search helper ─────────────────────────────────────────────────────
 
 func doSearch[T any](ctx context.Context, client *elasticsearch.Client, index string, query map[string]any, page, pageSize int) (*SearchResult[T], error) {
 	from := (page - 1) * pageSize

@@ -1,20 +1,9 @@
-// Package http là BẢN ĐỒ đường đi của toàn hệ thống.
-//
-// Kiến trúc: Nginx -> gateway_service (file này) -> gRPC tới internal service.
-// Client bên ngoài KHÔNG bao giờ chạm trực tiếp vào service nội bộ.
-//
-// Cây route được chia làm hai nhánh, và đó là điểm thiết kế quan trọng nhất ở đây:
-//
-//	/api/v1/...        -> app tài xế và app chủ hàng.
-//	/api/v1/admin/...  -> trang quản trị, gắn RequireRole("admin") ở CẤP GROUP.
-//
-// Gắn quyền ở cấp group thay vì từng handler nghĩa là không thể "quên" bảo vệ
-// một endpoint admin mới: chỉ cần khai báo nó trong adminGroup là đã được chặn.
 package http
 
 import (
 	"net/http"
 
+	"gateway_service/internal/conf"
 	"gateway_service/internal/controller"
 	"gateway_service/internal/middleware"
 
@@ -24,15 +13,16 @@ import (
 	pbnotification "github.com/logistic/api/logistic/notification_service/v1"
 	pbuser "github.com/logistic/api/logistic/user_service/v1"
 	pbvehicle "github.com/logistic/api/logistic/vehicle_service/v1"
+	"github.com/logistic/pkg/authn"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
-	_ "gateway_service/docs" // swagger docs
+	_ "gateway_service/docs"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// Clients gom mọi gRPC client lại để chữ ký hàm không phình ra theo số service.
 type Clients struct {
 	Auth         pbauth.AuthServiceClient
 	Matching     pbmatching.MatchingEngineServiceClient
@@ -42,17 +32,22 @@ type Clients struct {
 	Notification pbnotification.NotificationServiceClient
 }
 
-func RegisterGatewayRoutes(engine *gin.Engine, clients Clients) {
-	// Thứ tự middleware có ý nghĩa — xem ghi chú trong package middleware.
+func RegisterGatewayRoutes(
+	engine *gin.Engine,
+	clients Clients,
+	auth *middleware.Authenticator,
+	cfg *conf.Config,
+) {
 	engine.Use(
+		otelgin.Middleware("gateway_service"),
 		middleware.RequestID(),
 		middleware.Recovery(),
 		middleware.AccessLog(),
-		middleware.IdentityContext(),
+		middleware.StripClientIdentity(),
 		middleware.ErrorGuard(),
 	)
 
-	authController := controller.NewAuthController(clients.Auth)
+	authController := controller.NewAuthController(clients.Auth, cfg.Server.IsProduction)
 	mediaController := controller.NewMediaController(clients.Media)
 	matchingController := controller.NewMatchingController(clients.Matching)
 	userController := controller.NewUserController(clients.User)
@@ -61,40 +56,37 @@ func RegisterGatewayRoutes(engine *gin.Engine, clients Clients) {
 
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// Health check cho load balancer / docker healthcheck.
 	engine.GET("/healthz", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
 	api := engine.Group("/api/v1")
 
-	// =======================================================================
-	// AUTH  (5 endpoint)
-	// =======================================================================
-	auth := api.Group("/auth")
+	publicAuth := api.Group("/auth")
 	{
-		auth.POST("/register", authController.Register)
-		auth.POST("/login", authController.Login)
-		auth.GET("/me", authController.GetInfo)
-		auth.GET("/google/login", authController.GoogleLogin)
-		auth.GET("/google/callback", authController.GoogleCallback)
+		publicAuth.POST("/register", authController.Register)
+		publicAuth.POST("/login", authController.Login)
+		publicAuth.POST("/refresh", authController.Refresh)
+		publicAuth.GET("/google/login", authController.GoogleLogin)
+		publicAuth.GET("/google/callback", authController.GoogleCallback)
 	}
 
-	// =======================================================================
-	// MEDIA  (2 endpoint)
-	// =======================================================================
-	media := api.Group("/media")
+	authedAuth := api.Group("/auth", auth.Required())
+	{
+		authedAuth.GET("/me", authController.GetInfo)
+		authedAuth.POST("/logout", authController.Logout)
+	}
+
+	secured := api.Group("", auth.Required())
+
+	media := secured.Group("/media")
 	{
 		media.POST("/upload", mediaController.UploadFile)
 		media.DELETE("/files/:publicID", mediaController.DeleteFile)
 	}
 
-	// =======================================================================
-	// USER  (8 endpoint)
-	// =======================================================================
-	users := api.Group("/users")
+	users := secured.Group("/users")
 	{
-		users.POST("/register", userController.RegisterUser)
 		users.GET("/:user_id", userController.GetUser)
 		users.PUT("/:user_id", userController.UpdateUser)
 
@@ -102,17 +94,15 @@ func RegisterGatewayRoutes(engine *gin.Engine, clients Clients) {
 		users.PUT("/:user_id/driver-profile", userController.UpdateDriverProfile)
 		users.GET("/:user_id/shipper-profile", userController.GetShipperProfile)
 		users.PUT("/:user_id/shipper-profile", userController.UpdateShipperProfile)
+
 		users.PUT("/:user_id/kyc", userController.UpdateDriverKYC)
 
-		// --- Sổ địa chỉ (2 endpoint nằm trong nhánh user) ---
 		users.POST("/:user_id/addresses", userController.CreateAddress)
 		users.GET("/:user_id/addresses", userController.ListAddresses)
 
-		// --- Thiết bị nhận push (2 endpoint) ---
 		users.POST("/:user_id/devices", userController.RegisterDevice)
 		users.GET("/:user_id/devices", userController.ListDevices)
 
-		// --- Hộp thư thông báo (5 endpoint) ---
 		users.GET("/:user_id/notifications", notifController.ListNotifications)
 		users.PUT("/:user_id/notifications/read-all", notifController.MarkAllAsRead)
 		users.GET("/:user_id/notifications/unread-count", notifController.GetUnreadCount)
@@ -120,35 +110,31 @@ func RegisterGatewayRoutes(engine *gin.Engine, clients Clients) {
 		users.PUT("/:user_id/notification-preferences", notifController.UpdatePreferences)
 	}
 
-	// Địa chỉ và thiết bị thao tác theo id riêng của chúng, không lồng dưới user.
-	addresses := api.Group("/addresses")
+	api.POST("/users/register", userController.RegisterUser)
+
+	addresses := secured.Group("/addresses")
 	{
 		addresses.PUT("/:id", userController.UpdateAddress)
 		addresses.DELETE("/:id", userController.DeleteAddress)
 	}
 
-	devices := api.Group("/devices")
+	devices := secured.Group("/devices")
 	{
 		devices.DELETE("/:id", userController.DeleteDevice)
 	}
 
-	notifications := api.Group("/notifications")
+	notifications := secured.Group("/notifications")
 	{
 		notifications.GET("/:id", notifController.GetNotification)
 		notifications.PUT("/:id/read", notifController.MarkAsRead)
 		notifications.DELETE("/:id", notifController.DeleteNotification)
 	}
 
-	// =======================================================================
-	// VEHICLE  (12 endpoint)
-	// =======================================================================
-	vehicles := api.Group("/vehicles")
+	vehicles := secured.Group("/vehicles")
 	{
 		vehicles.POST("", vehicleController.RegisterVehicle)
 		vehicles.GET("", vehicleController.ListVehicles)
 
-		// Đăng ký TRƯỚC route có tham số: gin ưu tiên đoạn tĩnh, nên "nearby"
-		// không bị nuốt bởi "/:id". Đảo thứ tự là gin báo xung đột wildcard.
 		vehicles.POST("/nearby", vehicleController.SearchNearbyVehicles)
 
 		vehicles.GET("/:id", vehicleController.GetVehicle)
@@ -163,21 +149,18 @@ func RegisterGatewayRoutes(engine *gin.Engine, clients Clients) {
 		vehicles.GET("/:id/location", vehicleController.GetVehicleLocation)
 	}
 
-	vehicleDocs := api.Group("/vehicle-documents")
+	vehicleDocs := secured.Group("/vehicle-documents")
 	{
 		vehicleDocs.DELETE("/:id", vehicleController.DeleteVehicleDocument)
 	}
 
-	drivers := api.Group("/drivers")
+	drivers := secured.Group("/drivers")
 	{
 		drivers.POST("/:driver_id/availability", vehicleController.SetDriverAvailability)
 		drivers.GET("/:driver_id/availability", vehicleController.GetDriverAvailability)
 	}
 
-	// =======================================================================
-	// MATCHING  (5 endpoint)
-	// =======================================================================
-	matching := api.Group("/matching")
+	matching := secured.Group("/matching")
 	{
 		matching.POST("/bids", matchingController.SubmitBid)
 		matching.POST("/asks", matchingController.SubmitAsk)
@@ -186,10 +169,7 @@ func RegisterGatewayRoutes(engine *gin.Engine, clients Clients) {
 		matching.POST("/matches/accept", matchingController.AcceptMatch)
 	}
 
-	// =======================================================================
-	// ADMIN  (16 endpoint) — toàn bộ nhóm này yêu cầu vai trò admin
-	// =======================================================================
-	admin := api.Group("/admin", middleware.RequireRole("admin"))
+	admin := api.Group("/admin", auth.Required(), middleware.RequireRole(authn.RoleAdmin))
 	{
 		adminUsers := admin.Group("/users")
 		{

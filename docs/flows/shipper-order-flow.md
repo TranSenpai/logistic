@@ -66,8 +66,8 @@ POST /api/v1/matching/offers/reject
 nhận `matching.offer.rejected`.
 
 Không đọc được `ask` ở bước này **không** phải lỗi chí mạng: đơn đã được mở lại
-rồi, chỉ mất phần báo cho tài xế. (Bản cũ dùng `ask.DriverID` ngoài nhánh kiểm tra
-lỗi nên panic đúng vào lúc này — nay có test khoá lại.)
+rồi, chỉ mất phần báo cho tài xế. `ask.DriverID` vì vậy chỉ được đọc bên trong
+nhánh đã kiểm lỗi — có test khoá điều kiện này.
 
 ## Bước 4b — Chủ hàng chốt xe
 

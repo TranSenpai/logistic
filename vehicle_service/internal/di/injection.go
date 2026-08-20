@@ -1,4 +1,3 @@
-// Package di ráp các tầng của vehicle_service.
 package di
 
 import (
@@ -64,8 +63,6 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) (*Container, error) {
 			Prefix:   cfg.Redis.Prefix,
 		})
 		if err != nil {
-			// Cảnh báo mạnh hơn ở user_service: mất Redis nghĩa là mất chỉ mục GEO,
-			// và SearchNearby phải quét Postgres cho tới khi Redis quay lại.
 			log.Printf("[vehicle_service] CẢNH BÁO: Redis không khả dụng (%v) — "+
 				"tìm xe gần đây sẽ chạy đường dự phòng chậm hơn", err)
 			redisClient = nil

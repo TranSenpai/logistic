@@ -27,8 +27,7 @@ type matchingEngineImpl struct {
 	matchChan    chan *entity.MatchContract
 	kafkaPub     EventPublisher
 	natsPub      EventPublisher
-	// notifier đẩy thông báo BỀN sang notification_service qua RabbitMQ.
-	// Xem notifier.go để hiểu vì sao cần thêm kênh này bên cạnh Kafka/NATS.
+
 	notifier Notifier
 	mu       sync.RWMutex
 }
@@ -41,8 +40,6 @@ func NewMatchingEngine(
 	natsPub EventPublisher,
 	notifier Notifier,
 ) MatchingEngine {
-	// notifier nil (RabbitMQ chưa dựng được) không được phép làm engine panic:
-	// ghép đơn quan trọng hơn thông báo, nên rơi về bản không làm gì.
 	if notifier == nil {
 		notifier = NoopNotifier{}
 	}
@@ -86,15 +83,7 @@ func (e *matchingEngineImpl) broadcastBidToDrivers(ctx context.Context, bid *ent
 		Payload: *bid,
 	})
 
-	// NGHIỆP VỤ (1): chủ hàng tìm xe -> báo cho từng tài xế tiềm năng.
-	//
-	// NATS ở trên chỉ tới được app đang MỞ. Tài xế đang lái xe, app ở chế độ nền
-	// hoặc mất sóng thì message NATS bay mất. RabbitMQ giữ message tới khi
-	// notification_service ghi được vào inbox và đẩy push, nên đây mới là kênh
-	// bảo đảm tài xế thực sự biết có đơn hàng.
 	if err := e.notifier.NotifyDriverCandidates(ctx, bid, asks); err != nil {
-		// Thông báo hỏng KHÔNG được làm hỏng việc đăng đơn: đơn đã nằm trong DB
-		// và vẫn ghép được qua các luồng khác.
 		log.Printf("[NOTIFY] gửi thông báo ứng viên cho Bid %s thất bại: %v", bid.ID, err)
 	}
 
@@ -125,7 +114,6 @@ func (e *matchingEngineImpl) suggestBidsToDriver(ctx context.Context, ask *entit
 			Payload: *ask,
 		})
 
-		// Chiều ngược lại: tài xế đăng chuyến rỗng -> gợi ý đơn hàng phù hợp.
 		if err := e.notifier.NotifyCargoSuggested(ctx, ask, bids); err != nil {
 			log.Printf("[NOTIFY] gửi gợi ý đơn hàng cho Ask %s thất bại: %v", ask.ID, err)
 		}
@@ -248,7 +236,7 @@ func (e *matchingEngineImpl) ProcessOfferQueue(ctx context.Context, bidID uuid.U
 
 	log.Printf("[OFFER FORWARDED] Driver %s sent to Shipper %s for Bid %s", offerAsk.DriverID, bid.ShipperID, bidID)
 
-	return nil // ACK message
+	return nil
 }
 
 func (e *matchingEngineImpl) RejectOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID) error {
@@ -271,10 +259,6 @@ func (e *matchingEngineImpl) RejectOffer(ctx context.Context, bidID uuid.UUID, a
 
 	ask, err := e.repo.GetAsk(ctx, askID)
 	if err != nil {
-		// Bid đã được trả về PENDING ở trên nên nghiệp vụ coi như xong. Không
-		// đọc được ask thì chỉ mất phần báo cho tài xế, không phải lỗi chí mạng.
-		// (Trước đây đoạn log bên dưới dùng ask.DriverID ngoài nhánh err == nil
-		// nên sẽ panic đúng vào lúc này.)
 		log.Printf("[OFFER REJECTED] Bid %s đã mở lại, nhưng không đọc được Ask %s: %v", bidID, askID, err)
 		return nil
 	}
@@ -316,12 +300,10 @@ func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, a
 		BidID:            bid.ID,
 		AskID:            ask.ID,
 		ConsensusPrice:   ask.MinPrice,
-		ConsensusDeposit: ask.MinPrice * 0.1, // Escrow deposit: 10%
+		ConsensusDeposit: ask.MinPrice * 0.1,
 		Status:           entity.MatchStatusAccepted,
 	}
 
-	// Kiểm tra Shipper (bên đóng cọc) đủ số dư trước khi chốt match, tránh publish
-	// một khoản HoldDeposit chắc chắn sẽ bị wallet_service từ chối vì thiếu tiền.
 	balance, err := e.walletClient.CheckBalance(ctx, bid.ShipperID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check shipper balance: %w", err)
@@ -330,12 +312,11 @@ func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, a
 		return nil, fmt.Errorf("%w: shipper %s needs %.2f, has %.2f", cerr.ErrInsufficientBalance, bid.ShipperID, contract.ConsensusDeposit, balance)
 	}
 
-	// Publish event sang wallet_service qua Kafka để HoldDeposit
 	_ = e.kafkaPub.Publish(ctx, &EventMessage{
 		Topic: "wallet.hold_deposit",
 		Key:   contract.ID.String(),
 		Payload: map[string]any{
-			"driver_id":   bid.ShipperID.String(), // Shipper cọc (đặt hàng)
+			"driver_id":   bid.ShipperID.String(),
 			"amount":      contract.ConsensusDeposit,
 			"contract_id": contract.ID.String(),
 		},
@@ -366,9 +347,6 @@ func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, a
 		Payload: *contract,
 	})
 
-	// NGHIỆP VỤ (2): đã tìm được xe -> báo CẢ HAI phía.
-	// notification_service sẽ tách sự kiện này thành hai thông báo: một cho chủ
-	// hàng ("đã tìm được xe cho đơn của bạn"), một cho tài xế ("bạn nhận đơn").
 	if nErr := e.notifier.NotifyMatchFound(ctx, contract, bid, ask); nErr != nil {
 		log.Printf("[NOTIFY] gửi thông báo ghép đơn cho Contract %s thất bại: %v", contract.ID, nErr)
 	}

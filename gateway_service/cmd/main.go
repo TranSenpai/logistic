@@ -28,7 +28,6 @@ func main() {
 		log.Fatalf("Failed to start Gateway Service: %v", err)
 	}
 
-	// Đợi signal để shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

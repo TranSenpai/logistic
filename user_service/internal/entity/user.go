@@ -1,11 +1,3 @@
-// Package entity là tầng GIỮA của mô hình 3 lớp dao <-> entity <-> dto.
-//
-//	dao    (ent sinh ra)      -> biết về cột, enum, con trỏ nullable của Postgres
-//	entity (viết tay, ở đây)  -> ngôn ngữ nghiệp vụ thuần Go, không biết DB lẫn gRPC
-//	dto    (protobuf sinh ra) -> biết về dây truyền, timestamppb, string ID
-//
-// Tầng biz CHỈ được chạm vào entity. Việc dịch qua lại do goverter sinh code,
-// nên không có chỗ nào phải viết tay 200 dòng gán field.
 package entity
 
 import (
@@ -13,10 +5,6 @@ import (
 
 	"github.com/google/uuid"
 )
-
-// ---------------------------------------------------------------------------
-// HẰNG SỐ NGHIỆP VỤ
-// ---------------------------------------------------------------------------
 
 const (
 	RoleDriver  = "driver"
@@ -68,17 +56,13 @@ func IsValidPlatform(p string) bool {
 	return p == PlatformAndroid || p == PlatformIOS || p == PlatformWeb
 }
 
-// ---------------------------------------------------------------------------
-// DOMAIN ENTITIES
-// ---------------------------------------------------------------------------
-
 type User struct {
 	ID           uuid.UUID `json:"id"`
 	Phone        string    `json:"phone"`
 	Email        string    `json:"email"`
 	FullName     string    `json:"full_name"`
 	AvatarURL    string    `json:"avatar_url"`
-	PasswordHash string    `json:"-"` // không bao giờ ra khỏi service
+	PasswordHash string    `json:"-"`
 	Role         string    `json:"role"`
 	Status       string    `json:"status"`
 	StatusReason string    `json:"status_reason"`
@@ -139,10 +123,6 @@ type UserDevice struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// ---------------------------------------------------------------------------
-// PHÂN TRANG
-// ---------------------------------------------------------------------------
-
 type Pagination struct {
 	Page       int   `json:"page"`
 	PageSize   int   `json:"page_size"`
@@ -156,8 +136,6 @@ const (
 	maxPageSize     = 100
 )
 
-// NormalizePaging chặn các giá trị vô lý từ client (page=0, page_size=100000).
-// Trả về (page, pageSize, offset) đã an toàn để đưa thẳng vào query.
 func NormalizePaging(page, pageSize int) (int, int, int) {
 	if page < 1 {
 		page = defaultPage
@@ -183,10 +161,6 @@ func BuildPagination(page, pageSize int, total int64) Pagination {
 		TotalPages: totalPages,
 	}
 }
-
-// ---------------------------------------------------------------------------
-// PARAMS & RESULTS (đầu vào/ra của tầng biz)
-// ---------------------------------------------------------------------------
 
 type RegisterUserParam struct {
 	Phone    string

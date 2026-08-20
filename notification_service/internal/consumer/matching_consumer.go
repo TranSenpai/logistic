@@ -1,16 +1,3 @@
-// Package consumer là ĐẦU NHẬN của luồng RabbitMQ.
-//
-// Đây chính là chỗ nối hai yêu cầu nghiệp vụ lại với nhau:
-//
-//	(1) Chủ hàng đăng đơn -> matching_service tính ra danh sách tài xế tiềm năng
-//	    -> phát matching.driver.candidates_found -> ở đây sinh thông báo cho
-//	    TỪNG TÀI XẾ ("có đơn hàng phù hợp gần bạn").
-//
-//	(2) Ghép được xe -> phát matching.match.found -> ở đây sinh HAI thông báo:
-//	    một cho chủ hàng ("đã tìm được xe"), một cho tài xế ("bạn nhận được đơn").
-//
-// Toàn bộ đi qua exchange topic logistic.events. Consumer bind "matching.#" nên
-// matching_service thêm sự kiện mới cũng không cần sửa cấu hình binding.
 package consumer
 
 import (
@@ -39,17 +26,9 @@ func NewMatchingConsumer(engine biz.NotificationEngine) *MatchingConsumer {
 	return &MatchingConsumer{engine: engine}
 }
 
-// Handle là hàm được pkg/mq gọi cho mỗi message.
-//
-// Quy ước trả về rất quan trọng với hành vi ACK/NACK:
-//
-//	nil            -> ACK. Bao gồm cả trường hợp message hỏng hoặc trùng lặp:
-//	                  retry cũng không cứu được, giữ lại chỉ làm nghẽn queue.
-//	error          -> NACK. Chỉ dùng cho lỗi TẠM THỜI (DB rớt) để được thử lại.
 func (c *MatchingConsumer) Handle(ctx context.Context, d mq.Delivery) error {
 	var env events.Envelope
 	if err := json.Unmarshal(d.Body, &env); err != nil {
-		// JSON hỏng thì thử lại bao nhiêu lần cũng hỏng -> ACK và ghi log.
 		log.Printf("[consumer] bỏ qua message không parse được (routing=%s id=%s): %v",
 			d.RoutingKey, d.MessageID, err)
 		return nil
@@ -76,12 +55,11 @@ func (c *MatchingConsumer) Handle(ctx context.Context, d mq.Delivery) error {
 
 	count, err := c.engine.DispatchEvent(ctx, eventID, d.RoutingKey, env.Source, params)
 	if err != nil {
-		// Đã xử lý rồi (broker giao lại) -> coi như thành công.
 		if errors.Is(err, repo.ErrDuplicateEvent) || isDuplicate(err) {
 			log.Printf("[consumer] event %s đã xử lý trước đó — bỏ qua", eventID)
 			return nil
 		}
-		// Lỗi thật (DB rớt...) -> trả error để pkg/mq requeue/DLQ.
+
 		return fmt.Errorf("dispatch event %s: %w", eventID, err)
 	}
 
@@ -94,7 +72,6 @@ func isDuplicate(err error) bool {
 	return ok && appErr.Code == "EVENT_ALREADY_PROCESSED"
 }
 
-// buildNotifications dịch một sự kiện thành danh sách thông báo cần tạo.
 func (c *MatchingConsumer) buildNotifications(routingKey string, env *events.Envelope) ([]entity.CreateNotificationParam, error) {
 	switch routingKey {
 	case events.RoutingKeyDriverCandidatesFound:
@@ -108,15 +85,10 @@ func (c *MatchingConsumer) buildNotifications(routingKey string, env *events.Env
 	case events.RoutingKeyCargoSuggested:
 		return c.onCargoSuggested(env)
 	default:
-		// Binding "matching.#" bắt cả những sự kiện ta chưa quan tâm.
-		// Bỏ qua im lặng là đúng, không phải lỗi.
+
 		return nil, nil
 	}
 }
-
-// ---------------------------------------------------------------------------
-// (1) CHỦ HÀNG ĐĂNG ĐƠN -> BÁO CHO CÁC TÀI XẾ TIỀM NĂNG
-// ---------------------------------------------------------------------------
 
 func (c *MatchingConsumer) onDriverCandidatesFound(env *events.Envelope) ([]entity.CreateNotificationParam, error) {
 	var payload events.DriverCandidatesFound
@@ -160,10 +132,6 @@ func (c *MatchingConsumer) onDriverCandidatesFound(env *events.Envelope) ([]enti
 	return params, nil
 }
 
-// ---------------------------------------------------------------------------
-// (2) ĐÃ GHÉP ĐƯỢC XE -> BÁO CẢ HAI PHÍA
-// ---------------------------------------------------------------------------
-
 func (c *MatchingConsumer) onMatchFound(env *events.Envelope) ([]entity.CreateNotificationParam, error) {
 	var payload events.MatchFound
 	if err := decodeData(env.Data, &payload); err != nil {
@@ -180,7 +148,6 @@ func (c *MatchingConsumer) onMatchFound(env *events.Envelope) ([]entity.CreateNo
 
 	params := make([]entity.CreateNotificationParam, 0, 2)
 
-	// Phía chủ hàng: "đã tìm được xe cho đơn của bạn".
 	if shipperID, err := uuid.Parse(payload.ShipperID); err == nil {
 		params = append(params, entity.CreateNotificationParam{
 			UserID:        shipperID,
@@ -200,7 +167,6 @@ func (c *MatchingConsumer) onMatchFound(env *events.Envelope) ([]entity.CreateNo
 		log.Printf("[consumer] match %s có shipper_id không hợp lệ: %q", payload.ContractID, payload.ShipperID)
 	}
 
-	// Phía tài xế: "bạn vừa nhận được đơn".
 	if driverID, err := uuid.Parse(payload.DriverID); err == nil {
 		params = append(params, entity.CreateNotificationParam{
 			UserID:        driverID,
@@ -222,10 +188,6 @@ func (c *MatchingConsumer) onMatchFound(env *events.Envelope) ([]entity.CreateNo
 
 	return params, nil
 }
-
-// ---------------------------------------------------------------------------
-// CÁC SỰ KIỆN CÒN LẠI TRONG VÒNG THƯƠNG LƯỢNG
-// ---------------------------------------------------------------------------
 
 func (c *MatchingConsumer) onOfferReceived(env *events.Envelope) ([]entity.CreateNotificationParam, error) {
 	var payload events.OfferReceived
@@ -317,10 +279,6 @@ func (c *MatchingConsumer) onCargoSuggested(env *events.Envelope) ([]entity.Crea
 	}}, nil
 }
 
-// decodeData bóc Envelope.Data (map[string]any) ra struct cụ thể.
-//
-// Đi vòng qua JSON là cách gọn nhất mà không phải kéo thêm thư viện decode nào,
-// và giữ được đúng ngữ nghĩa số học của JSON gốc.
 func decodeData(data map[string]any, dest any) error {
 	if len(data) == 0 {
 		return errors.New("envelope không có trường data")

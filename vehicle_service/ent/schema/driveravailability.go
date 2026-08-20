@@ -8,22 +8,16 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+	"github.com/logistic/pkg/uuidx"
 )
 
-// DriverAvailability là công tắc "tôi đang nhận đơn" của tài xế, kèm sức chứa
-// còn trống ngay lúc này.
-//
-// Đây chính là bảng mà matching_service dựa vào để biết chiếc xe nào đang chạy
-// và còn nhận thêm được bao nhiêu hàng. available_* KHÁC capacity_* bên Vehicle:
-// capacity là sức chứa tối đa của xe, available là phần còn trống sau khi đã
-// nhận các đơn trước đó.
 type DriverAvailability struct {
 	ent.Schema
 }
 
 func (DriverAvailability) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
+		field.UUID("id", uuid.UUID{}).Default(uuidx.New).Unique(),
 		field.UUID("driver_id", uuid.UUID{}).Unique(),
 		field.UUID("vehicle_id", uuid.UUID{}),
 		field.Bool("is_online").Default(false),

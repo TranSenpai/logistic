@@ -60,7 +60,6 @@ func NewKafkaConsumer(brokers []string, groupId string) (biz.EventConsumer, erro
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true
 
-	// Read from oldest message if this is the first time running this group
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
 
 	consumerGroup, err := sarama.NewConsumerGroup(brokers, groupId, config)
@@ -76,7 +75,6 @@ func (c *kafkaConsumer) Consume(ctx context.Context, topic string, handler func(
 		bizHandler: handler,
 	}
 
-	// Run Sarama's Consume in background because it's a blocking function
 	go func() {
 		for {
 			err := c.consumerGroup.Consume(ctx, []string{topic}, saramaHandler)
@@ -84,7 +82,6 @@ func (c *kafkaConsumer) Consume(ctx context.Context, topic string, handler func(
 				log.Printf("Kafka consumer error: %v", err)
 			}
 			if ctx.Err() != nil {
-				// Main Context cancelled -> Exit loop safely
 				return
 			}
 		}

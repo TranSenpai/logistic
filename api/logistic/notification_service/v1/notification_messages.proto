@@ -5,6 +5,13 @@ option go_package = "github.com/logistic/api/logistic/notification_service/v1;no
 
 import "google/protobuf/timestamp.proto";
 
+// KIỂU ID: mọi field định danh là `bytes` — 16 byte thô của UUID v7. Lý do đầy
+// đủ và ranh giới đổi sang chuỗi ở gateway nằm trong
+// api/logistic/user_service/v1/user_messages.proto.
+//
+// `ref_id` cũng là bytes: nó trỏ tới một bid/ask/match có thật, nên phải cùng
+// không gian định danh với các service đó.
+
 // ---------------------------------------------------------------------------
 // DOMAIN MODELS
 // ---------------------------------------------------------------------------
@@ -12,8 +19,8 @@ import "google/protobuf/timestamp.proto";
 // Notification là một thông báo đã được sinh ra cho MỘT người nhận cụ thể.
 // Sự kiện "tìm được xe" sẽ đẻ ra 2 dòng: một cho shipper, một cho tài xế.
 message Notification {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
   string recipient_role = 3; // driver | shipper | admin
   string type = 4;           // match_found | driver_candidate | offer_received ...
   string channel = 5;        // in_app | push | email | sms
@@ -21,7 +28,7 @@ message Notification {
   string body = 7;
   string data = 8;      // JSON payload để app deep-link
   string ref_type = 9;  // bid | ask | match
-  string ref_id = 10;
+  bytes ref_id = 10;
   bool is_read = 11;
   string status = 12; // pending | sent | failed | read
   google.protobuf.Timestamp read_at = 13;
@@ -31,7 +38,7 @@ message Notification {
 // NotificationTemplate cho phép admin sửa câu chữ thông báo mà không cần deploy.
 // Placeholder dạng {{driver_name}} được điền lúc render.
 message NotificationTemplate {
-  string id = 1;
+  bytes id = 1;
   string code = 2; // MATCH_FOUND_SHIPPER, DRIVER_CANDIDATE...
   string name = 3;
   string channel = 4;
@@ -45,8 +52,8 @@ message NotificationTemplate {
 
 // NotificationPreference: người dùng tự chọn muốn nhận gì, qua kênh nào.
 message NotificationPreference {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
   bool in_app_enabled = 3;
   bool push_enabled = 4;
   bool email_enabled = 5;
@@ -70,7 +77,7 @@ message Pagination {
 // ---------------------------------------------------------------------------
 
 message ListNotificationsRequest {
-  string user_id = 1;
+  bytes user_id = 1;
   string type = 2;
   bool unread_only = 3;
   int32 page = 4;
@@ -84,8 +91,8 @@ message ListNotificationsResponse {
 }
 
 message GetNotificationRequest {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
 }
 
 message GetNotificationResponse {
@@ -93,8 +100,8 @@ message GetNotificationResponse {
 }
 
 message MarkAsReadRequest {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
 }
 
 message MarkAsReadResponse {
@@ -103,7 +110,7 @@ message MarkAsReadResponse {
 }
 
 message MarkAllAsReadRequest {
-  string user_id = 1;
+  bytes user_id = 1;
 }
 
 message MarkAllAsReadResponse {
@@ -112,8 +119,8 @@ message MarkAllAsReadResponse {
 }
 
 message DeleteNotificationRequest {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
 }
 
 message DeleteNotificationResponse {
@@ -121,7 +128,7 @@ message DeleteNotificationResponse {
 }
 
 message GetUnreadCountRequest {
-  string user_id = 1;
+  bytes user_id = 1;
 }
 
 message GetUnreadCountResponse {
@@ -129,7 +136,7 @@ message GetUnreadCountResponse {
 }
 
 message GetPreferencesRequest {
-  string user_id = 1;
+  bytes user_id = 1;
 }
 
 message GetPreferencesResponse {
@@ -137,7 +144,7 @@ message GetPreferencesResponse {
 }
 
 message UpdatePreferencesRequest {
-  string user_id = 1;
+  bytes user_id = 1;
   bool in_app_enabled = 2;
   bool push_enabled = 3;
   bool email_enabled = 4;
@@ -160,7 +167,7 @@ message UpdatePreferencesResponse {
 // AdminSendNotification: gửi thủ công. Để trống user_ids + đặt broadcast_role
 // thì gửi cho toàn bộ người dùng thuộc vai trò đó.
 message AdminSendNotificationRequest {
-  repeated string user_ids = 1;
+  repeated bytes user_ids = 1;
   string broadcast_role = 2;
   string type = 3;
   string channel = 4;
@@ -175,7 +182,7 @@ message AdminSendNotificationResponse {
 }
 
 message AdminListNotificationsRequest {
-  string user_id = 1;
+  bytes user_id = 1;
   string type = 2;
   string status = 3;
   int32 page = 4;
@@ -212,7 +219,7 @@ message AdminCreateTemplateResponse {
 }
 
 message AdminUpdateTemplateRequest {
-  string id = 1;
+  bytes id = 1;
   string name = 2;
   string title_template = 3;
   string body_template = 4;
@@ -225,7 +232,7 @@ message AdminUpdateTemplateResponse {
 }
 
 message AdminDeleteTemplateRequest {
-  string id = 1;
+  bytes id = 1;
 }
 
 message AdminDeleteTemplateResponse {

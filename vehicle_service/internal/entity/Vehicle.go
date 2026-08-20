@@ -1,5 +1,3 @@
-// Package entity là tầng giữa dao <-> entity <-> dto của vehicle_service.
-// Xem ghi chú kiến trúc trong user_service/internal/entity/user.go.
 package entity
 
 import (
@@ -9,10 +7,6 @@ import (
 
 	"github.com/google/uuid"
 )
-
-// ---------------------------------------------------------------------------
-// HẰNG SỐ NGHIỆP VỤ
-// ---------------------------------------------------------------------------
 
 const (
 	VehicleTypeTruck     = "truck"
@@ -87,9 +81,6 @@ func IsValidReviewStatus(s string) bool {
 	return false
 }
 
-// IsValidCoordinate chặn toạ độ rác (0,0 giữa Đại Tây Dương, hay lat=999 do
-// thiết bị GPS lỗi). Một điểm sai đưa vào Redis GEO sẽ kéo cả kết quả tìm xe
-// gần đây đi lệch.
 func IsValidCoordinate(lat, lng float64) bool {
 	if math.IsNaN(lat) || math.IsNaN(lng) || math.IsInf(lat, 0) || math.IsInf(lng, 0) {
 		return false
@@ -100,15 +91,8 @@ func IsValidCoordinate(lat, lng float64) bool {
 	return !(lat == 0 && lng == 0)
 }
 
-// ZoneSize là cạnh ô lưới tính theo độ. 0.05 độ xấp xỉ 5.5 km ở vĩ độ Việt Nam.
-//
-// Vì sao cần zone khi đã có Redis GEO: zone là khoá phân vùng RẺ dùng cho các
-// truy vấn thống kê và lọc thô trên Postgres (đếm xe online theo khu vực),
-// còn GEO lo phần tìm chính xác theo bán kính.
 const ZoneSize = 0.05
 
-// ComputeZoneID quy toạ độ về ô lưới. Cùng công thức phải cho cùng kết quả ở
-// mọi service, nên hàm này được giữ thuần tuý, không phụ thuộc cấu hình.
 func ComputeZoneID(lat, lng float64) string {
 	if !IsValidCoordinate(lat, lng) {
 		return ""
@@ -117,10 +101,6 @@ func ComputeZoneID(lat, lng float64) string {
 	lngCell := int(math.Floor(lng / ZoneSize))
 	return fmt.Sprintf("Z%d_%d", latCell, lngCell)
 }
-
-// ---------------------------------------------------------------------------
-// DOMAIN ENTITIES
-// ---------------------------------------------------------------------------
 
 type Vehicle struct {
 	ID                 uuid.UUID `json:"id"`
@@ -176,8 +156,6 @@ type DriverAvailability struct {
 	UpdatedAt          time.Time `json:"updated_at"`
 }
 
-// NearbyVehicle là kết quả đã ghép: toạ độ + khoảng cách lấy từ Redis GEO,
-// thông tin xe lấy từ Postgres.
 type NearbyVehicle struct {
 	VehicleID          uuid.UUID `json:"vehicle_id"`
 	DriverID           uuid.UUID `json:"driver_id"`
@@ -189,10 +167,6 @@ type NearbyVehicle struct {
 	Latitude           float64   `json:"latitude"`
 	Longitude          float64   `json:"longitude"`
 }
-
-// ---------------------------------------------------------------------------
-// PHÂN TRANG
-// ---------------------------------------------------------------------------
 
 type Pagination struct {
 	Page       int   `json:"page"`
@@ -227,10 +201,6 @@ func BuildPagination(page, pageSize int, total int64) Pagination {
 	}
 	return Pagination{Page: page, PageSize: pageSize, TotalItems: total, TotalPages: totalPages}
 }
-
-// ---------------------------------------------------------------------------
-// PARAMS & RESULTS
-// ---------------------------------------------------------------------------
 
 type RegisterVehicleParam struct {
 	DriverID          uuid.UUID
@@ -330,7 +300,6 @@ type SearchNearbyParam struct {
 	Limit        int
 }
 
-// Giới hạn để một truy vấn tìm xe hỏng không quét cả nước.
 const (
 	DefaultSearchRadiusKm = 5.0
 	MaxSearchRadiusKm     = 100.0
@@ -338,7 +307,6 @@ const (
 	MaxSearchLimit        = 200
 )
 
-// Normalize điền giá trị mặc định và cắt các con số vượt ngưỡng.
 func (p *SearchNearbyParam) Normalize() {
 	if p.RadiusKm <= 0 {
 		p.RadiusKm = DefaultSearchRadiusKm

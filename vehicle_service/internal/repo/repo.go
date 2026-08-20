@@ -1,19 +1,3 @@
-// Package repo là tầng truy cập dữ liệu của vehicle_service.
-//
-// Ở đây có hai loại lưu trữ với hai vai trò rất khác nhau:
-//
-//	Postgres — nguồn sự thật. Mọi thứ phải ghi được xuống đây mới coi là xong.
-//	Redis    — (a) cache đọc cho vehicle theo id,
-//	           (b) CHỈ MỤC KHÔNG GIAN (GEO) cho các xe đang online.
-//
-// Vế (b) mới là phần đáng nói. Bài toán "tìm xe đang chạy quanh điểm lấy hàng"
-// chạy trên mỗi đơn hàng, trong khi tài xế ping GPS vài giây một lần. Nếu để
-// Postgres gánh thì mỗi lần tìm là một lần quét chỉ mục không gian trên bảng
-// đang bị ghi liên tục — chính là công thức tạo bottleneck.
-//
-// Redis GEO giải quyết bằng cách giữ toàn bộ toạ độ trên RAM dưới dạng sorted
-// set (score = geohash 52-bit), nên GEOSEARCH trả về trong khoảng mili-giây.
-// Postgres vẫn giữ bản ghi vị trí mới nhất để khởi động lại còn dựng lại được.
 package repo
 
 import (
@@ -39,8 +23,6 @@ import (
 const (
 	ttlVehicle = 10 * time.Minute
 
-	// geoKeyOnline là sorted set chứa MỌI xe đang bật nhận đơn.
-	// Member = vehicle_id dạng chuỗi, score = geohash do Redis tự tính.
 	geoKeyOnline = "geo:online"
 )
 
@@ -67,10 +49,6 @@ func (r *vehicleRepoImpl) invalidateVehicle(ctx context.Context, id uuid.UUID) {
 		log.Printf("[repo] invalidate vehicle %s failed: %v", id, err)
 	}
 }
-
-// ---------------------------------------------------------------------------
-// VEHICLES
-// ---------------------------------------------------------------------------
 
 func (r *vehicleRepoImpl) CreateVehicle(ctx context.Context, param *entity.RegisterVehicleParam) (*entity.Vehicle, error) {
 	builder := r.client.Vehicle.Create().
@@ -121,10 +99,6 @@ func (r *vehicleRepoImpl) GetVehicleByID(ctx context.Context, id uuid.UUID) (*en
 	return &e, nil
 }
 
-// GetVehiclesByIDs nạp một lô xe trong MỘT truy vấn.
-//
-// Đây là cách tránh bài toán N+1 ở SearchNearby: Redis trả về 50 vehicle_id,
-// nếu gọi GetVehicleByID 50 lần thì thành 50 vòng đi-về xuống DB.
 func (r *vehicleRepoImpl) GetVehiclesByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]entity.Vehicle, error) {
 	result := make(map[uuid.UUID]entity.Vehicle, len(ids))
 	if len(ids) == 0 {
@@ -241,8 +215,6 @@ func (r *vehicleRepoImpl) UpdateVehicleStatus(ctx context.Context, id uuid.UUID,
 
 	r.invalidateVehicle(ctx, id)
 
-	// Xe rời trạng thái active thì phải BIẾN MẤT khỏi chỉ mục tìm kiếm ngay.
-	// Bỏ bước này thì matching vẫn gán đơn cho một chiếc xe đang nằm garage.
 	if status != entity.VehicleStatusActive && r.cache != nil {
 		if err := r.cache.GeoRemove(ctx, r.keyGeo(), id.String()); err != nil {
 			log.Printf("[repo] gỡ xe %s khỏi geo index thất bại: %v", id, err)
@@ -270,7 +242,6 @@ func (r *vehicleRepoImpl) UpdateVerification(ctx context.Context, param *entity.
 
 	r.invalidateVehicle(ctx, param.ID)
 
-	// Bị từ chối duyệt thì không được xuất hiện trong kết quả tìm xe nữa.
 	if status == entity.VerificationRejected && r.cache != nil {
 		_ = r.cache.GeoRemove(ctx, r.keyGeo(), param.ID.String())
 	}
@@ -324,10 +295,6 @@ func (r *vehicleRepoImpl) CountVehicles(ctx context.Context, status, verificatio
 	}
 	return int64(n), nil
 }
-
-// ---------------------------------------------------------------------------
-// DOCUMENTS
-// ---------------------------------------------------------------------------
 
 func (r *vehicleRepoImpl) CreateDocument(ctx context.Context, param *entity.UploadDocumentParam) (*entity.VehicleDocument, error) {
 	builder := r.client.VehicleDocument.Create().
@@ -429,15 +396,6 @@ func (r *vehicleRepoImpl) CountPendingDocuments(ctx context.Context) (int64, err
 	return int64(n), nil
 }
 
-// ---------------------------------------------------------------------------
-// LOCATIONS
-// ---------------------------------------------------------------------------
-
-// UpsertLocation ghi vị trí mới nhất xuống Postgres RỒI mới cập nhật Redis GEO.
-//
-// Thứ tự này quan trọng: nếu ghi Redis trước mà Postgres hỏng, chỉ mục sẽ chứa
-// một xe mà bảng vị trí không hề biết tới. Ngược lại thì tệ nhất là chỉ mục
-// chậm hơn DB đúng một nhịp ping — điều hoàn toàn chấp nhận được.
 func (r *vehicleRepoImpl) UpsertLocation(ctx context.Context, param *entity.ReportLocationParam, zoneID string) (*entity.VehicleLocation, error) {
 	existing, err := r.client.VehicleLocation.Query().
 		Where(vehiclelocation.VehicleIDEQ(param.VehicleID)).
@@ -476,8 +434,6 @@ func (r *vehicleRepoImpl) UpsertLocation(ctx context.Context, param *entity.Repo
 		return nil, wrapError(err, cerr.ErrLocationNotFound)
 	}
 
-	// Đồng bộ toạ độ mới sang bảng trạng thái nhận đơn, để matching đọc một chỗ
-	// là đủ thay vì phải join hai bảng.
 	if _, err := r.client.DriverAvailability.Update().
 		Where(driveravailability.VehicleIDEQ(param.VehicleID)).
 		SetCurrentLat(param.Latitude).
@@ -493,9 +449,6 @@ func (r *vehicleRepoImpl) UpsertLocation(ctx context.Context, param *entity.Repo
 	return &e, nil
 }
 
-// syncGeoIndex chỉ đưa xe vào chỉ mục khi tài xế ĐANG BẬT nhận đơn.
-// Tài xế tắt máy vẫn có thể tiếp tục gửi GPS (app chạy nền), và ta không muốn
-// những xe đó lọt vào kết quả tìm kiếm.
 func (r *vehicleRepoImpl) syncGeoIndex(ctx context.Context, vehicleID uuid.UUID, lat, lng float64) {
 	if r.cache == nil {
 		return
@@ -527,10 +480,6 @@ func (r *vehicleRepoImpl) GetLocation(ctx context.Context, vehicleID uuid.UUID) 
 	e := r.mapper.EntLocationToEntityLocation(dao)
 	return &e, nil
 }
-
-// ---------------------------------------------------------------------------
-// AVAILABILITY
-// ---------------------------------------------------------------------------
 
 func (r *vehicleRepoImpl) UpsertAvailability(ctx context.Context, param *entity.SetAvailabilityParam, zoneID string) (*entity.DriverAvailability, error) {
 	existing, err := r.client.DriverAvailability.Query().
@@ -572,7 +521,6 @@ func (r *vehicleRepoImpl) UpsertAvailability(ctx context.Context, param *entity.
 		return nil, wrapError(err, cerr.ErrAvailabilityNotFound)
 	}
 
-	// Bật/tắt nhận đơn chính là thêm/bớt xe khỏi chỉ mục tìm kiếm.
 	if r.cache != nil {
 		if param.IsOnline && entity.IsValidCoordinate(param.CurrentLat, param.CurrentLng) {
 			if err := r.cache.GeoAdd(ctx, r.keyGeo(), cache.GeoMember{
@@ -633,22 +581,6 @@ func (r *vehicleRepoImpl) CountOnlineDrivers(ctx context.Context) (int64, error)
 	return int64(n), nil
 }
 
-// ---------------------------------------------------------------------------
-// TÌM XE GẦN ĐÂY
-// ---------------------------------------------------------------------------
-
-// SearchNearby chạy qua ba bước:
-//
-//  1. Redis GEOSEARCH -> danh sách vehicle_id kèm khoảng cách, đã sắp gần->xa.
-//  2. Hai truy vấn gộp xuống Postgres để lấy thông tin xe + sức chứa còn trống.
-//  3. Lọc theo yêu cầu của đơn hàng (loại xe, tải trọng, thể tích).
-//
-// Vì sao lọc ở bước 3 chứ không ở bước 1: Redis GEO chỉ biết toạ độ, không biết
-// xe còn trống bao nhiêu. Ta cố tình lấy dư ở bước 1 (hệ số 3) rồi mới lọc, để
-// sau khi loại bớt vẫn còn đủ số lượng người gọi yêu cầu.
-//
-// Redis chết thì rơi về đường dự phòng quét Postgres — chậm hơn nhưng hệ thống
-// vẫn ghép được đơn, và đó mới là điều quan trọng.
 func (r *vehicleRepoImpl) SearchNearby(ctx context.Context, param *entity.SearchNearbyParam) ([]entity.NearbyVehicle, error) {
 	param.Normalize()
 
@@ -670,7 +602,6 @@ func (r *vehicleRepoImpl) SearchNearby(ctx context.Context, param *entity.Search
 	for _, h := range hits {
 		id, pErr := uuid.Parse(h.Name)
 		if pErr != nil {
-			// Member rác trong chỉ mục: dọn luôn để lần sau khỏi gặp lại.
 			_ = r.cache.GeoRemove(ctx, r.keyGeo(), h.Name)
 			continue
 		}
@@ -696,7 +627,6 @@ func (r *vehicleRepoImpl) SearchNearby(ctx context.Context, param *entity.Search
 
 		v, ok := vehicles[id]
 		if !ok {
-			// Xe đã bị xoá khỏi DB nhưng còn sót trong chỉ mục -> dọn.
 			_ = r.cache.GeoRemove(ctx, r.keyGeo(), h.Name)
 			continue
 		}
@@ -729,12 +659,11 @@ func (r *vehicleRepoImpl) SearchNearby(ctx context.Context, param *entity.Search
 	return results, nil
 }
 
-// matchesRequirement gom các điều kiện "xe này có chở nổi đơn hàng không".
 func matchesRequirement(v entity.Vehicle, avail entity.DriverAvailability, param *entity.SearchNearbyParam) bool {
 	if v.Status != entity.VehicleStatusActive {
 		return false
 	}
-	// Xe chưa qua kiểm duyệt giấy tờ thì không được nhận đơn.
+
 	if v.VerificationStatus != entity.VerificationVerified {
 		return false
 	}
@@ -750,11 +679,6 @@ func matchesRequirement(v entity.Vehicle, avail entity.DriverAvailability, param
 	return true
 }
 
-// searchNearbyFallback là đường dự phòng khi Redis không dùng được.
-//
-// Lọc thô theo zone lân cận (ô hiện tại + 8 ô xung quanh) rồi tính khoảng cách
-// chính xác trong Go. Không nhanh bằng GEO nhưng không cần thêm extension nào
-// của Postgres, và chỉ chạy khi Redis đã hỏng.
 func (r *vehicleRepoImpl) searchNearbyFallback(ctx context.Context, param *entity.SearchNearbyParam) ([]entity.NearbyVehicle, error) {
 	zones := neighborZones(param.Latitude, param.Longitude, param.RadiusKm)
 

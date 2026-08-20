@@ -1,8 +1,8 @@
-// Package controller là lớp vỏ gRPC của notification_service.
 package controller
 
 import (
 	"context"
+	"encoding/base64"
 
 	"notification_service/internal/biz"
 	cerr "notification_service/internal/common/errors"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	pb "github.com/logistic/api/logistic/notification_service/v1"
+	"github.com/logistic/pkg/uuidx"
 )
 
 type notificationController struct {
@@ -23,27 +24,20 @@ func NewNotificationController(engine biz.NotificationEngine, appMapper mapper.A
 	return &notificationController{engine: engine, mapper: appMapper}
 }
 
-func parseID(raw string, invalid error) (uuid.UUID, error) {
-	if raw == "" {
-		return uuid.Nil, invalid
-	}
-	id, err := uuid.Parse(raw)
-	if err != nil {
+func parseID(raw []byte, invalid error) (uuid.UUID, error) {
+	id, err := uuidx.FromBytes(raw)
+	if err != nil || id == uuid.Nil {
 		return uuid.Nil, invalid
 	}
 	return id, nil
 }
 
-func parseOptionalID(raw string, invalid error) (uuid.UUID, error) {
-	if raw == "" {
+func parseOptionalID(raw []byte, invalid error) (uuid.UUID, error) {
+	if len(raw) == 0 {
 		return uuid.Nil, nil
 	}
 	return parseID(raw, invalid)
 }
-
-// ===========================================================================
-// CLIENT
-// ===========================================================================
 
 func (c *notificationController) ListNotifications(ctx context.Context, req *pb.ListNotificationsRequest) (*pb.ListNotificationsResponse, error) {
 	param, err := c.mapper.PbListNotificationsToParam(req)
@@ -177,16 +171,12 @@ func (c *notificationController) UpdatePreferences(ctx context.Context, req *pb.
 	}, nil
 }
 
-// ===========================================================================
-// ADMIN
-// ===========================================================================
-
 func (c *notificationController) AdminSendNotification(ctx context.Context, req *pb.AdminSendNotificationRequest) (*pb.AdminSendNotificationResponse, error) {
 	userIDs := make([]uuid.UUID, 0, len(req.UserIds))
 	for _, raw := range req.UserIds {
 		id, err := parseID(raw, cerr.ErrInvalidUserID)
 		if err != nil {
-			return nil, cerr.ErrInvalidUserID.WithDetail("user_id", raw)
+			return nil, cerr.ErrInvalidUserID.WithDetail("user_id", base64.RawURLEncoding.EncodeToString(raw))
 		}
 		userIDs = append(userIDs, id)
 	}

@@ -8,16 +8,16 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+	"github.com/logistic/pkg/uuidx"
 )
 
-// ShipperProfile là phần hồ sơ doanh nghiệp của chủ hàng.
 type ShipperProfile struct {
 	ent.Schema
 }
 
 func (ShipperProfile) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
+		field.UUID("id", uuid.UUID{}).Default(uuidx.New).Unique(),
 		field.UUID("user_id", uuid.UUID{}),
 		field.String("company_name").Optional(),
 		field.String("tax_code").Optional(),

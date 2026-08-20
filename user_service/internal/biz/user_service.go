@@ -1,9 +1,3 @@
-// Package biz chứa LUẬT NGHIỆP VỤ của user_service.
-//
-// Tầng này không biết gRPC, không biết Postgres, không biết Redis. Nó chỉ nói
-// chuyện bằng entity và UserRepo. Nhờ vậy các quy tắc dạng "chỉ tài xế mới có
-// hồ sơ KYC" hay "mỗi người chỉ có một địa chỉ mặc định" nằm đúng một chỗ, thay
-// vì rải rác trong controller rồi lệch nhau giữa API client và API admin.
 package biz
 
 import (
@@ -16,7 +10,6 @@ import (
 )
 
 type UserEngine interface {
-	// --- Client ---
 	RegisterUser(ctx context.Context, param *entity.RegisterUserParam) (*entity.RegisterUserResult, error)
 	GetUser(ctx context.Context, id uuid.UUID) (*entity.GetUserResult, error)
 	UpdateUser(ctx context.Context, param *entity.UpdateUserParam) (*entity.User, error)
@@ -36,7 +29,6 @@ type UserEngine interface {
 	ListDevices(ctx context.Context, userID uuid.UUID) ([]entity.UserDevice, error)
 	DeleteDevice(ctx context.Context, id, userID uuid.UUID) error
 
-	// --- Admin ---
 	AdminListUsers(ctx context.Context, filter *entity.ListUsersFilter) (*entity.ListUsersResult, error)
 	AdminUpdateUserStatus(ctx context.Context, param *entity.UpdateUserStatusParam) (*entity.User, error)
 	AdminListPendingKYC(ctx context.Context, page, pageSize int) (*entity.ListDriverProfilesResult, error)
@@ -53,10 +45,6 @@ func NewUserEngine(repo UserRepo) UserEngine {
 	return &userEngineImpl{repo: repo}
 }
 
-// ---------------------------------------------------------------------------
-// ĐĂNG KÝ & HỒ SƠ
-// ---------------------------------------------------------------------------
-
 func (e *userEngineImpl) RegisterUser(ctx context.Context, param *entity.RegisterUserParam) (*entity.RegisterUserResult, error) {
 	if param.Phone == "" {
 		return nil, cerr.ErrPhoneRequired
@@ -68,9 +56,6 @@ func (e *userEngineImpl) RegisterUser(ctx context.Context, param *entity.Registe
 		return nil, cerr.ErrInvalidRole.WithDetail("role", param.Role)
 	}
 
-	// Kiểm tra trước để trả về lỗi rõ nghĩa. Vẫn có khe hở đua nhau giữa lúc
-	// kiểm tra và lúc INSERT, nhưng unique index ở DB là chốt chặn thật —
-	// wrapError sẽ dịch lỗi trùng khoá đó về đúng ErrPhoneAlreadyUsed.
 	exists, err := e.repo.ExistsByPhone(ctx, param.Phone)
 	if err != nil {
 		return nil, err
@@ -100,8 +85,6 @@ func (e *userEngineImpl) RegisterUser(ctx context.Context, param *entity.Registe
 		return nil, err
 	}
 
-	// Hồ sơ phụ được tạo rỗng ngay lúc đăng ký để mọi API sau đó có chỗ ghi vào,
-	// khỏi phải xử lý riêng trường hợp "user có mà hồ sơ chưa có".
 	switch param.Role {
 	case entity.RoleDriver:
 		if _, err := e.repo.CreateDriverProfile(ctx, created.ID, &entity.DriverProfile{}); err != nil {
@@ -132,7 +115,6 @@ func (e *userEngineImpl) GetUser(ctx context.Context, id uuid.UUID) (*entity.Get
 
 	result := &entity.GetUserResult{User: u}
 
-	// Hồ sơ phụ thiếu không phải lỗi chí mạng: vẫn trả về thông tin user chính.
 	switch u.Role {
 	case entity.RoleDriver:
 		if dp, dErr := e.repo.GetDriverProfile(ctx, id); dErr == nil {
@@ -157,7 +139,6 @@ func (e *userEngineImpl) UpdateUser(ctx context.Context, param *entity.UpdateUse
 			return nil, err
 		}
 		if taken {
-			// Email chính chủ thì không tính là trùng.
 			current, cErr := e.repo.GetUserByID(ctx, param.ID)
 			if cErr != nil {
 				return nil, cErr
@@ -223,9 +204,6 @@ func (e *userEngineImpl) UpdateDriverKYC(ctx context.Context, param *entity.Upda
 	return e.repo.UpdateDriverKYC(ctx, param)
 }
 
-// mustBeRole chặn thao tác đặt nhầm chỗ, ví dụ gọi API hồ sơ tài xế trên một
-// tài khoản chủ hàng. Không có bước này thì repo sẽ trả "không tìm thấy hồ sơ",
-// một câu vừa sai nguyên nhân vừa khiến client đi dò mò.
 func (e *userEngineImpl) mustBeRole(ctx context.Context, userID uuid.UUID, role string) error {
 	u, err := e.repo.GetUserByID(ctx, userID)
 	if err != nil {
@@ -239,10 +217,6 @@ func (e *userEngineImpl) mustBeRole(ctx context.Context, userID uuid.UUID, role 
 	}
 	return nil
 }
-
-// ---------------------------------------------------------------------------
-// SỔ ĐỊA CHỈ
-// ---------------------------------------------------------------------------
 
 func (e *userEngineImpl) CreateAddress(ctx context.Context, param *entity.CreateAddressParam) (*entity.Address, error) {
 	if param.UserID == uuid.Nil {
@@ -262,7 +236,6 @@ func (e *userEngineImpl) CreateAddress(ctx context.Context, param *entity.Create
 		return nil, err
 	}
 
-	// "Mặc định" phải là duy nhất: hạ cờ của các địa chỉ cũ trước khi dựng cờ mới.
 	if param.IsDefault {
 		if err := e.repo.ClearDefaultAddress(ctx, param.UserID); err != nil {
 			return nil, err
@@ -304,7 +277,7 @@ func (e *userEngineImpl) UpdateAddress(ctx context.Context, param *entity.Update
 	if err != nil {
 		return nil, err
 	}
-	// Không cho sửa địa chỉ của người khác dù có đoán đúng id.
+
 	if param.UserID != uuid.Nil && current.UserID != param.UserID {
 		return nil, cerr.ErrAddressNotOwned
 	}
@@ -331,10 +304,6 @@ func (e *userEngineImpl) DeleteAddress(ctx context.Context, id, userID uuid.UUID
 	}
 	return e.repo.DeleteAddress(ctx, id)
 }
-
-// ---------------------------------------------------------------------------
-// THIẾT BỊ NHẬN PUSH
-// ---------------------------------------------------------------------------
 
 func (e *userEngineImpl) RegisterDevice(ctx context.Context, param *entity.RegisterDeviceParam) (*entity.UserDevice, error) {
 	if param.UserID == uuid.Nil {
@@ -376,10 +345,6 @@ func (e *userEngineImpl) DeleteDevice(ctx context.Context, id, userID uuid.UUID)
 	}
 	return e.repo.DeleteDevice(ctx, id)
 }
-
-// ---------------------------------------------------------------------------
-// ADMIN
-// ---------------------------------------------------------------------------
 
 func (e *userEngineImpl) AdminListUsers(ctx context.Context, filter *entity.ListUsersFilter) (*entity.ListUsersResult, error) {
 	if filter.Role != "" && !entity.IsValidRole(filter.Role) {
@@ -432,8 +397,7 @@ func (e *userEngineImpl) AdminReviewKYC(ctx context.Context, param *entity.Revie
 	if err != nil {
 		return nil, err
 	}
-	// Chặn duyệt hai lần: nếu không, một cú bấm nhầm sẽ lật ngược quyết định cũ
-	// mà không để lại dấu vết là ai đã đổi.
+
 	if current.KycStatus != entity.KycPending {
 		return nil, cerr.ErrKycAlreadyReviewed.WithDetail("current_status", current.KycStatus)
 	}

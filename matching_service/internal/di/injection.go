@@ -25,7 +25,6 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Container giữ các tài nguyên nền cần đóng lúc tắt service.
 type Container struct {
 	MQConn      *mq.Connection
 	MQPublisher *mq.Publisher
@@ -57,13 +56,11 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) (*Container, error) {
 		return nil, err
 	}
 
-	// Mapper tập trung, dùng chung cho repo / controller / broker.
 	appMapper := &generated.MatchingMapperImpl{}
 
 	matchingRepo := repo.NewMatchingRepo(masterClient, salveClient, appMapper)
 	engine := biz.NewGeoHashEngine()
 
-	// ─── NATS JETSTREAM (đẩy realtime tới app đang mở) ──────────────────────
 	natsConn, err := nats.Connect("nats://" + cfg.NatConfig.Host + ":" + cfg.NatConfig.Port)
 	if err != nil {
 		return nil, err
@@ -74,7 +71,6 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) (*Container, error) {
 	}
 	natsPub := nats_jetstream.InitPublisher(natsCtx, appMapper)
 
-	// ─── KAFKA (nhật ký sự kiện lâu dài) ────────────────────────────────────
 	brokers := strings.Split(cfg.KafkaConfig.Brokers, ",")
 	kafkaPub, err := kafka.NewKafkaPublisher(brokers, appMapper)
 	if err != nil {
@@ -83,12 +79,6 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) (*Container, error) {
 
 	container := &Container{}
 
-	// ─── RABBITMQ (thông báo bền tới người dùng) ────────────────────────────
-	// Đây là kênh phục vụ hai nghiệp vụ chính:
-	//   1. Chủ hàng đăng đơn -> báo cho các tài xế tiềm năng.
-	//   2. Ghép được xe      -> báo cho cả chủ hàng lẫn tài xế.
-	// Dựng không được thì dùng NoopNotifier: việc ghép đơn vẫn chạy bình thường,
-	// chỉ mất phần thông báo.
 	var notifier biz.Notifier = biz.NoopNotifier{}
 	if cfg.RabbitMQ.Enabled {
 		mqConn, mqErr := mq.Connect(mq.Config{
@@ -117,9 +107,6 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) (*Container, error) {
 		log.Printf("[matching_service] Publisher RabbitMQ bị tắt bằng cấu hình")
 	}
 
-	// ─── WALLET SERVICE CLIENT ──────────────────────────────────────────────
-	// Dùng để CheckBalance trước khi chốt match. Việc đóng băng tiền cọc thực
-	// tế diễn ra bất đồng bộ qua Kafka topic "wallet.hold_deposit".
 	var walletClient biz.WalletClient
 	walletConn, err := grpc.NewClient(
 		cfg.WalletService.GrpcAddr,

@@ -95,7 +95,6 @@ func (c *MediaController) DeleteFile(ctx *gin.Context) {
 		PublicId: publicID,
 	})
 	if err != nil {
-		// response.Error tự dịch codes.NotFound sang HTTP 404, không cần if riêng.
 		response.Error(ctx, err)
 		return
 	}

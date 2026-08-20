@@ -25,9 +25,6 @@ type DatabaseConfig struct {
 	DBName   string `env:"VEHICLE_DB_NAME" env-required:"true"`
 }
 
-// RedisConfig ở vehicle_service quan trọng hơn ở user_service: ngoài vai trò
-// cache, Redis còn giữ CHỈ MỤC GEO của các xe đang online. Mất Redis thì
-// SearchNearby rơi về đường quét Postgres — vẫn chạy nhưng chậm hơn đáng kể.
 type RedisConfig struct {
 	Host     string `env:"REDIS_HOST" env-default:"redis"`
 	Port     string `env:"REDIS_PORT" env-default:"6379"`

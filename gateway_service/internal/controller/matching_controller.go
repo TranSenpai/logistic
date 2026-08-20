@@ -10,12 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// MatchingController là cửa HTTP vào lõi ghép đơn.
-//
-// Lưu ý về ID: proto của matching_service dùng `bytes` (16 byte thô của UUID),
-// khác với user/vehicle/notification đã chuyển sang `string`. Vì vậy ở đây phải
-// parse tường minh qua uuidBytes() — đoạn code cũ dùng `[]byte(req.ShipperId)`
-// biến chuỗi 36 ký tự thành 36 byte, tức là gửi xuống một UUID sai hoàn toàn.
 type MatchingController struct {
 	matchingClient pb.MatchingEngineServiceClient
 }
@@ -24,10 +18,9 @@ func NewMatchingController(matchingClient pb.MatchingEngineServiceClient) *Match
 	return &MatchingController{matchingClient: matchingClient}
 }
 
-// uuidBytes đổi chuỗi UUID sang đúng 16 byte mà proto mong đợi.
 func uuidBytes(raw string) ([]byte, bool) {
 	if raw == "" {
-		return nil, true // field không bắt buộc
+		return nil, true
 	}
 	id, err := uuid.Parse(raw)
 	if err != nil {
@@ -318,7 +311,6 @@ func (c *MatchingController) AcceptMatch(ctx *gin.Context) {
 	})
 }
 
-// bytesToUUIDString đổi 16 byte thô về dạng chuỗi cho client đọc được.
 func bytesToUUIDString(b []byte) string {
 	if len(b) != 16 {
 		return ""

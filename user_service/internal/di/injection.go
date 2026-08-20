@@ -1,8 +1,3 @@
-// Package di ráp các tầng lại với nhau. Đây là NƠI DUY NHẤT biết mọi thứ:
-// ent client, Redis, mapper, repo, biz, controller.
-//
-// Mọi tầng khác chỉ nhận dependency qua tham số hàm khởi tạo, nên đổi Postgres
-// sang thứ khác hay bỏ Redis đều chỉ phải sửa file này.
 package di
 
 import (
@@ -22,7 +17,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Container giữ các tài nguyên cần đóng lúc tắt service.
 type Container struct {
 	EntClient *ent.Client
 	Cache     *cache.Client
@@ -59,8 +53,6 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) (*Container, error) {
 		return nil, fmt.Errorf("user_service: tạo schema thất bại: %w", err)
 	}
 
-	// Redis hỏng KHÔNG được làm service chết. Ta log lại rồi chạy tiếp với
-	// redisClient == nil; repo đã viết để chịu được trường hợp này.
 	var redisClient *cache.Client
 	if cfg.Redis.Enabled {
 		redisClient, err = cache.New(cache.Config{

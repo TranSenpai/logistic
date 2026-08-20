@@ -8,20 +8,16 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+	"github.com/logistic/pkg/uuidx"
 )
 
-// Address là sổ địa chỉ của người dùng.
-//
-// Vì sao lưu sẵn latitude/longitude: khi shipper tạo đơn, matching_service cần
-// toạ độ ngay để tính zone. Nếu chỉ lưu chữ thì mỗi lần đặt đơn lại phải gọi
-// geocoding bên thứ ba — chậm và tốn tiền cho dữ liệu gần như không đổi.
 type Address struct {
 	ent.Schema
 }
 
 func (Address) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
+		field.UUID("id", uuid.UUID{}).Default(uuidx.New).Unique(),
 		field.UUID("user_id", uuid.UUID{}),
 		field.String("label").Optional(),
 		field.String("contact_name").Optional(),

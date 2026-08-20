@@ -1,10 +1,3 @@
-// Package apperr là "bảng mã lỗi" dùng chung cho toàn bộ microservice.
-//
-// Ý tưởng: tầng biz/repo KHÔNG được biết gì về gRPC hay HTTP. Chúng chỉ trả về
-// *Error của package này. Việc dịch sang gRPC code (ở interceptor của service)
-// hay HTTP status (ở middleware của gateway) là việc của tầng ngoài cùng.
-// Nhờ vậy một lỗi "không tìm thấy user" luôn ra 404 ở mọi service mà không phải
-// copy-paste if/else ở từng controller.
 package apperr
 
 import (
@@ -15,7 +8,6 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-// Kind phân loại lỗi theo NGỮ NGHĨA nghiệp vụ, không theo transport.
 type Kind string
 
 const (
@@ -32,13 +24,6 @@ const (
 	KindInternal         Kind = "INTERNAL"
 )
 
-// Error là kiểu lỗi chuẩn của hệ thống.
-//
-//	Kind    -> quyết định gRPC code / HTTP status
-//	Code    -> mã máy đọc được, client dùng để switch (vd: "USER_NOT_FOUND")
-//	Message -> câu chữ trả cho client (đã an toàn để lộ ra ngoài)
-//	Details -> metadata phụ (field nào sai, id nào...)
-//	cause   -> lỗi gốc, GIỮ LẠI để log nhưng KHÔNG trả ra ngoài
 type Error struct {
 	Kind    Kind
 	Code    string
@@ -54,17 +39,14 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("%s(%s): %s", e.Kind, e.Code, e.Message)
 }
 
-// Unwrap cho phép errors.Is/errors.As xuyên qua lớp bọc.
 func (e *Error) Unwrap() error { return e.cause }
 
-// WithCause gắn lỗi gốc (sql, redis, grpc...) để interceptor log lại.
 func (e *Error) WithCause(err error) *Error {
 	clone := *e
 	clone.cause = err
 	return &clone
 }
 
-// WithDetail thêm một cặp metadata. An toàn khi Details đang nil.
 func (e *Error) WithDetail(key, value string) *Error {
 	clone := *e
 	clone.Details = make(map[string]string, len(e.Details)+1)
@@ -75,14 +57,12 @@ func (e *Error) WithDetail(key, value string) *Error {
 	return &clone
 }
 
-// WithMessage thay câu chữ nhưng giữ nguyên Kind/Code.
 func (e *Error) WithMessage(format string, args ...any) *Error {
 	clone := *e
 	clone.Message = fmt.Sprintf(format, args...)
 	return &clone
 }
 
-// New tạo một mã lỗi mới. Thường được gọi ở biến package-level của từng service.
 func New(kind Kind, code, message string) *Error {
 	return &Error{Kind: kind, Code: code, Message: message}
 }
@@ -97,8 +77,6 @@ func Unauthenticated(code, msg string) *Error    { return New(KindUnauthenticate
 func Unavailable(code, msg string) *Error        { return New(KindUnavailable, code, msg) }
 func Internal(code, msg string) *Error           { return New(KindInternal, code, msg) }
 
-// From bóc *Error ra khỏi chuỗi wrap. Nếu err không phải lỗi của hệ thống,
-// trả về false để tầng ngoài biết đây là lỗi "lạ" (cần log full stack, trả 500).
 func From(err error) (*Error, bool) {
 	var e *Error
 	if errors.As(err, &e) {
@@ -107,7 +85,6 @@ func From(err error) (*Error, bool) {
 	return nil, false
 }
 
-// GRPCCode dịch Kind sang gRPC status code.
 func (e *Error) GRPCCode() codes.Code {
 	switch e.Kind {
 	case KindInvalidArgument:
@@ -135,7 +112,6 @@ func (e *Error) GRPCCode() codes.Code {
 	}
 }
 
-// HTTPStatus dịch Kind sang HTTP status, dùng ở gateway.
 func (e *Error) HTTPStatus() int {
 	switch e.Kind {
 	case KindInvalidArgument:
@@ -161,7 +137,6 @@ func (e *Error) HTTPStatus() int {
 	}
 }
 
-// HTTPStatusFromGRPC dùng ở gateway khi chỉ còn cầm gRPC code (đã qua dây).
 func HTTPStatusFromGRPC(c codes.Code) int {
 	switch c {
 	case codes.OK:

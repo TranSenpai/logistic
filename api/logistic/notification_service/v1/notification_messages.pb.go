@@ -26,8 +26,8 @@ const (
 // Sự kiện "tìm được xe" sẽ đẻ ra 2 dòng: một cho shipper, một cho tài xế.
 type Notification struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	RecipientRole string                 `protobuf:"bytes,3,opt,name=recipient_role,json=recipientRole,proto3" json:"recipient_role,omitempty"` // driver | shipper | admin
 	Type          string                 `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`                                        // match_found | driver_candidate | offer_received ...
 	Channel       string                 `protobuf:"bytes,5,opt,name=channel,proto3" json:"channel,omitempty"`                                  // in_app | push | email | sms
@@ -35,7 +35,7 @@ type Notification struct {
 	Body          string                 `protobuf:"bytes,7,opt,name=body,proto3" json:"body,omitempty"`
 	Data          string                 `protobuf:"bytes,8,opt,name=data,proto3" json:"data,omitempty"`                      // JSON payload để app deep-link
 	RefType       string                 `protobuf:"bytes,9,opt,name=ref_type,json=refType,proto3" json:"ref_type,omitempty"` // bid | ask | match
-	RefId         string                 `protobuf:"bytes,10,opt,name=ref_id,json=refId,proto3" json:"ref_id,omitempty"`
+	RefId         []byte                 `protobuf:"bytes,10,opt,name=ref_id,json=refId,proto3" json:"ref_id,omitempty"`
 	IsRead        bool                   `protobuf:"varint,11,opt,name=is_read,json=isRead,proto3" json:"is_read,omitempty"`
 	Status        string                 `protobuf:"bytes,12,opt,name=status,proto3" json:"status,omitempty"` // pending | sent | failed | read
 	ReadAt        *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=read_at,json=readAt,proto3" json:"read_at,omitempty"`
@@ -74,18 +74,18 @@ func (*Notification) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Notification) GetId() string {
+func (x *Notification) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *Notification) GetUserId() string {
+func (x *Notification) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *Notification) GetRecipientRole() string {
@@ -137,11 +137,11 @@ func (x *Notification) GetRefType() string {
 	return ""
 }
 
-func (x *Notification) GetRefId() string {
+func (x *Notification) GetRefId() []byte {
 	if x != nil {
 		return x.RefId
 	}
-	return ""
+	return nil
 }
 
 func (x *Notification) GetIsRead() bool {
@@ -176,7 +176,7 @@ func (x *Notification) GetCreatedAt() *timestamppb.Timestamp {
 // Placeholder dạng {{driver_name}} được điền lúc render.
 type NotificationTemplate struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Code          string                 `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"` // MATCH_FOUND_SHIPPER, DRIVER_CANDIDATE...
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	Channel       string                 `protobuf:"bytes,4,opt,name=channel,proto3" json:"channel,omitempty"`
@@ -220,11 +220,11 @@ func (*NotificationTemplate) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *NotificationTemplate) GetId() string {
+func (x *NotificationTemplate) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *NotificationTemplate) GetCode() string {
@@ -293,8 +293,8 @@ func (x *NotificationTemplate) GetUpdatedAt() *timestamppb.Timestamp {
 // NotificationPreference: người dùng tự chọn muốn nhận gì, qua kênh nào.
 type NotificationPreference struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId             string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id                 []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId             []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	InAppEnabled       bool                   `protobuf:"varint,3,opt,name=in_app_enabled,json=inAppEnabled,proto3" json:"in_app_enabled,omitempty"`
 	PushEnabled        bool                   `protobuf:"varint,4,opt,name=push_enabled,json=pushEnabled,proto3" json:"push_enabled,omitempty"`
 	EmailEnabled       bool                   `protobuf:"varint,5,opt,name=email_enabled,json=emailEnabled,proto3" json:"email_enabled,omitempty"`
@@ -338,18 +338,18 @@ func (*NotificationPreference) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *NotificationPreference) GetId() string {
+func (x *NotificationPreference) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *NotificationPreference) GetUserId() string {
+func (x *NotificationPreference) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *NotificationPreference) GetInAppEnabled() bool {
@@ -485,7 +485,7 @@ func (x *Pagination) GetTotalPages() int32 {
 
 type ListNotificationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	UnreadOnly    bool                   `protobuf:"varint,3,opt,name=unread_only,json=unreadOnly,proto3" json:"unread_only,omitempty"`
 	Page          int32                  `protobuf:"varint,4,opt,name=page,proto3" json:"page,omitempty"`
@@ -524,11 +524,11 @@ func (*ListNotificationsRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *ListNotificationsRequest) GetUserId() string {
+func (x *ListNotificationsRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *ListNotificationsRequest) GetType() string {
@@ -621,8 +621,8 @@ func (x *ListNotificationsResponse) GetUnreadCount() int64 {
 
 type GetNotificationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -657,18 +657,18 @@ func (*GetNotificationRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *GetNotificationRequest) GetId() string {
+func (x *GetNotificationRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *GetNotificationRequest) GetUserId() string {
+func (x *GetNotificationRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 type GetNotificationResponse struct {
@@ -717,8 +717,8 @@ func (x *GetNotificationResponse) GetNotification() *Notification {
 
 type MarkAsReadRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -753,18 +753,18 @@ func (*MarkAsReadRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *MarkAsReadRequest) GetId() string {
+func (x *MarkAsReadRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *MarkAsReadRequest) GetUserId() string {
+func (x *MarkAsReadRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 type MarkAsReadResponse struct {
@@ -821,7 +821,7 @@ func (x *MarkAsReadResponse) GetUnreadCount() int64 {
 
 type MarkAllAsReadRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -856,11 +856,11 @@ func (*MarkAllAsReadRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *MarkAllAsReadRequest) GetUserId() string {
+func (x *MarkAllAsReadRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 type MarkAllAsReadResponse struct {
@@ -917,8 +917,8 @@ func (x *MarkAllAsReadResponse) GetMarkedCount() int64 {
 
 type DeleteNotificationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -953,18 +953,18 @@ func (*DeleteNotificationRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *DeleteNotificationRequest) GetId() string {
+func (x *DeleteNotificationRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *DeleteNotificationRequest) GetUserId() string {
+func (x *DeleteNotificationRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 type DeleteNotificationResponse struct {
@@ -1013,7 +1013,7 @@ func (x *DeleteNotificationResponse) GetMessage() string {
 
 type GetUnreadCountRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1048,11 +1048,11 @@ func (*GetUnreadCountRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *GetUnreadCountRequest) GetUserId() string {
+func (x *GetUnreadCountRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 type GetUnreadCountResponse struct {
@@ -1101,7 +1101,7 @@ func (x *GetUnreadCountResponse) GetUnreadCount() int64 {
 
 type GetPreferencesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1136,11 +1136,11 @@ func (*GetPreferencesRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *GetPreferencesRequest) GetUserId() string {
+func (x *GetPreferencesRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 type GetPreferencesResponse struct {
@@ -1189,7 +1189,7 @@ func (x *GetPreferencesResponse) GetPreference() *NotificationPreference {
 
 type UpdatePreferencesRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	UserId             string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId             []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	InAppEnabled       bool                   `protobuf:"varint,2,opt,name=in_app_enabled,json=inAppEnabled,proto3" json:"in_app_enabled,omitempty"`
 	PushEnabled        bool                   `protobuf:"varint,3,opt,name=push_enabled,json=pushEnabled,proto3" json:"push_enabled,omitempty"`
 	EmailEnabled       bool                   `protobuf:"varint,4,opt,name=email_enabled,json=emailEnabled,proto3" json:"email_enabled,omitempty"`
@@ -1232,11 +1232,11 @@ func (*UpdatePreferencesRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{18}
 }
 
-func (x *UpdatePreferencesRequest) GetUserId() string {
+func (x *UpdatePreferencesRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *UpdatePreferencesRequest) GetInAppEnabled() bool {
@@ -1351,7 +1351,7 @@ func (x *UpdatePreferencesResponse) GetMessage() string {
 // thì gửi cho toàn bộ người dùng thuộc vai trò đó.
 type AdminSendNotificationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserIds       []string               `protobuf:"bytes,1,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
+	UserIds       [][]byte               `protobuf:"bytes,1,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
 	BroadcastRole string                 `protobuf:"bytes,2,opt,name=broadcast_role,json=broadcastRole,proto3" json:"broadcast_role,omitempty"`
 	Type          string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
 	Channel       string                 `protobuf:"bytes,4,opt,name=channel,proto3" json:"channel,omitempty"`
@@ -1392,7 +1392,7 @@ func (*AdminSendNotificationRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{20}
 }
 
-func (x *AdminSendNotificationRequest) GetUserIds() []string {
+func (x *AdminSendNotificationRequest) GetUserIds() [][]byte {
 	if x != nil {
 		return x.UserIds
 	}
@@ -1495,7 +1495,7 @@ func (x *AdminSendNotificationResponse) GetSentCount() int64 {
 
 type AdminListNotificationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
 	Page          int32                  `protobuf:"varint,4,opt,name=page,proto3" json:"page,omitempty"`
@@ -1534,11 +1534,11 @@ func (*AdminListNotificationsRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *AdminListNotificationsRequest) GetUserId() string {
+func (x *AdminListNotificationsRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *AdminListNotificationsRequest) GetType() string {
@@ -1863,7 +1863,7 @@ func (x *AdminCreateTemplateResponse) GetMessage() string {
 
 type AdminUpdateTemplateRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	TitleTemplate string                 `protobuf:"bytes,3,opt,name=title_template,json=titleTemplate,proto3" json:"title_template,omitempty"`
 	BodyTemplate  string                 `protobuf:"bytes,4,opt,name=body_template,json=bodyTemplate,proto3" json:"body_template,omitempty"`
@@ -1902,11 +1902,11 @@ func (*AdminUpdateTemplateRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{28}
 }
 
-func (x *AdminUpdateTemplateRequest) GetId() string {
+func (x *AdminUpdateTemplateRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *AdminUpdateTemplateRequest) GetName() string {
@@ -1991,7 +1991,7 @@ func (x *AdminUpdateTemplateResponse) GetMessage() string {
 
 type AdminDeleteTemplateRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2026,11 +2026,11 @@ func (*AdminDeleteTemplateRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_notification_service_v1_notification_messages_proto_rawDescGZIP(), []int{30}
 }
 
-func (x *AdminDeleteTemplateRequest) GetId() string {
+func (x *AdminDeleteTemplateRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 type AdminDeleteTemplateResponse struct {
@@ -2195,8 +2195,8 @@ const file_logistic_notification_service_v1_notification_messages_proto_rawDesc 
 	"\n" +
 	"<logistic/notification_service/v1/notification_messages.proto\x12 logistic.notification_service.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9d\x03\n" +
 	"\fNotification\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12%\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\x12%\n" +
 	"\x0erecipient_role\x18\x03 \x01(\tR\rrecipientRole\x12\x12\n" +
 	"\x04type\x18\x04 \x01(\tR\x04type\x12\x18\n" +
 	"\achannel\x18\x05 \x01(\tR\achannel\x12\x14\n" +
@@ -2205,14 +2205,14 @@ const file_logistic_notification_service_v1_notification_messages_proto_rawDesc 
 	"\x04data\x18\b \x01(\tR\x04data\x12\x19\n" +
 	"\bref_type\x18\t \x01(\tR\arefType\x12\x15\n" +
 	"\x06ref_id\x18\n" +
-	" \x01(\tR\x05refId\x12\x17\n" +
+	" \x01(\fR\x05refId\x12\x17\n" +
 	"\ais_read\x18\v \x01(\bR\x06isRead\x12\x16\n" +
 	"\x06status\x18\f \x01(\tR\x06status\x123\n" +
 	"\aread_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\x06readAt\x129\n" +
 	"\n" +
 	"created_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xdf\x02\n" +
 	"\x14NotificationTemplate\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x12\n" +
 	"\x04code\x18\x02 \x01(\tR\x04code\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x18\n" +
 	"\achannel\x18\x04 \x01(\tR\achannel\x12\x16\n" +
@@ -2226,8 +2226,8 @@ const file_logistic_notification_service_v1_notification_messages_proto_rawDesc 
 	"updated_at\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xbe\x03\n" +
 	"\x16NotificationPreference\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12$\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\x12$\n" +
 	"\x0ein_app_enabled\x18\x03 \x01(\bR\finAppEnabled\x12!\n" +
 	"\fpush_enabled\x18\x04 \x01(\bR\vpushEnabled\x12#\n" +
 	"\remail_enabled\x18\x05 \x01(\bR\femailEnabled\x12\x1f\n" +
@@ -2249,7 +2249,7 @@ const file_logistic_notification_service_v1_notification_messages_proto_rawDesc 
 	"\vtotal_pages\x18\x04 \x01(\x05R\n" +
 	"totalPages\"\x99\x01\n" +
 	"\x18ListNotificationsRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x1f\n" +
 	"\vunread_only\x18\x03 \x01(\bR\n" +
 	"unreadOnly\x12\x12\n" +
@@ -2262,38 +2262,38 @@ const file_logistic_notification_service_v1_notification_messages_proto_rawDesc 
 	"pagination\x12!\n" +
 	"\funread_count\x18\x03 \x01(\x03R\vunreadCount\"A\n" +
 	"\x16GetNotificationRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\"m\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\"m\n" +
 	"\x17GetNotificationResponse\x12R\n" +
 	"\fnotification\x18\x01 \x01(\v2..logistic.notification_service.v1.NotificationR\fnotification\"<\n" +
 	"\x11MarkAsReadRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\"Q\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\"Q\n" +
 	"\x12MarkAsReadResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12!\n" +
 	"\funread_count\x18\x02 \x01(\x03R\vunreadCount\"/\n" +
 	"\x14MarkAllAsReadRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"T\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\"T\n" +
 	"\x15MarkAllAsReadResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12!\n" +
 	"\fmarked_count\x18\x02 \x01(\x03R\vmarkedCount\"D\n" +
 	"\x19DeleteNotificationRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\"6\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\"6\n" +
 	"\x1aDeleteNotificationResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"0\n" +
 	"\x15GetUnreadCountRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\";\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\";\n" +
 	"\x16GetUnreadCountResponse\x12!\n" +
 	"\funread_count\x18\x01 \x01(\x03R\vunreadCount\"0\n" +
 	"\x15GetPreferencesRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"r\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\"r\n" +
 	"\x16GetPreferencesResponse\x12X\n" +
 	"\n" +
 	"preference\x18\x01 \x01(\v28.logistic.notification_service.v1.NotificationPreferenceR\n" +
 	"preference\"\xf5\x02\n" +
 	"\x18UpdatePreferencesRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12$\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12$\n" +
 	"\x0ein_app_enabled\x18\x02 \x01(\bR\finAppEnabled\x12!\n" +
 	"\fpush_enabled\x18\x03 \x01(\bR\vpushEnabled\x12#\n" +
 	"\remail_enabled\x18\x04 \x01(\bR\femailEnabled\x12\x1f\n" +
@@ -2309,7 +2309,7 @@ const file_logistic_notification_service_v1_notification_messages_proto_rawDesc 
 	"preference\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\xcc\x01\n" +
 	"\x1cAdminSendNotificationRequest\x12\x19\n" +
-	"\buser_ids\x18\x01 \x03(\tR\auserIds\x12%\n" +
+	"\buser_ids\x18\x01 \x03(\fR\auserIds\x12%\n" +
 	"\x0ebroadcast_role\x18\x02 \x01(\tR\rbroadcastRole\x12\x12\n" +
 	"\x04type\x18\x03 \x01(\tR\x04type\x12\x18\n" +
 	"\achannel\x18\x04 \x01(\tR\achannel\x12\x14\n" +
@@ -2321,7 +2321,7 @@ const file_logistic_notification_service_v1_notification_messages_proto_rawDesc 
 	"\n" +
 	"sent_count\x18\x02 \x01(\x03R\tsentCount\"\x95\x01\n" +
 	"\x1dAdminListNotificationsRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x16\n" +
 	"\x06status\x18\x03 \x01(\tR\x06status\x12\x12\n" +
 	"\x04page\x18\x04 \x01(\x05R\x04page\x12\x1b\n" +
@@ -2348,7 +2348,7 @@ const file_logistic_notification_service_v1_notification_messages_proto_rawDesc 
 	"\btemplate\x18\x01 \x01(\v26.logistic.notification_service.v1.NotificationTemplateR\btemplate\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\xa9\x01\n" +
 	"\x1aAdminUpdateTemplateRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12%\n" +
 	"\x0etitle_template\x18\x03 \x01(\tR\rtitleTemplate\x12#\n" +
 	"\rbody_template\x18\x04 \x01(\tR\fbodyTemplate\x12\x1b\n" +
@@ -2357,7 +2357,7 @@ const file_logistic_notification_service_v1_notification_messages_proto_rawDesc 
 	"\btemplate\x18\x01 \x01(\v26.logistic.notification_service.v1.NotificationTemplateR\btemplate\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\",\n" +
 	"\x1aAdminDeleteTemplateRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"7\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\"7\n" +
 	"\x1bAdminDeleteTemplateResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"\"\n" +
 	" AdminGetNotificationStatsRequest\"\x82\x02\n" +

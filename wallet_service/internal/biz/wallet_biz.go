@@ -14,7 +14,6 @@ import (
 )
 
 var (
-	// SystemEscrowWalletID là mã UUID cứng đại diện cho Ví Hệ Thống chuyên giữ tiền cọc
 	SystemEscrowWalletID = uuid.MustParse("00000000-0000-0000-0000-000000000001")
 )
 
@@ -79,7 +78,7 @@ func (uc *wallet) Deposit(ctx context.Context, userID uuid.UUID, amount int64, d
 		tx, err := uc.txRepo.CreateTransaction(ctxTx, &repository.CreateTransactionParam{
 			WalletID:        w.ID,
 			Amount:          amount,
-			TransactionType: 1, // Deposit
+			TransactionType: 1,
 			ReferenceID:     uuid.New().String(),
 			Description:     description,
 			Status:          1,
@@ -88,7 +87,7 @@ func (uc *wallet) Deposit(ctx context.Context, userID uuid.UUID, amount int64, d
 			return err
 		}
 
-		walletRes, err = uc.walletRepo.GetWallet(ctxTx, userID) // lấy state mới nhất
+		walletRes, err = uc.walletRepo.GetWallet(ctxTx, userID)
 		if err != nil {
 			return err
 		}
@@ -104,23 +103,20 @@ func (uc *wallet) Deposit(ctx context.Context, userID uuid.UUID, amount int64, d
 	return txRes, err
 }
 
-// HoldDeposit đóng băng tiền cọc của tài xế bằng cách chuyển vào Ví Hệ Thống
 func (uc *wallet) HoldDeposit(ctx context.Context, driverID uuid.UUID, amount int64, refID string) error {
 	if amount <= 0 {
 		return ErrInvalidAmount
 	}
 
 	return uc.uow.Do(ctx, func(ctxTx context.Context) error {
-		// 1. Chống xử lý trùng lặp từ Broker (Idempotency)
 		err := uc.walletRepo.MarkMessageProcessed(ctxTx, refID)
 		if err != nil {
 			if ent.IsConstraintError(err) {
-				return nil // Bỏ qua nếu tin nhắn đã được xử lý
+				return nil
 			}
 			return fmt.Errorf("%w: %v", ErrDatabaseTxFailed, err)
 		}
 
-		// 2. Lock ví Driver
 		driverWallet, err := uc.walletRepo.GetWalletForUpdate(ctxTx, driverID)
 		if err != nil {
 			if ent.IsNotFound(err) {
@@ -133,17 +129,14 @@ func (uc *wallet) HoldDeposit(ctx context.Context, driverID uuid.UUID, amount in
 			return fmt.Errorf("%w: required %d, has %d", ErrInsufficientBalance, amount, driverWallet.Balance)
 		}
 
-		// 3. Lock ví Hệ thống (Escrow)
 		escrowWallet, err := uc.walletRepo.GetWalletForUpdate(ctxTx, SystemEscrowWalletID)
 		if err != nil {
-			// Tự động tạo ví hệ thống nếu chưa tồn tại
-			escrowWallet, err = uc.walletRepo.CreateWallet(ctxTx, SystemEscrowWalletID, 0) // 0 = System
+			escrowWallet, err = uc.walletRepo.CreateWallet(ctxTx, SystemEscrowWalletID, 0)
 			if err != nil {
 				return err
 			}
 		}
 
-		// 4. Trừ tiền Driver, Cộng tiền Hệ thống
 		if err := uc.walletRepo.UpdateBalance(ctxTx, driverWallet.ID, -amount); err != nil {
 			return err
 		}
@@ -151,11 +144,10 @@ func (uc *wallet) HoldDeposit(ctx context.Context, driverID uuid.UUID, amount in
 			return err
 		}
 
-		// 5. Ghi nhận giao dịch (Ledger)
 		tx1, err := uc.txRepo.CreateTransaction(ctxTx, &repository.CreateTransactionParam{
 			WalletID:        driverWallet.ID,
 			Amount:          -amount,
-			TransactionType: 5, // Hold Escrow Out
+			TransactionType: 5,
 			ReferenceID:     refID,
 			Description:     "Đóng băng tiền cọc nhận cuốc",
 			Status:          1,
@@ -167,7 +159,7 @@ func (uc *wallet) HoldDeposit(ctx context.Context, driverID uuid.UUID, amount in
 		tx2, err := uc.txRepo.CreateTransaction(ctxTx, &repository.CreateTransactionParam{
 			WalletID:        escrowWallet.ID,
 			Amount:          amount,
-			TransactionType: 6, // Hold Escrow In
+			TransactionType: 6,
 			ReferenceID:     refID,
 			Description:     "Hệ thống nhận tiền cọc của tài xế",
 			Status:          1,
@@ -176,7 +168,6 @@ func (uc *wallet) HoldDeposit(ctx context.Context, driverID uuid.UUID, amount in
 			return err
 		}
 
-		// Index ES (có thể cho ra queue, nhưng làm đồng bộ cũng OK)
 		if uc.esEngine != nil {
 			w1, _ := uc.walletRepo.GetWallet(ctxTx, driverWallet.ID)
 			w2, _ := uc.walletRepo.GetWallet(ctxTx, escrowWallet.ID)
@@ -189,10 +180,8 @@ func (uc *wallet) HoldDeposit(ctx context.Context, driverID uuid.UUID, amount in
 	})
 }
 
-// ReleaseAndPay được gọi khi hoàn thành cuốc xe: Trả lại cọc cho tài xế + Thanh toán tiền cước từ Shipper
 func (uc *wallet) ReleaseAndPay(ctx context.Context, driverID, shipperID uuid.UUID, escrowAmount, tripFare int64, refID string) error {
 	return uc.uow.Do(ctx, func(ctxTx context.Context) error {
-		// 1. Chống xử lý trùng lặp
 		err := uc.walletRepo.MarkMessageProcessed(ctxTx, refID)
 		if err != nil {
 			if ent.IsConstraintError(err) {
@@ -201,7 +190,6 @@ func (uc *wallet) ReleaseAndPay(ctx context.Context, driverID, shipperID uuid.UU
 			return err
 		}
 
-		// 2. Lock ví Hệ thống (Release Escrow)
 		escrowWallet, err := uc.walletRepo.GetWalletForUpdate(ctxTx, SystemEscrowWalletID)
 		if err != nil {
 			if ent.IsNotFound(err) {
@@ -213,7 +201,6 @@ func (uc *wallet) ReleaseAndPay(ctx context.Context, driverID, shipperID uuid.UU
 			return fmt.Errorf("%w: system escrow required %d, has %d", ErrInsufficientBalance, escrowAmount, escrowWallet.Balance)
 		}
 
-		// 3. Lock ví Shipper (Thanh toán cước)
 		shipperWallet, err := uc.walletRepo.GetWalletForUpdate(ctxTx, shipperID)
 		if err != nil {
 			if ent.IsNotFound(err) {
@@ -225,7 +212,6 @@ func (uc *wallet) ReleaseAndPay(ctx context.Context, driverID, shipperID uuid.UU
 			return fmt.Errorf("%w: shipper required %d, has %d", ErrInsufficientBalance, tripFare, shipperWallet.Balance)
 		}
 
-		// 4. Lock ví Driver
 		driverWallet, err := uc.walletRepo.GetWalletForUpdate(ctxTx, driverID)
 		if err != nil {
 			if ent.IsNotFound(err) {
@@ -234,9 +220,6 @@ func (uc *wallet) ReleaseAndPay(ctx context.Context, driverID, shipperID uuid.UU
 			return fmt.Errorf("%w: %v", ErrDatabaseTxFailed, err)
 		}
 
-		// THỰC HIỆN CỘNG TRỪ TIỀN ĐỒNG THỜI
-
-		// 5. Trả cọc: Hệ thống -> Driver
 		if err := uc.walletRepo.UpdateBalance(ctxTx, escrowWallet.ID, -escrowAmount); err != nil {
 			return err
 		}
@@ -244,7 +227,6 @@ func (uc *wallet) ReleaseAndPay(ctx context.Context, driverID, shipperID uuid.UU
 			return err
 		}
 
-		// 6. Trả cước: Shipper -> Driver
 		if err := uc.walletRepo.UpdateBalance(ctxTx, shipperWallet.ID, -tripFare); err != nil {
 			return err
 		}
@@ -252,9 +234,6 @@ func (uc *wallet) ReleaseAndPay(ctx context.Context, driverID, shipperID uuid.UU
 			return err
 		}
 
-		// GHI LOGS GIAO DỊCH VÀO SỔ CÁI
-
-		// Log 1: Hệ thống xuất trả cọc
 		tx1, err := uc.txRepo.CreateTransaction(ctxTx, &repository.CreateTransactionParam{
 			WalletID: escrowWallet.ID, Amount: -escrowAmount, TransactionType: 7, ReferenceID: refID, Description: "Hoàn cọc cho tài xế", Status: 1,
 		})
@@ -262,7 +241,6 @@ func (uc *wallet) ReleaseAndPay(ctx context.Context, driverID, shipperID uuid.UU
 			return err
 		}
 
-		// Log 2: Tài xế nhận lại cọc
 		tx2, err := uc.txRepo.CreateTransaction(ctxTx, &repository.CreateTransactionParam{
 			WalletID: driverWallet.ID, Amount: escrowAmount, TransactionType: 8, ReferenceID: refID, Description: "Nhận lại tiền cọc", Status: 1,
 		})
@@ -270,7 +248,6 @@ func (uc *wallet) ReleaseAndPay(ctx context.Context, driverID, shipperID uuid.UU
 			return err
 		}
 
-		// Log 3: Shipper trả tiền cước
 		tx3, err := uc.txRepo.CreateTransaction(ctxTx, &repository.CreateTransactionParam{
 			WalletID: shipperWallet.ID, Amount: -tripFare, TransactionType: 4, ReferenceID: refID, Description: "Thanh toán phí cuốc xe", Status: 1,
 		})
@@ -278,7 +255,6 @@ func (uc *wallet) ReleaseAndPay(ctx context.Context, driverID, shipperID uuid.UU
 			return err
 		}
 
-		// Log 4: Tài xế nhận tiền cước
 		tx4, err := uc.txRepo.CreateTransaction(ctxTx, &repository.CreateTransactionParam{
 			WalletID: driverWallet.ID, Amount: tripFare, TransactionType: 3, ReferenceID: refID, Description: "Nhận cước phí cuốc xe", Status: 1,
 		})
@@ -349,7 +325,7 @@ func (w *wallet) TransferMoney(ctx context.Context, fromUser, toUser uuid.UUID, 
 		tx1, err := w.txRepo.CreateTransaction(ctxTx, &repository.CreateTransactionParam{
 			WalletID:        senderWallet.ID,
 			Amount:          -amount,
-			TransactionType: 3, // Transfer Out
+			TransactionType: 3,
 			ReferenceID:     kafkaMsgID,
 			Description:     "Chuyển tiền",
 			Status:          1,
@@ -361,7 +337,7 @@ func (w *wallet) TransferMoney(ctx context.Context, fromUser, toUser uuid.UUID, 
 		tx2, err := w.txRepo.CreateTransaction(ctxTx, &repository.CreateTransactionParam{
 			WalletID:        receiverWallet.ID,
 			Amount:          amount,
-			TransactionType: 4, // Transfer In
+			TransactionType: 4,
 			ReferenceID:     kafkaMsgID,
 			Description:     "Nhận tiền",
 			Status:          1,

@@ -24,8 +24,8 @@ const (
 
 type Vehicle struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	DriverId           string                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	Id                 []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	DriverId           []byte                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
 	LicensePlate       string                 `protobuf:"bytes,3,opt,name=license_plate,json=licensePlate,proto3" json:"license_plate,omitempty"`
 	Brand              string                 `protobuf:"bytes,4,opt,name=brand,proto3" json:"brand,omitempty"`
 	Model              string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
@@ -71,18 +71,18 @@ func (*Vehicle) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Vehicle) GetId() string {
+func (x *Vehicle) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *Vehicle) GetDriverId() string {
+func (x *Vehicle) GetDriverId() []byte {
 	if x != nil {
 		return x.DriverId
 	}
-	return ""
+	return nil
 }
 
 func (x *Vehicle) GetLicensePlate() string {
@@ -166,8 +166,8 @@ func (x *Vehicle) GetUpdatedAt() *timestamppb.Timestamp {
 // xe chỉ được "verified" khi mọi giấy tờ bắt buộc đã approved và còn hạn.
 type VehicleDocument struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	VehicleId      string                 `protobuf:"bytes,2,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
+	Id             []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	VehicleId      []byte                 `protobuf:"bytes,2,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
 	DocumentType   string                 `protobuf:"bytes,3,opt,name=document_type,json=documentType,proto3" json:"document_type,omitempty"` // registration | inspection | insurance | license
 	DocumentNumber string                 `protobuf:"bytes,4,opt,name=document_number,json=documentNumber,proto3" json:"document_number,omitempty"`
 	FileUrl        string                 `protobuf:"bytes,5,opt,name=file_url,json=fileUrl,proto3" json:"file_url,omitempty"`
@@ -210,18 +210,18 @@ func (*VehicleDocument) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *VehicleDocument) GetId() string {
+func (x *VehicleDocument) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *VehicleDocument) GetVehicleId() string {
+func (x *VehicleDocument) GetVehicleId() []byte {
 	if x != nil {
 		return x.VehicleId
 	}
-	return ""
+	return nil
 }
 
 func (x *VehicleDocument) GetDocumentType() string {
@@ -284,8 +284,8 @@ func (x *VehicleDocument) GetCreatedAt() *timestamppb.Timestamp {
 // Toạ độ nóng nằm ở Redis GEO; bảng này là bản lưu bền để khởi động lại không mất.
 type VehicleLocation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	VehicleId     string                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
-	DriverId      string                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	VehicleId     []byte                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
+	DriverId      []byte                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
 	Latitude      float64                `protobuf:"fixed64,3,opt,name=latitude,proto3" json:"latitude,omitempty"`
 	Longitude     float64                `protobuf:"fixed64,4,opt,name=longitude,proto3" json:"longitude,omitempty"`
 	Heading       float64                `protobuf:"fixed64,5,opt,name=heading,proto3" json:"heading,omitempty"` // hướng di chuyển, độ
@@ -326,18 +326,18 @@ func (*VehicleLocation) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *VehicleLocation) GetVehicleId() string {
+func (x *VehicleLocation) GetVehicleId() []byte {
 	if x != nil {
 		return x.VehicleId
 	}
-	return ""
+	return nil
 }
 
-func (x *VehicleLocation) GetDriverId() string {
+func (x *VehicleLocation) GetDriverId() []byte {
 	if x != nil {
 		return x.DriverId
 	}
-	return ""
+	return nil
 }
 
 func (x *VehicleLocation) GetLatitude() float64 {
@@ -386,9 +386,9 @@ func (x *VehicleLocation) GetRecordedAt() *timestamppb.Timestamp {
 // Đây chính là đầu vào cho matching engine khi tìm "xe đang chạy" phù hợp.
 type DriverAvailability struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Id                 string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	DriverId           string                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
-	VehicleId          string                 `protobuf:"bytes,3,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
+	Id                 []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	DriverId           []byte                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	VehicleId          []byte                 `protobuf:"bytes,3,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
 	IsOnline           bool                   `protobuf:"varint,4,opt,name=is_online,json=isOnline,proto3" json:"is_online,omitempty"`
 	AvailableWeightKg  float64                `protobuf:"fixed64,5,opt,name=available_weight_kg,json=availableWeightKg,proto3" json:"available_weight_kg,omitempty"`
 	AvailableVolumeCbm float64                `protobuf:"fixed64,6,opt,name=available_volume_cbm,json=availableVolumeCbm,proto3" json:"available_volume_cbm,omitempty"`
@@ -430,25 +430,25 @@ func (*DriverAvailability) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *DriverAvailability) GetId() string {
+func (x *DriverAvailability) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *DriverAvailability) GetDriverId() string {
+func (x *DriverAvailability) GetDriverId() []byte {
 	if x != nil {
 		return x.DriverId
 	}
-	return ""
+	return nil
 }
 
-func (x *DriverAvailability) GetVehicleId() string {
+func (x *DriverAvailability) GetVehicleId() []byte {
 	if x != nil {
 		return x.VehicleId
 	}
-	return ""
+	return nil
 }
 
 func (x *DriverAvailability) GetIsOnline() bool {
@@ -570,7 +570,7 @@ func (x *Pagination) GetTotalPages() int32 {
 
 type RegisterVehicleRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	DriverId          string                 `protobuf:"bytes,1,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	DriverId          []byte                 `protobuf:"bytes,1,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
 	LicensePlate      string                 `protobuf:"bytes,2,opt,name=license_plate,json=licensePlate,proto3" json:"license_plate,omitempty"`
 	Brand             string                 `protobuf:"bytes,3,opt,name=brand,proto3" json:"brand,omitempty"`
 	Model             string                 `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
@@ -612,11 +612,11 @@ func (*RegisterVehicleRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *RegisterVehicleRequest) GetDriverId() string {
+func (x *RegisterVehicleRequest) GetDriverId() []byte {
 	if x != nil {
 		return x.DriverId
 	}
-	return ""
+	return nil
 }
 
 func (x *RegisterVehicleRequest) GetLicensePlate() string {
@@ -670,7 +670,7 @@ func (x *RegisterVehicleRequest) GetCapacityVolumeCbm() float64 {
 
 type RegisterVehicleResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	Vehicle       *Vehicle               `protobuf:"bytes,3,opt,name=vehicle,proto3" json:"vehicle,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -707,11 +707,11 @@ func (*RegisterVehicleResponse) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *RegisterVehicleResponse) GetId() string {
+func (x *RegisterVehicleResponse) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *RegisterVehicleResponse) GetMessage() string {
@@ -730,7 +730,7 @@ func (x *RegisterVehicleResponse) GetVehicle() *Vehicle {
 
 type GetVehicleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -765,11 +765,11 @@ func (*GetVehicleRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *GetVehicleRequest) GetId() string {
+func (x *GetVehicleRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 type GetVehicleResponse struct {
@@ -818,7 +818,7 @@ func (x *GetVehicleResponse) GetVehicle() *Vehicle {
 
 type ListVehiclesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	DriverId      string                 `protobuf:"bytes,1,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	DriverId      []byte                 `protobuf:"bytes,1,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
 	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
 	VehicleType   string                 `protobuf:"bytes,3,opt,name=vehicle_type,json=vehicleType,proto3" json:"vehicle_type,omitempty"`
 	Page          int32                  `protobuf:"varint,4,opt,name=page,proto3" json:"page,omitempty"`
@@ -857,11 +857,11 @@ func (*ListVehiclesRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *ListVehiclesRequest) GetDriverId() string {
+func (x *ListVehiclesRequest) GetDriverId() []byte {
 	if x != nil {
 		return x.DriverId
 	}
-	return ""
+	return nil
 }
 
 func (x *ListVehiclesRequest) GetStatus() string {
@@ -946,7 +946,7 @@ func (x *ListVehiclesResponse) GetPagination() *Pagination {
 
 type UpdateVehicleRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id                []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Brand             string                 `protobuf:"bytes,2,opt,name=brand,proto3" json:"brand,omitempty"`
 	Model             string                 `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
 	ManufactureYear   int32                  `protobuf:"varint,4,opt,name=manufacture_year,json=manufactureYear,proto3" json:"manufacture_year,omitempty"`
@@ -987,11 +987,11 @@ func (*UpdateVehicleRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *UpdateVehicleRequest) GetId() string {
+func (x *UpdateVehicleRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *UpdateVehicleRequest) GetBrand() string {
@@ -1090,8 +1090,8 @@ func (x *UpdateVehicleResponse) GetMessage() string {
 
 type DeleteVehicleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	DriverId      string                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	DriverId      []byte                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1126,18 +1126,18 @@ func (*DeleteVehicleRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *DeleteVehicleRequest) GetId() string {
+func (x *DeleteVehicleRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *DeleteVehicleRequest) GetDriverId() string {
+func (x *DeleteVehicleRequest) GetDriverId() []byte {
 	if x != nil {
 		return x.DriverId
 	}
-	return ""
+	return nil
 }
 
 type DeleteVehicleResponse struct {
@@ -1186,7 +1186,7 @@ func (x *DeleteVehicleResponse) GetMessage() string {
 
 type UpdateVehicleStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1222,11 +1222,11 @@ func (*UpdateVehicleStatusRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *UpdateVehicleStatusRequest) GetId() string {
+func (x *UpdateVehicleStatusRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *UpdateVehicleStatusRequest) GetStatus() string {
@@ -1290,7 +1290,7 @@ func (x *UpdateVehicleStatusResponse) GetVehicle() *Vehicle {
 
 type UploadVehicleDocumentRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	VehicleId      string                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
+	VehicleId      []byte                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
 	DocumentType   string                 `protobuf:"bytes,2,opt,name=document_type,json=documentType,proto3" json:"document_type,omitempty"`
 	DocumentNumber string                 `protobuf:"bytes,3,opt,name=document_number,json=documentNumber,proto3" json:"document_number,omitempty"`
 	FileUrl        string                 `protobuf:"bytes,4,opt,name=file_url,json=fileUrl,proto3" json:"file_url,omitempty"`
@@ -1330,11 +1330,11 @@ func (*UploadVehicleDocumentRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *UploadVehicleDocumentRequest) GetVehicleId() string {
+func (x *UploadVehicleDocumentRequest) GetVehicleId() []byte {
 	if x != nil {
 		return x.VehicleId
 	}
-	return ""
+	return nil
 }
 
 func (x *UploadVehicleDocumentRequest) GetDocumentType() string {
@@ -1426,7 +1426,7 @@ func (x *UploadVehicleDocumentResponse) GetMessage() string {
 
 type ListVehicleDocumentsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	VehicleId     string                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
+	VehicleId     []byte                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
 	ReviewStatus  string                 `protobuf:"bytes,2,opt,name=review_status,json=reviewStatus,proto3" json:"review_status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1462,11 +1462,11 @@ func (*ListVehicleDocumentsRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *ListVehicleDocumentsRequest) GetVehicleId() string {
+func (x *ListVehicleDocumentsRequest) GetVehicleId() []byte {
 	if x != nil {
 		return x.VehicleId
 	}
-	return ""
+	return nil
 }
 
 func (x *ListVehicleDocumentsRequest) GetReviewStatus() string {
@@ -1522,7 +1522,7 @@ func (x *ListVehicleDocumentsResponse) GetDocuments() []*VehicleDocument {
 
 type DeleteVehicleDocumentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1557,11 +1557,11 @@ func (*DeleteVehicleDocumentRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{21}
 }
 
-func (x *DeleteVehicleDocumentRequest) GetId() string {
+func (x *DeleteVehicleDocumentRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 type DeleteVehicleDocumentResponse struct {
@@ -1610,8 +1610,8 @@ func (x *DeleteVehicleDocumentResponse) GetMessage() string {
 
 type ReportLocationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	VehicleId     string                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
-	DriverId      string                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	VehicleId     []byte                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
+	DriverId      []byte                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
 	Latitude      float64                `protobuf:"fixed64,3,opt,name=latitude,proto3" json:"latitude,omitempty"`
 	Longitude     float64                `protobuf:"fixed64,4,opt,name=longitude,proto3" json:"longitude,omitempty"`
 	Heading       float64                `protobuf:"fixed64,5,opt,name=heading,proto3" json:"heading,omitempty"`
@@ -1650,18 +1650,18 @@ func (*ReportLocationRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{23}
 }
 
-func (x *ReportLocationRequest) GetVehicleId() string {
+func (x *ReportLocationRequest) GetVehicleId() []byte {
 	if x != nil {
 		return x.VehicleId
 	}
-	return ""
+	return nil
 }
 
-func (x *ReportLocationRequest) GetDriverId() string {
+func (x *ReportLocationRequest) GetDriverId() []byte {
 	if x != nil {
 		return x.DriverId
 	}
-	return ""
+	return nil
 }
 
 func (x *ReportLocationRequest) GetLatitude() float64 {
@@ -1746,7 +1746,7 @@ func (x *ReportLocationResponse) GetZoneId() string {
 
 type GetVehicleLocationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	VehicleId     string                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
+	VehicleId     []byte                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1781,11 +1781,11 @@ func (*GetVehicleLocationRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{25}
 }
 
-func (x *GetVehicleLocationRequest) GetVehicleId() string {
+func (x *GetVehicleLocationRequest) GetVehicleId() []byte {
 	if x != nil {
 		return x.VehicleId
 	}
-	return ""
+	return nil
 }
 
 type GetVehicleLocationResponse struct {
@@ -1834,8 +1834,8 @@ func (x *GetVehicleLocationResponse) GetLocation() *VehicleLocation {
 
 type SetDriverAvailabilityRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	DriverId           string                 `protobuf:"bytes,1,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
-	VehicleId          string                 `protobuf:"bytes,2,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
+	DriverId           []byte                 `protobuf:"bytes,1,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	VehicleId          []byte                 `protobuf:"bytes,2,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
 	IsOnline           bool                   `protobuf:"varint,3,opt,name=is_online,json=isOnline,proto3" json:"is_online,omitempty"`
 	AvailableWeightKg  float64                `protobuf:"fixed64,4,opt,name=available_weight_kg,json=availableWeightKg,proto3" json:"available_weight_kg,omitempty"`
 	AvailableVolumeCbm float64                `protobuf:"fixed64,5,opt,name=available_volume_cbm,json=availableVolumeCbm,proto3" json:"available_volume_cbm,omitempty"`
@@ -1875,18 +1875,18 @@ func (*SetDriverAvailabilityRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{27}
 }
 
-func (x *SetDriverAvailabilityRequest) GetDriverId() string {
+func (x *SetDriverAvailabilityRequest) GetDriverId() []byte {
 	if x != nil {
 		return x.DriverId
 	}
-	return ""
+	return nil
 }
 
-func (x *SetDriverAvailabilityRequest) GetVehicleId() string {
+func (x *SetDriverAvailabilityRequest) GetVehicleId() []byte {
 	if x != nil {
 		return x.VehicleId
 	}
-	return ""
+	return nil
 }
 
 func (x *SetDriverAvailabilityRequest) GetIsOnline() bool {
@@ -1978,7 +1978,7 @@ func (x *SetDriverAvailabilityResponse) GetMessage() string {
 
 type GetDriverAvailabilityRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	DriverId      string                 `protobuf:"bytes,1,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	DriverId      []byte                 `protobuf:"bytes,1,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2013,11 +2013,11 @@ func (*GetDriverAvailabilityRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{29}
 }
 
-func (x *GetDriverAvailabilityRequest) GetDriverId() string {
+func (x *GetDriverAvailabilityRequest) GetDriverId() []byte {
 	if x != nil {
 		return x.DriverId
 	}
-	return ""
+	return nil
 }
 
 type GetDriverAvailabilityResponse struct {
@@ -2161,8 +2161,8 @@ func (x *SearchNearbyVehiclesRequest) GetLimit() int32 {
 
 type NearbyVehicle struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	VehicleId          string                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
-	DriverId           string                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
+	VehicleId          []byte                 `protobuf:"bytes,1,opt,name=vehicle_id,json=vehicleId,proto3" json:"vehicle_id,omitempty"`
+	DriverId           []byte                 `protobuf:"bytes,2,opt,name=driver_id,json=driverId,proto3" json:"driver_id,omitempty"`
 	LicensePlate       string                 `protobuf:"bytes,3,opt,name=license_plate,json=licensePlate,proto3" json:"license_plate,omitempty"`
 	VehicleType        string                 `protobuf:"bytes,4,opt,name=vehicle_type,json=vehicleType,proto3" json:"vehicle_type,omitempty"`
 	DistanceKm         float64                `protobuf:"fixed64,5,opt,name=distance_km,json=distanceKm,proto3" json:"distance_km,omitempty"`
@@ -2204,18 +2204,18 @@ func (*NearbyVehicle) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{32}
 }
 
-func (x *NearbyVehicle) GetVehicleId() string {
+func (x *NearbyVehicle) GetVehicleId() []byte {
 	if x != nil {
 		return x.VehicleId
 	}
-	return ""
+	return nil
 }
 
-func (x *NearbyVehicle) GetDriverId() string {
+func (x *NearbyVehicle) GetDriverId() []byte {
 	if x != nil {
 		return x.DriverId
 	}
-	return ""
+	return nil
 }
 
 func (x *NearbyVehicle) GetLicensePlate() string {
@@ -2457,10 +2457,10 @@ func (x *AdminListVehiclesResponse) GetPagination() *Pagination {
 
 type AdminVerifyVehicleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Approved      bool                   `protobuf:"varint,2,opt,name=approved,proto3" json:"approved,omitempty"`
 	Note          string                 `protobuf:"bytes,3,opt,name=note,proto3" json:"note,omitempty"`
-	ReviewerId    string                 `protobuf:"bytes,4,opt,name=reviewer_id,json=reviewerId,proto3" json:"reviewer_id,omitempty"`
+	ReviewerId    []byte                 `protobuf:"bytes,4,opt,name=reviewer_id,json=reviewerId,proto3" json:"reviewer_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2495,11 +2495,11 @@ func (*AdminVerifyVehicleRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{36}
 }
 
-func (x *AdminVerifyVehicleRequest) GetId() string {
+func (x *AdminVerifyVehicleRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *AdminVerifyVehicleRequest) GetApproved() bool {
@@ -2516,11 +2516,11 @@ func (x *AdminVerifyVehicleRequest) GetNote() string {
 	return ""
 }
 
-func (x *AdminVerifyVehicleRequest) GetReviewerId() string {
+func (x *AdminVerifyVehicleRequest) GetReviewerId() []byte {
 	if x != nil {
 		return x.ReviewerId
 	}
-	return ""
+	return nil
 }
 
 type AdminVerifyVehicleResponse struct {
@@ -2681,10 +2681,10 @@ func (x *AdminListPendingDocumentsResponse) GetPagination() *Pagination {
 
 type AdminReviewDocumentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Approved      bool                   `protobuf:"varint,2,opt,name=approved,proto3" json:"approved,omitempty"`
 	Note          string                 `protobuf:"bytes,3,opt,name=note,proto3" json:"note,omitempty"`
-	ReviewerId    string                 `protobuf:"bytes,4,opt,name=reviewer_id,json=reviewerId,proto3" json:"reviewer_id,omitempty"`
+	ReviewerId    []byte                 `protobuf:"bytes,4,opt,name=reviewer_id,json=reviewerId,proto3" json:"reviewer_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2719,11 +2719,11 @@ func (*AdminReviewDocumentRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDescGZIP(), []int{40}
 }
 
-func (x *AdminReviewDocumentRequest) GetId() string {
+func (x *AdminReviewDocumentRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *AdminReviewDocumentRequest) GetApproved() bool {
@@ -2740,11 +2740,11 @@ func (x *AdminReviewDocumentRequest) GetNote() string {
 	return ""
 }
 
-func (x *AdminReviewDocumentRequest) GetReviewerId() string {
+func (x *AdminReviewDocumentRequest) GetReviewerId() []byte {
 	if x != nil {
 		return x.ReviewerId
 	}
-	return ""
+	return nil
 }
 
 type AdminReviewDocumentResponse struct {
@@ -2925,8 +2925,8 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"\n" +
 	"2logistic/vehicle_service/v1/vehicle_messages.proto\x12\x1blogistic.vehicle_service.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf2\x03\n" +
 	"\aVehicle\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\tdriver_id\x18\x02 \x01(\tR\bdriverId\x12#\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\tdriver_id\x18\x02 \x01(\fR\bdriverId\x12#\n" +
 	"\rlicense_plate\x18\x03 \x01(\tR\flicensePlate\x12\x14\n" +
 	"\x05brand\x18\x04 \x01(\tR\x05brand\x12\x14\n" +
 	"\x05model\x18\x05 \x01(\tR\x05model\x12)\n" +
@@ -2942,9 +2942,9 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x9e\x03\n" +
 	"\x0fVehicleDocument\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x02 \x01(\tR\tvehicleId\x12#\n" +
+	"vehicle_id\x18\x02 \x01(\fR\tvehicleId\x12#\n" +
 	"\rdocument_type\x18\x03 \x01(\tR\fdocumentType\x12'\n" +
 	"\x0fdocument_number\x18\x04 \x01(\tR\x0edocumentNumber\x12\x19\n" +
 	"\bfile_url\x18\x05 \x01(\tR\afileUrl\x127\n" +
@@ -2959,8 +2959,8 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\x94\x02\n" +
 	"\x0fVehicleLocation\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x01 \x01(\tR\tvehicleId\x12\x1b\n" +
-	"\tdriver_id\x18\x02 \x01(\tR\bdriverId\x12\x1a\n" +
+	"vehicle_id\x18\x01 \x01(\fR\tvehicleId\x12\x1b\n" +
+	"\tdriver_id\x18\x02 \x01(\fR\bdriverId\x12\x1a\n" +
 	"\blatitude\x18\x03 \x01(\x01R\blatitude\x12\x1c\n" +
 	"\tlongitude\x18\x04 \x01(\x01R\tlongitude\x12\x18\n" +
 	"\aheading\x18\x05 \x01(\x01R\aheading\x12\x1b\n" +
@@ -2969,10 +2969,10 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"\vrecorded_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"recordedAt\"\xf5\x02\n" +
 	"\x12DriverAvailability\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\tdriver_id\x18\x02 \x01(\tR\bdriverId\x12\x1d\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\tdriver_id\x18\x02 \x01(\fR\bdriverId\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x03 \x01(\tR\tvehicleId\x12\x1b\n" +
+	"vehicle_id\x18\x03 \x01(\fR\tvehicleId\x12\x1b\n" +
 	"\tis_online\x18\x04 \x01(\bR\bisOnline\x12.\n" +
 	"\x13available_weight_kg\x18\x05 \x01(\x01R\x11availableWeightKg\x120\n" +
 	"\x14available_volume_cbm\x18\x06 \x01(\x01R\x12availableVolumeCbm\x12\x1f\n" +
@@ -2993,7 +2993,7 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"\vtotal_pages\x18\x04 \x01(\x05R\n" +
 	"totalPages\"\xb2\x02\n" +
 	"\x16RegisterVehicleRequest\x12\x1b\n" +
-	"\tdriver_id\x18\x01 \x01(\tR\bdriverId\x12#\n" +
+	"\tdriver_id\x18\x01 \x01(\fR\bdriverId\x12#\n" +
 	"\rlicense_plate\x18\x02 \x01(\tR\flicensePlate\x12\x14\n" +
 	"\x05brand\x18\x03 \x01(\tR\x05brand\x12\x14\n" +
 	"\x05model\x18\x04 \x01(\tR\x05model\x12)\n" +
@@ -3002,15 +3002,15 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"\x12capacity_weight_kg\x18\a \x01(\x01R\x10capacityWeightKg\x12.\n" +
 	"\x13capacity_volume_cbm\x18\b \x01(\x01R\x11capacityVolumeCbm\"\x83\x01\n" +
 	"\x17RegisterVehicleResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12>\n" +
 	"\avehicle\x18\x03 \x01(\v2$.logistic.vehicle_service.v1.VehicleR\avehicle\"#\n" +
 	"\x11GetVehicleRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"T\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\"T\n" +
 	"\x12GetVehicleResponse\x12>\n" +
 	"\avehicle\x18\x01 \x01(\v2$.logistic.vehicle_service.v1.VehicleR\avehicle\"\x9e\x01\n" +
 	"\x13ListVehiclesRequest\x12\x1b\n" +
-	"\tdriver_id\x18\x01 \x01(\tR\bdriverId\x12\x16\n" +
+	"\tdriver_id\x18\x01 \x01(\fR\bdriverId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12!\n" +
 	"\fvehicle_type\x18\x03 \x01(\tR\vvehicleType\x12\x12\n" +
 	"\x04page\x18\x04 \x01(\x05R\x04page\x12\x1b\n" +
@@ -3021,7 +3021,7 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"pagination\x18\x02 \x01(\v2'.logistic.vehicle_service.v1.PaginationR\n" +
 	"pagination\"\xfe\x01\n" +
 	"\x14UpdateVehicleRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
 	"\x05brand\x18\x02 \x01(\tR\x05brand\x12\x14\n" +
 	"\x05model\x18\x03 \x01(\tR\x05model\x12)\n" +
 	"\x10manufacture_year\x18\x04 \x01(\x05R\x0fmanufactureYear\x12!\n" +
@@ -3032,19 +3032,19 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"\avehicle\x18\x01 \x01(\v2$.logistic.vehicle_service.v1.VehicleR\avehicle\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"C\n" +
 	"\x14DeleteVehicleRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\tdriver_id\x18\x02 \x01(\tR\bdriverId\"1\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
+	"\tdriver_id\x18\x02 \x01(\fR\bdriverId\"1\n" +
 	"\x15DeleteVehicleResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"D\n" +
 	"\x1aUpdateVehicleStatusRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\"w\n" +
 	"\x1bUpdateVehicleStatusResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12>\n" +
 	"\avehicle\x18\x02 \x01(\v2$.logistic.vehicle_service.v1.VehicleR\avehicle\"\x9a\x02\n" +
 	"\x1cUploadVehicleDocumentRequest\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x01 \x01(\tR\tvehicleId\x12#\n" +
+	"vehicle_id\x18\x01 \x01(\fR\tvehicleId\x12#\n" +
 	"\rdocument_type\x18\x02 \x01(\tR\fdocumentType\x12'\n" +
 	"\x0fdocument_number\x18\x03 \x01(\tR\x0edocumentNumber\x12\x19\n" +
 	"\bfile_url\x18\x04 \x01(\tR\afileUrl\x127\n" +
@@ -3056,18 +3056,18 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"a\n" +
 	"\x1bListVehicleDocumentsRequest\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x01 \x01(\tR\tvehicleId\x12#\n" +
+	"vehicle_id\x18\x01 \x01(\fR\tvehicleId\x12#\n" +
 	"\rreview_status\x18\x02 \x01(\tR\freviewStatus\"j\n" +
 	"\x1cListVehicleDocumentsResponse\x12J\n" +
 	"\tdocuments\x18\x01 \x03(\v2,.logistic.vehicle_service.v1.VehicleDocumentR\tdocuments\".\n" +
 	"\x1cDeleteVehicleDocumentRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"9\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\"9\n" +
 	"\x1dDeleteVehicleDocumentResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"\xc4\x01\n" +
 	"\x15ReportLocationRequest\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x01 \x01(\tR\tvehicleId\x12\x1b\n" +
-	"\tdriver_id\x18\x02 \x01(\tR\bdriverId\x12\x1a\n" +
+	"vehicle_id\x18\x01 \x01(\fR\tvehicleId\x12\x1b\n" +
+	"\tdriver_id\x18\x02 \x01(\fR\bdriverId\x12\x1a\n" +
 	"\blatitude\x18\x03 \x01(\x01R\blatitude\x12\x1c\n" +
 	"\tlongitude\x18\x04 \x01(\x01R\tlongitude\x12\x18\n" +
 	"\aheading\x18\x05 \x01(\x01R\aheading\x12\x1b\n" +
@@ -3077,13 +3077,13 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"\azone_id\x18\x02 \x01(\tR\x06zoneId\":\n" +
 	"\x19GetVehicleLocationRequest\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x01 \x01(\tR\tvehicleId\"f\n" +
+	"vehicle_id\x18\x01 \x01(\fR\tvehicleId\"f\n" +
 	"\x1aGetVehicleLocationResponse\x12H\n" +
 	"\blocation\x18\x01 \x01(\v2,.logistic.vehicle_service.v1.VehicleLocationR\blocation\"\x9b\x02\n" +
 	"\x1cSetDriverAvailabilityRequest\x12\x1b\n" +
-	"\tdriver_id\x18\x01 \x01(\tR\bdriverId\x12\x1d\n" +
+	"\tdriver_id\x18\x01 \x01(\fR\bdriverId\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x02 \x01(\tR\tvehicleId\x12\x1b\n" +
+	"vehicle_id\x18\x02 \x01(\fR\tvehicleId\x12\x1b\n" +
 	"\tis_online\x18\x03 \x01(\bR\bisOnline\x12.\n" +
 	"\x13available_weight_kg\x18\x04 \x01(\x01R\x11availableWeightKg\x120\n" +
 	"\x14available_volume_cbm\x18\x05 \x01(\x01R\x12availableVolumeCbm\x12\x1f\n" +
@@ -3095,7 +3095,7 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"\favailability\x18\x01 \x01(\v2/.logistic.vehicle_service.v1.DriverAvailabilityR\favailability\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\";\n" +
 	"\x1cGetDriverAvailabilityRequest\x12\x1b\n" +
-	"\tdriver_id\x18\x01 \x01(\tR\bdriverId\"t\n" +
+	"\tdriver_id\x18\x01 \x01(\fR\bdriverId\"t\n" +
 	"\x1dGetDriverAvailabilityResponse\x12S\n" +
 	"\favailability\x18\x01 \x01(\v2/.logistic.vehicle_service.v1.DriverAvailabilityR\favailability\"\xf7\x01\n" +
 	"\x1bSearchNearbyVehiclesRequest\x12\x1a\n" +
@@ -3108,8 +3108,8 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"\x05limit\x18\a \x01(\x05R\x05limit\"\xd0\x02\n" +
 	"\rNearbyVehicle\x12\x1d\n" +
 	"\n" +
-	"vehicle_id\x18\x01 \x01(\tR\tvehicleId\x12\x1b\n" +
-	"\tdriver_id\x18\x02 \x01(\tR\bdriverId\x12#\n" +
+	"vehicle_id\x18\x01 \x01(\fR\tvehicleId\x12\x1b\n" +
+	"\tdriver_id\x18\x02 \x01(\fR\bdriverId\x12#\n" +
 	"\rlicense_plate\x18\x03 \x01(\tR\flicensePlate\x12!\n" +
 	"\fvehicle_type\x18\x04 \x01(\tR\vvehicleType\x12\x1f\n" +
 	"\vdistance_km\x18\x05 \x01(\x01R\n" +
@@ -3135,10 +3135,10 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"pagination\x18\x02 \x01(\v2'.logistic.vehicle_service.v1.PaginationR\n" +
 	"pagination\"|\n" +
 	"\x19AdminVerifyVehicleRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1a\n" +
 	"\bapproved\x18\x02 \x01(\bR\bapproved\x12\x12\n" +
 	"\x04note\x18\x03 \x01(\tR\x04note\x12\x1f\n" +
-	"\vreviewer_id\x18\x04 \x01(\tR\n" +
+	"\vreviewer_id\x18\x04 \x01(\fR\n" +
 	"reviewerId\"v\n" +
 	"\x1aAdminVerifyVehicleResponse\x12>\n" +
 	"\avehicle\x18\x01 \x01(\v2$.logistic.vehicle_service.v1.VehicleR\avehicle\x12\x18\n" +
@@ -3152,10 +3152,10 @@ const file_logistic_vehicle_service_v1_vehicle_messages_proto_rawDesc = "" +
 	"pagination\x18\x02 \x01(\v2'.logistic.vehicle_service.v1.PaginationR\n" +
 	"pagination\"}\n" +
 	"\x1aAdminReviewDocumentRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1a\n" +
 	"\bapproved\x18\x02 \x01(\bR\bapproved\x12\x12\n" +
 	"\x04note\x18\x03 \x01(\tR\x04note\x12\x1f\n" +
-	"\vreviewer_id\x18\x04 \x01(\tR\n" +
+	"\vreviewer_id\x18\x04 \x01(\fR\n" +
 	"reviewerId\"\x81\x01\n" +
 	"\x1bAdminReviewDocumentResponse\x12H\n" +
 	"\bdocument\x18\x01 \x01(\v2,.logistic.vehicle_service.v1.VehicleDocumentR\bdocument\x12\x18\n" +

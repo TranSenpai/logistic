@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-// TestIsValidCoordinate: toạ độ rác lọt vào Redis GEO sẽ kéo lệch kết quả tìm
-// xe gần đây, nên phải chặn ngay ở tầng entity.
 func TestIsValidCoordinate(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -32,9 +30,6 @@ func TestIsValidCoordinate(t *testing.T) {
 	}
 }
 
-// TestComputeZoneIDIsStable: cùng một điểm phải luôn cho cùng zone, và hai điểm
-// trong cùng ô lưới phải trùng zone. Nếu không, việc lọc thô theo zone ở đường
-// dự phòng sẽ bỏ sót xe.
 func TestComputeZoneIDIsStable(t *testing.T) {
 	lat, lng := 10.7769, 106.7009
 
@@ -46,12 +41,10 @@ func TestComputeZoneIDIsStable(t *testing.T) {
 		t.Errorf("không ổn định: %q rồi %q", first, second)
 	}
 
-	// Dịch một phần nhỏ của cạnh ô -> vẫn phải cùng zone.
 	if near := ComputeZoneID(lat+ZoneSize/10, lng+ZoneSize/10); near != first {
 		t.Errorf("điểm rất gần lại ra zone khác: %q vs %q", near, first)
 	}
 
-	// Dịch hơn hai ô -> phải khác zone.
 	if far := ComputeZoneID(lat+ZoneSize*2, lng); far == first {
 		t.Errorf("điểm cách hơn 2 ô vẫn cùng zone %q", first)
 	}
@@ -66,8 +59,6 @@ func TestComputeZoneIDRejectsInvalid(t *testing.T) {
 	}
 }
 
-// TestSearchNearbyParamNormalize: tham số tìm kiếm phải bị kẹp trong ngưỡng,
-// nếu không một request radius_km=100000 sẽ bắt Redis quét toàn bộ chỉ mục.
 func TestSearchNearbyParamNormalize(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -93,7 +84,6 @@ func TestSearchNearbyParamNormalize(t *testing.T) {
 	}
 }
 
-// TestNormalizePagingClampsPageSize chặn request kéo cả bảng về một lượt.
 func TestNormalizePagingClampsPageSize(t *testing.T) {
 	cases := []struct {
 		page, size                     int

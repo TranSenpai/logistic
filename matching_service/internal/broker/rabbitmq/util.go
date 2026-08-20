@@ -6,12 +6,6 @@ import (
 	"math"
 )
 
-// toMap chuyển struct payload thành map[string]any để nhét vào Envelope.Data.
-//
-// Đi vòng qua JSON nghe thừa, nhưng nó bảo đảm tên khoá trong map TRÙNG KHÍT
-// với json tag của struct — cũng chính là tên mà notification_service decode
-// ngược lại. Gán map bằng tay thì chỉ cần một lần gõ nhầm là consumer nhận field
-// rỗng mà không có lỗi nào được báo.
 func toMap(v any) map[string]any {
 	blob, err := json.Marshal(v)
 	if err != nil {
@@ -29,9 +23,6 @@ func toMap(v any) map[string]any {
 
 const earthRadiusKm = 6371.0
 
-// haversineKm tính khoảng cách đường chim bay, dùng để hiển thị "cách bạn X km"
-// trong nội dung thông báo. Không dùng cho việc chấm điểm ghép đơn — phần đó do
-// engine spatial lo.
 func haversineKm(lat1, lng1, lat2, lng2 float64) float64 {
 	if lat1 == 0 && lng1 == 0 {
 		return 0

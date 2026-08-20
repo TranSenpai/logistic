@@ -1,8 +1,3 @@
-// Package controller là lớp vỏ gRPC: nhận dto, gọi biz, trả dto.
-//
-// Ở đây KHÔNG có luật nghiệp vụ và KHÔNG có xử lý lỗi thủ công. Lỗi cứ trả
-// nguyên vẹn lên trên, ErrorInterceptor trong pkg/middleware sẽ dịch sang gRPC
-// status. Nhờ vậy 21 hàm dưới đây không có lấy một dòng `status.Errorf`.
 package controller
 
 import (
@@ -14,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	pb "github.com/logistic/api/logistic/user_service/v1"
+	"github.com/logistic/pkg/uuidx"
 )
 
 type userController struct {
@@ -26,21 +22,13 @@ func NewUserController(engine biz.UserEngine, appMapper mapper.AppMapper) pb.Use
 	return &userController{engine: engine, mapper: appMapper}
 }
 
-// parseID gói việc "chuỗi -> uuid" lại một chỗ để mọi endpoint báo lỗi giống nhau.
-func parseID(raw string, invalid error) (uuid.UUID, error) {
-	if raw == "" {
-		return uuid.Nil, invalid
-	}
-	id, err := uuid.Parse(raw)
-	if err != nil {
+func parseID(raw []byte, invalid error) (uuid.UUID, error) {
+	id, err := uuidx.FromBytes(raw)
+	if err != nil || id == uuid.Nil {
 		return uuid.Nil, invalid
 	}
 	return id, nil
 }
-
-// ===========================================================================
-// CLIENT
-// ===========================================================================
 
 func (c *userController) RegisterUser(ctx context.Context, req *pb.RegisterUserRequest) (*pb.RegisterUserResponse, error) {
 	param := c.mapper.PbRegisterUserToParam(req)
@@ -51,7 +39,7 @@ func (c *userController) RegisterUser(ctx context.Context, req *pb.RegisterUserR
 	}
 
 	return &pb.RegisterUserResponse{
-		Id:      res.ID.String(),
+		Id:      uuidx.ToBytes(res.ID),
 		Message: res.Message,
 		User:    c.mapper.EntityUserToPbUser(*res.User),
 	}, nil
@@ -229,9 +217,8 @@ func (c *userController) DeleteAddress(ctx context.Context, req *pb.DeleteAddres
 		return nil, err
 	}
 
-	// user_id để trống nghĩa là gọi từ nội bộ/admin -> bỏ qua kiểm tra sở hữu.
 	var userID uuid.UUID
-	if req.UserId != "" {
+	if len(req.UserId) > 0 {
 		userID, err = parseID(req.UserId, cerr.ErrInvalidUserID)
 		if err != nil {
 			return nil, err
@@ -281,7 +268,7 @@ func (c *userController) DeleteDevice(ctx context.Context, req *pb.DeleteDeviceR
 	}
 
 	var userID uuid.UUID
-	if req.UserId != "" {
+	if len(req.UserId) > 0 {
 		userID, err = parseID(req.UserId, cerr.ErrInvalidUserID)
 		if err != nil {
 			return nil, err
@@ -293,10 +280,6 @@ func (c *userController) DeleteDevice(ctx context.Context, req *pb.DeleteDeviceR
 	}
 	return &pb.DeleteDeviceResponse{Message: "Xoá thiết bị thành công"}, nil
 }
-
-// ===========================================================================
-// ADMIN
-// ===========================================================================
 
 func (c *userController) AdminListUsers(ctx context.Context, req *pb.AdminListUsersRequest) (*pb.AdminListUsersResponse, error) {
 	filter := c.mapper.PbAdminListUsersToFilter(req)

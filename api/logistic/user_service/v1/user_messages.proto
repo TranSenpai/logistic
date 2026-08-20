@@ -6,21 +6,29 @@ option go_package = "github.com/logistic/api/logistic/user_service/v1;userv1";
 import "google/protobuf/timestamp.proto";
 
 // ---------------------------------------------------------------------------
-// GHI CHÚ VỀ KIỂU ID
+// GHI CHÚ VỀ KIỂU ID — áp dụng cho MỌI service
 // ---------------------------------------------------------------------------
-// Trước đây các field id dùng `bytes` (16 byte thô của UUID). Điều đó buộc mọi
-// client REST phải tự encode base64, và gateway đã có bug `[]byte(id)` — biến
-// chuỗi "3f2b..." 36 ký tự thành 36 byte, không phải UUID.
-// Nay thống nhất dùng `string` ở dạng RFC-4122 ("3f2b7c10-...") cho toàn bộ
-// user/vehicle/notification: đọc được bằng mắt, đi thẳng vào URL, và tầng
-// mapper sẽ parse sang uuid.UUID đúng một chỗ duy nhất.
+// Mọi field định danh dùng `bytes`: đúng 16 byte thô của một UUID v7.
+//
+// Trên dây gRPC, chuỗi UUID tốn 36 byte + header, còn dạng bytes tốn 16 + header
+// — tiết kiệm 20 byte cho MỖI field id. Message Ask/Bid có 5 id một cái, và app
+// tài xế báo GPS vài giây một lần cho từng xe; ở nhịp đó thì đây là con số thật.
+//
+// Ranh giới đổi dạng nằm ĐÚNG ở gateway: bytes bên trong mạng nội bộ, chuỗi
+// canonical khi ra HTTP. Client REST không bao giờ nhìn thấy base64.
+//
+// Bản trước từng đổi sang `string` vì gateway có bug `[]byte(id)` — biến chuỗi
+// 36 ký tự thành 36 byte và gửi đi một UUID sai mà không ai báo lỗi. Cách chữa
+// đúng không phải là đổi kiểu dữ liệu, mà là dồn việc chuyển đổi về một chỗ:
+// pkg/uuidx. Hàm ở đó từ chối thẳng mọi slice không dài đúng 16 byte, nên chính
+// cái bug ấy nay là một test đỏ chứ không phải dữ liệu hỏng nằm im trong DB.
 
 // ---------------------------------------------------------------------------
 // DOMAIN MODELS
 // ---------------------------------------------------------------------------
 
 message User {
-  string id = 1;
+  bytes id = 1;
   string phone = 2;
   string email = 3;
   string full_name = 4;
@@ -32,8 +40,8 @@ message User {
 }
 
 message DriverProfile {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
   string license_number = 3;
   string id_card = 4;
   double rating = 5;
@@ -45,8 +53,8 @@ message DriverProfile {
 }
 
 message ShipperProfile {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
   string company_name = 3;
   string tax_code = 4;
   string business_address = 5;
@@ -58,8 +66,8 @@ message ShipperProfile {
 // Address là sổ địa chỉ của người dùng: điểm lấy hàng / giao hàng hay dùng.
 // Có toạ độ sẵn nên khi tạo đơn không phải geocode lại.
 message Address {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
   string label = 3; // "Kho Q7", "Nhà riêng"
   string contact_name = 4;
   string contact_phone = 5;
@@ -78,8 +86,8 @@ message Address {
 // UserDevice lưu push token của từng thiết bị. notification_service đọc bảng này
 // (qua gRPC) để biết đẩy push tới đâu.
 message UserDevice {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
   string device_token = 3;
   string platform = 4; // android | ios | web
   string device_name = 5;
@@ -108,13 +116,13 @@ message RegisterUserRequest {
 }
 
 message RegisterUserResponse {
-  string id = 1;
+  bytes id = 1;
   string message = 2;
   User user = 3;
 }
 
 message GetUserRequest {
-  string id = 1;
+  bytes id = 1;
 }
 
 message GetUserResponse {
@@ -124,7 +132,7 @@ message GetUserResponse {
 }
 
 message UpdateUserRequest {
-  string id = 1;
+  bytes id = 1;
   string full_name = 2;
   string email = 3;
   string avatar_url = 4;
@@ -136,7 +144,7 @@ message UpdateUserResponse {
 }
 
 message UpdateDriverProfileRequest {
-  string user_id = 1;
+  bytes user_id = 1;
   string license_number = 2;
   string id_card = 3;
 }
@@ -147,7 +155,7 @@ message UpdateDriverProfileResponse {
 }
 
 message GetDriverProfileRequest {
-  string user_id = 1;
+  bytes user_id = 1;
 }
 
 message GetDriverProfileResponse {
@@ -155,7 +163,7 @@ message GetDriverProfileResponse {
 }
 
 message UpdateShipperProfileRequest {
-  string user_id = 1;
+  bytes user_id = 1;
   string company_name = 2;
   string tax_code = 3;
   string business_address = 4;
@@ -167,7 +175,7 @@ message UpdateShipperProfileResponse {
 }
 
 message GetShipperProfileRequest {
-  string user_id = 1;
+  bytes user_id = 1;
 }
 
 message GetShipperProfileResponse {
@@ -175,7 +183,7 @@ message GetShipperProfileResponse {
 }
 
 message UpdateDriverKYCRequest {
-  string user_id = 1;
+  bytes user_id = 1;
   string kyc_status = 2; // approved | rejected | pending
   string note = 3;
 }
@@ -186,7 +194,7 @@ message UpdateDriverKYCResponse {
 }
 
 message CreateAddressRequest {
-  string user_id = 1;
+  bytes user_id = 1;
   string label = 2;
   string contact_name = 3;
   string contact_phone = 4;
@@ -206,7 +214,7 @@ message CreateAddressResponse {
 }
 
 message ListAddressesRequest {
-  string user_id = 1;
+  bytes user_id = 1;
   string address_type = 2; // lọc tuỳ chọn
   int32 page = 3;
   int32 page_size = 4;
@@ -218,8 +226,8 @@ message ListAddressesResponse {
 }
 
 message UpdateAddressRequest {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
   string label = 3;
   string contact_name = 4;
   string contact_phone = 5;
@@ -239,8 +247,8 @@ message UpdateAddressResponse {
 }
 
 message DeleteAddressRequest {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
 }
 
 message DeleteAddressResponse {
@@ -248,7 +256,7 @@ message DeleteAddressResponse {
 }
 
 message RegisterDeviceRequest {
-  string user_id = 1;
+  bytes user_id = 1;
   string device_token = 2;
   string platform = 3;
   string device_name = 4;
@@ -260,7 +268,7 @@ message RegisterDeviceResponse {
 }
 
 message ListDevicesRequest {
-  string user_id = 1;
+  bytes user_id = 1;
 }
 
 message ListDevicesResponse {
@@ -268,8 +276,8 @@ message ListDevicesResponse {
 }
 
 message DeleteDeviceRequest {
-  string id = 1;
-  string user_id = 2;
+  bytes id = 1;
+  bytes user_id = 2;
 }
 
 message DeleteDeviceResponse {
@@ -294,7 +302,7 @@ message AdminListUsersResponse {
 }
 
 message AdminUpdateUserStatusRequest {
-  string id = 1;
+  bytes id = 1;
   string status = 2; // active | banned | suspended
   string reason = 3;
 }
@@ -315,10 +323,10 @@ message AdminListPendingKYCResponse {
 }
 
 message AdminReviewKYCRequest {
-  string user_id = 1;
+  bytes user_id = 1;
   bool approved = 2;
   string note = 3;
-  string reviewer_id = 4;
+  bytes reviewer_id = 4;
 }
 
 message AdminReviewKYCResponse {
@@ -338,7 +346,7 @@ message AdminGetUserStatsResponse {
 }
 
 message AdminDeleteUserRequest {
-  string id = 1;
+  bytes id = 1;
 }
 
 message AdminDeleteUserResponse {

@@ -105,7 +105,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -133,7 +134,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -171,7 +173,8 @@
             "name": "userId",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "type",
@@ -282,13 +285,15 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "userId",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -316,13 +321,15 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "userId",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -352,7 +359,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -390,7 +398,8 @@
             "name": "userId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -418,7 +427,8 @@
             "name": "userId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -456,7 +466,8 @@
             "name": "userId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "type",
@@ -512,7 +523,8 @@
             "name": "userId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -550,7 +562,8 @@
             "name": "userId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -584,7 +597,8 @@
       "type": "object",
       "properties": {
         "userId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         }
       }
     },
@@ -748,7 +762,8 @@
         "userIds": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         },
         "broadcastRole": {
@@ -875,10 +890,12 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "userId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "recipientRole": {
           "type": "string",
@@ -907,7 +924,8 @@
           "title": "bid | ask | match"
         },
         "refId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "isRead": {
           "type": "boolean"
@@ -931,10 +949,12 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "userId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "inAppEnabled": {
           "type": "boolean"
@@ -973,7 +993,8 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "code": {
           "type": "string",

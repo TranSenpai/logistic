@@ -2,6 +2,7 @@ package conf
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -34,7 +35,9 @@ type GoogleConfig struct {
 }
 
 type JWTConfig struct {
-	Secret string `env:"AUTH_SERVICE_JWT_SECRET" env-required:"true"`
+	PrivateKey string        `env:"AUTH_SERVICE_JWT_PRIVATE_KEY" env-required:"true"`
+	AccessTTL  time.Duration `env:"AUTH_SERVICE_JWT_ACCESS_TTL" env-default:"15m"`
+	RefreshTTL time.Duration `env:"AUTH_SERVICE_JWT_REFRESH_TTL" env-default:"168h"`
 }
 
 func (db *DatabaseConfig) GetDataSource() string {
@@ -42,7 +45,6 @@ func (db *DatabaseConfig) GetDataSource() string {
 		db.Host, db.Port, db.User, db.Password, db.DBName)
 }
 
-// LoadConfig loads configuration from environment variables
 func LoadConfig() (*Config, error) {
 	cfg := &Config{}
 	err := cleanenv.ReadEnv(cfg)

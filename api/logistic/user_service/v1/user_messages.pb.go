@@ -24,7 +24,7 @@ const (
 
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Phone         string                 `protobuf:"bytes,2,opt,name=phone,proto3" json:"phone,omitempty"`
 	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	FullName      string                 `protobuf:"bytes,4,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
@@ -67,11 +67,11 @@ func (*User) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *User) GetId() string {
+func (x *User) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *User) GetPhone() string {
@@ -132,8 +132,8 @@ func (x *User) GetUpdatedAt() *timestamppb.Timestamp {
 
 type DriverProfile struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	LicenseNumber string                 `protobuf:"bytes,3,opt,name=license_number,json=licenseNumber,proto3" json:"license_number,omitempty"`
 	IdCard        string                 `protobuf:"bytes,4,opt,name=id_card,json=idCard,proto3" json:"id_card,omitempty"`
 	Rating        float64                `protobuf:"fixed64,5,opt,name=rating,proto3" json:"rating,omitempty"`
@@ -176,18 +176,18 @@ func (*DriverProfile) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *DriverProfile) GetId() string {
+func (x *DriverProfile) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *DriverProfile) GetUserId() string {
+func (x *DriverProfile) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *DriverProfile) GetLicenseNumber() string {
@@ -248,8 +248,8 @@ func (x *DriverProfile) GetUpdatedAt() *timestamppb.Timestamp {
 
 type ShipperProfile struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId          string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id              []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId          []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	CompanyName     string                 `protobuf:"bytes,3,opt,name=company_name,json=companyName,proto3" json:"company_name,omitempty"`
 	TaxCode         string                 `protobuf:"bytes,4,opt,name=tax_code,json=taxCode,proto3" json:"tax_code,omitempty"`
 	BusinessAddress string                 `protobuf:"bytes,5,opt,name=business_address,json=businessAddress,proto3" json:"business_address,omitempty"`
@@ -290,18 +290,18 @@ func (*ShipperProfile) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ShipperProfile) GetId() string {
+func (x *ShipperProfile) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *ShipperProfile) GetUserId() string {
+func (x *ShipperProfile) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *ShipperProfile) GetCompanyName() string {
@@ -350,8 +350,8 @@ func (x *ShipperProfile) GetUpdatedAt() *timestamppb.Timestamp {
 // Có toạ độ sẵn nên khi tạo đơn không phải geocode lại.
 type Address struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Label         string                 `protobuf:"bytes,3,opt,name=label,proto3" json:"label,omitempty"` // "Kho Q7", "Nhà riêng"
 	ContactName   string                 `protobuf:"bytes,4,opt,name=contact_name,json=contactName,proto3" json:"contact_name,omitempty"`
 	ContactPhone  string                 `protobuf:"bytes,5,opt,name=contact_phone,json=contactPhone,proto3" json:"contact_phone,omitempty"`
@@ -399,18 +399,18 @@ func (*Address) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *Address) GetId() string {
+func (x *Address) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *Address) GetUserId() string {
+func (x *Address) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *Address) GetLabel() string {
@@ -508,8 +508,8 @@ func (x *Address) GetUpdatedAt() *timestamppb.Timestamp {
 // (qua gRPC) để biết đẩy push tới đâu.
 type UserDevice struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	DeviceToken   string                 `protobuf:"bytes,3,opt,name=device_token,json=deviceToken,proto3" json:"device_token,omitempty"`
 	Platform      string                 `protobuf:"bytes,4,opt,name=platform,proto3" json:"platform,omitempty"` // android | ios | web
 	DeviceName    string                 `protobuf:"bytes,5,opt,name=device_name,json=deviceName,proto3" json:"device_name,omitempty"`
@@ -550,18 +550,18 @@ func (*UserDevice) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *UserDevice) GetId() string {
+func (x *UserDevice) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *UserDevice) GetUserId() string {
+func (x *UserDevice) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *UserDevice) GetDeviceToken() string {
@@ -752,7 +752,7 @@ func (x *RegisterUserRequest) GetFullName() string {
 
 type RegisterUserResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 	User          *User                  `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -789,11 +789,11 @@ func (*RegisterUserResponse) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *RegisterUserResponse) GetId() string {
+func (x *RegisterUserResponse) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *RegisterUserResponse) GetMessage() string {
@@ -812,7 +812,7 @@ func (x *RegisterUserResponse) GetUser() *User {
 
 type GetUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -847,11 +847,11 @@ func (*GetUserRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *GetUserRequest) GetId() string {
+func (x *GetUserRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 type GetUserResponse struct {
@@ -916,7 +916,7 @@ func (x *GetUserResponse) GetShipperProfile() *ShipperProfile {
 
 type UpdateUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	FullName      string                 `protobuf:"bytes,2,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
 	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	AvatarUrl     string                 `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
@@ -954,11 +954,11 @@ func (*UpdateUserRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *UpdateUserRequest) GetId() string {
+func (x *UpdateUserRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *UpdateUserRequest) GetFullName() string {
@@ -1036,7 +1036,7 @@ func (x *UpdateUserResponse) GetMessage() string {
 
 type UpdateDriverProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	LicenseNumber string                 `protobuf:"bytes,2,opt,name=license_number,json=licenseNumber,proto3" json:"license_number,omitempty"`
 	IdCard        string                 `protobuf:"bytes,3,opt,name=id_card,json=idCard,proto3" json:"id_card,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1073,11 +1073,11 @@ func (*UpdateDriverProfileRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *UpdateDriverProfileRequest) GetUserId() string {
+func (x *UpdateDriverProfileRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *UpdateDriverProfileRequest) GetLicenseNumber() string {
@@ -1148,7 +1148,7 @@ func (x *UpdateDriverProfileResponse) GetMessage() string {
 
 type GetDriverProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1183,11 +1183,11 @@ func (*GetDriverProfileRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *GetDriverProfileRequest) GetUserId() string {
+func (x *GetDriverProfileRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 type GetDriverProfileResponse struct {
@@ -1236,7 +1236,7 @@ func (x *GetDriverProfileResponse) GetDriverProfile() *DriverProfile {
 
 type UpdateShipperProfileRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	UserId          string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId          []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	CompanyName     string                 `protobuf:"bytes,2,opt,name=company_name,json=companyName,proto3" json:"company_name,omitempty"`
 	TaxCode         string                 `protobuf:"bytes,3,opt,name=tax_code,json=taxCode,proto3" json:"tax_code,omitempty"`
 	BusinessAddress string                 `protobuf:"bytes,4,opt,name=business_address,json=businessAddress,proto3" json:"business_address,omitempty"`
@@ -1274,11 +1274,11 @@ func (*UpdateShipperProfileRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *UpdateShipperProfileRequest) GetUserId() string {
+func (x *UpdateShipperProfileRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *UpdateShipperProfileRequest) GetCompanyName() string {
@@ -1356,7 +1356,7 @@ func (x *UpdateShipperProfileResponse) GetMessage() string {
 
 type GetShipperProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1391,11 +1391,11 @@ func (*GetShipperProfileRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{18}
 }
 
-func (x *GetShipperProfileRequest) GetUserId() string {
+func (x *GetShipperProfileRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 type GetShipperProfileResponse struct {
@@ -1444,7 +1444,7 @@ func (x *GetShipperProfileResponse) GetShipperProfile() *ShipperProfile {
 
 type UpdateDriverKYCRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	KycStatus     string                 `protobuf:"bytes,2,opt,name=kyc_status,json=kycStatus,proto3" json:"kyc_status,omitempty"` // approved | rejected | pending
 	Note          string                 `protobuf:"bytes,3,opt,name=note,proto3" json:"note,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1481,11 +1481,11 @@ func (*UpdateDriverKYCRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{20}
 }
 
-func (x *UpdateDriverKYCRequest) GetUserId() string {
+func (x *UpdateDriverKYCRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *UpdateDriverKYCRequest) GetKycStatus() string {
@@ -1556,7 +1556,7 @@ func (x *UpdateDriverKYCResponse) GetDriverProfile() *DriverProfile {
 
 type CreateAddressRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
 	ContactName   string                 `protobuf:"bytes,3,opt,name=contact_name,json=contactName,proto3" json:"contact_name,omitempty"`
 	ContactPhone  string                 `protobuf:"bytes,4,opt,name=contact_phone,json=contactPhone,proto3" json:"contact_phone,omitempty"`
@@ -1602,11 +1602,11 @@ func (*CreateAddressRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *CreateAddressRequest) GetUserId() string {
+func (x *CreateAddressRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *CreateAddressRequest) GetLabel() string {
@@ -1740,7 +1740,7 @@ func (x *CreateAddressResponse) GetMessage() string {
 
 type ListAddressesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	AddressType   string                 `protobuf:"bytes,2,opt,name=address_type,json=addressType,proto3" json:"address_type,omitempty"` // lọc tuỳ chọn
 	Page          int32                  `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
 	PageSize      int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
@@ -1778,11 +1778,11 @@ func (*ListAddressesRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{24}
 }
 
-func (x *ListAddressesRequest) GetUserId() string {
+func (x *ListAddressesRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *ListAddressesRequest) GetAddressType() string {
@@ -1860,8 +1860,8 @@ func (x *ListAddressesResponse) GetPagination() *Pagination {
 
 type UpdateAddressRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Label         string                 `protobuf:"bytes,3,opt,name=label,proto3" json:"label,omitempty"`
 	ContactName   string                 `protobuf:"bytes,4,opt,name=contact_name,json=contactName,proto3" json:"contact_name,omitempty"`
 	ContactPhone  string                 `protobuf:"bytes,5,opt,name=contact_phone,json=contactPhone,proto3" json:"contact_phone,omitempty"`
@@ -1907,18 +1907,18 @@ func (*UpdateAddressRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{26}
 }
 
-func (x *UpdateAddressRequest) GetId() string {
+func (x *UpdateAddressRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *UpdateAddressRequest) GetUserId() string {
+func (x *UpdateAddressRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *UpdateAddressRequest) GetLabel() string {
@@ -2052,8 +2052,8 @@ func (x *UpdateAddressResponse) GetMessage() string {
 
 type DeleteAddressRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2088,18 +2088,18 @@ func (*DeleteAddressRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{28}
 }
 
-func (x *DeleteAddressRequest) GetId() string {
+func (x *DeleteAddressRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *DeleteAddressRequest) GetUserId() string {
+func (x *DeleteAddressRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 type DeleteAddressResponse struct {
@@ -2148,7 +2148,7 @@ func (x *DeleteAddressResponse) GetMessage() string {
 
 type RegisterDeviceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	DeviceToken   string                 `protobuf:"bytes,2,opt,name=device_token,json=deviceToken,proto3" json:"device_token,omitempty"`
 	Platform      string                 `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
 	DeviceName    string                 `protobuf:"bytes,4,opt,name=device_name,json=deviceName,proto3" json:"device_name,omitempty"`
@@ -2186,11 +2186,11 @@ func (*RegisterDeviceRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{30}
 }
 
-func (x *RegisterDeviceRequest) GetUserId() string {
+func (x *RegisterDeviceRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *RegisterDeviceRequest) GetDeviceToken() string {
@@ -2268,7 +2268,7 @@ func (x *RegisterDeviceResponse) GetMessage() string {
 
 type ListDevicesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2303,11 +2303,11 @@ func (*ListDevicesRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{32}
 }
 
-func (x *ListDevicesRequest) GetUserId() string {
+func (x *ListDevicesRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 type ListDevicesResponse struct {
@@ -2356,8 +2356,8 @@ func (x *ListDevicesResponse) GetDevices() []*UserDevice {
 
 type DeleteDeviceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2392,18 +2392,18 @@ func (*DeleteDeviceRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{34}
 }
 
-func (x *DeleteDeviceRequest) GetId() string {
+func (x *DeleteDeviceRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
-func (x *DeleteDeviceRequest) GetUserId() string {
+func (x *DeleteDeviceRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 type DeleteDeviceResponse struct {
@@ -2580,7 +2580,7 @@ func (x *AdminListUsersResponse) GetPagination() *Pagination {
 
 type AdminUpdateUserStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"` // active | banned | suspended
 	Reason        string                 `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2617,11 +2617,11 @@ func (*AdminUpdateUserStatusRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{38}
 }
 
-func (x *AdminUpdateUserStatusRequest) GetId() string {
+func (x *AdminUpdateUserStatusRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 func (x *AdminUpdateUserStatusRequest) GetStatus() string {
@@ -2796,10 +2796,10 @@ func (x *AdminListPendingKYCResponse) GetPagination() *Pagination {
 
 type AdminReviewKYCRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        []byte                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Approved      bool                   `protobuf:"varint,2,opt,name=approved,proto3" json:"approved,omitempty"`
 	Note          string                 `protobuf:"bytes,3,opt,name=note,proto3" json:"note,omitempty"`
-	ReviewerId    string                 `protobuf:"bytes,4,opt,name=reviewer_id,json=reviewerId,proto3" json:"reviewer_id,omitempty"`
+	ReviewerId    []byte                 `protobuf:"bytes,4,opt,name=reviewer_id,json=reviewerId,proto3" json:"reviewer_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2834,11 +2834,11 @@ func (*AdminReviewKYCRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{42}
 }
 
-func (x *AdminReviewKYCRequest) GetUserId() string {
+func (x *AdminReviewKYCRequest) GetUserId() []byte {
 	if x != nil {
 		return x.UserId
 	}
-	return ""
+	return nil
 }
 
 func (x *AdminReviewKYCRequest) GetApproved() bool {
@@ -2855,11 +2855,11 @@ func (x *AdminReviewKYCRequest) GetNote() string {
 	return ""
 }
 
-func (x *AdminReviewKYCRequest) GetReviewerId() string {
+func (x *AdminReviewKYCRequest) GetReviewerId() []byte {
 	if x != nil {
 		return x.ReviewerId
 	}
-	return ""
+	return nil
 }
 
 type AdminReviewKYCResponse struct {
@@ -3036,7 +3036,7 @@ func (x *AdminGetUserStatsResponse) GetPendingKyc() int64 {
 
 type AdminDeleteUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3071,11 +3071,11 @@ func (*AdminDeleteUserRequest) Descriptor() ([]byte, []int) {
 	return file_logistic_user_service_v1_user_messages_proto_rawDescGZIP(), []int{46}
 }
 
-func (x *AdminDeleteUserRequest) GetId() string {
+func (x *AdminDeleteUserRequest) GetId() []byte {
 	if x != nil {
 		return x.Id
 	}
-	return ""
+	return nil
 }
 
 type AdminDeleteUserResponse struct {
@@ -3128,7 +3128,7 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\n" +
 	",logistic/user_service/v1/user_messages.proto\x12\x18logistic.user_service.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa0\x02\n" +
 	"\x04User\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
 	"\x05phone\x18\x02 \x01(\tR\x05phone\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1b\n" +
 	"\tfull_name\x18\x04 \x01(\tR\bfullName\x12\x12\n" +
@@ -3141,8 +3141,8 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xe1\x02\n" +
 	"\rDriverProfile\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12%\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\x12%\n" +
 	"\x0elicense_number\x18\x03 \x01(\tR\rlicenseNumber\x12\x17\n" +
 	"\aid_card\x18\x04 \x01(\tR\x06idCard\x12\x16\n" +
 	"\x06rating\x18\x05 \x01(\x01R\x06rating\x12\x1f\n" +
@@ -3157,8 +3157,8 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"updated_at\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xbb\x02\n" +
 	"\x0eShipperProfile\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\x12!\n" +
 	"\fcompany_name\x18\x03 \x01(\tR\vcompanyName\x12\x19\n" +
 	"\btax_code\x18\x04 \x01(\tR\ataxCode\x12)\n" +
 	"\x10business_address\x18\x05 \x01(\tR\x0fbusinessAddress\x12!\n" +
@@ -3168,8 +3168,8 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xdc\x03\n" +
 	"\aAddress\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\x12\x14\n" +
 	"\x05label\x18\x03 \x01(\tR\x05label\x12!\n" +
 	"\fcontact_name\x18\x04 \x01(\tR\vcontactName\x12#\n" +
 	"\rcontact_phone\x18\x05 \x01(\tR\fcontactPhone\x12\x14\n" +
@@ -3189,8 +3189,8 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"updated_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xab\x02\n" +
 	"\n" +
 	"UserDevice\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\x12!\n" +
 	"\fdevice_token\x18\x03 \x01(\tR\vdeviceToken\x12\x1a\n" +
 	"\bplatform\x18\x04 \x01(\tR\bplatform\x12\x1f\n" +
 	"\vdevice_name\x18\x05 \x01(\tR\n" +
@@ -3215,17 +3215,17 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1b\n" +
 	"\tfull_name\x18\x05 \x01(\tR\bfullName\"t\n" +
 	"\x14RegisterUserResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x122\n" +
 	"\x04user\x18\x03 \x01(\v2\x1e.logistic.user_service.v1.UserR\x04user\" \n" +
 	"\x0eGetUserRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xe8\x01\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\"\xe8\x01\n" +
 	"\x0fGetUserResponse\x122\n" +
 	"\x04user\x18\x01 \x01(\v2\x1e.logistic.user_service.v1.UserR\x04user\x12N\n" +
 	"\x0edriver_profile\x18\x02 \x01(\v2'.logistic.user_service.v1.DriverProfileR\rdriverProfile\x12Q\n" +
 	"\x0fshipper_profile\x18\x03 \x01(\v2(.logistic.user_service.v1.ShipperProfileR\x0eshipperProfile\"u\n" +
 	"\x11UpdateUserRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
 	"\tfull_name\x18\x02 \x01(\tR\bfullName\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1d\n" +
 	"\n" +
@@ -3234,18 +3234,18 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\x04user\x18\x01 \x01(\v2\x1e.logistic.user_service.v1.UserR\x04user\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"u\n" +
 	"\x1aUpdateDriverProfileRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12%\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12%\n" +
 	"\x0elicense_number\x18\x02 \x01(\tR\rlicenseNumber\x12\x17\n" +
 	"\aid_card\x18\x03 \x01(\tR\x06idCard\"\x87\x01\n" +
 	"\x1bUpdateDriverProfileResponse\x12N\n" +
 	"\x0edriver_profile\x18\x01 \x01(\v2'.logistic.user_service.v1.DriverProfileR\rdriverProfile\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"2\n" +
 	"\x17GetDriverProfileRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"j\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\"j\n" +
 	"\x18GetDriverProfileResponse\x12N\n" +
 	"\x0edriver_profile\x18\x01 \x01(\v2'.logistic.user_service.v1.DriverProfileR\rdriverProfile\"\x9f\x01\n" +
 	"\x1bUpdateShipperProfileRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12!\n" +
 	"\fcompany_name\x18\x02 \x01(\tR\vcompanyName\x12\x19\n" +
 	"\btax_code\x18\x03 \x01(\tR\ataxCode\x12)\n" +
 	"\x10business_address\x18\x04 \x01(\tR\x0fbusinessAddress\"\x8b\x01\n" +
@@ -3253,11 +3253,11 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\x0fshipper_profile\x18\x01 \x01(\v2(.logistic.user_service.v1.ShipperProfileR\x0eshipperProfile\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"3\n" +
 	"\x18GetShipperProfileRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"n\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\"n\n" +
 	"\x19GetShipperProfileResponse\x12Q\n" +
 	"\x0fshipper_profile\x18\x01 \x01(\v2(.logistic.user_service.v1.ShipperProfileR\x0eshipperProfile\"d\n" +
 	"\x16UpdateDriverKYCRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1d\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12\x1d\n" +
 	"\n" +
 	"kyc_status\x18\x02 \x01(\tR\tkycStatus\x12\x12\n" +
 	"\x04note\x18\x03 \x01(\tR\x04note\"\x83\x01\n" +
@@ -3265,7 +3265,7 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12N\n" +
 	"\x0edriver_profile\x18\x02 \x01(\v2'.logistic.user_service.v1.DriverProfileR\rdriverProfile\"\xe3\x02\n" +
 	"\x14CreateAddressRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12!\n" +
 	"\fcontact_name\x18\x03 \x01(\tR\vcontactName\x12#\n" +
 	"\rcontact_phone\x18\x04 \x01(\tR\fcontactPhone\x12\x14\n" +
@@ -3283,7 +3283,7 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\aaddress\x18\x01 \x01(\v2!.logistic.user_service.v1.AddressR\aaddress\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\x83\x01\n" +
 	"\x14ListAddressesRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12!\n" +
 	"\faddress_type\x18\x02 \x01(\tR\vaddressType\x12\x12\n" +
 	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\"\x9e\x01\n" +
@@ -3293,8 +3293,8 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"pagination\x18\x02 \x01(\v2$.logistic.user_service.v1.PaginationR\n" +
 	"pagination\"\xf3\x02\n" +
 	"\x14UpdateAddressRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x14\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\x12\x14\n" +
 	"\x05label\x18\x03 \x01(\tR\x05label\x12!\n" +
 	"\fcontact_name\x18\x04 \x01(\tR\vcontactName\x12#\n" +
 	"\rcontact_phone\x18\x05 \x01(\tR\fcontactPhone\x12\x14\n" +
@@ -3312,12 +3312,12 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\aaddress\x18\x01 \x01(\v2!.logistic.user_service.v1.AddressR\aaddress\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"?\n" +
 	"\x14DeleteAddressRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\"1\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\"1\n" +
 	"\x15DeleteAddressResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"\x90\x01\n" +
 	"\x15RegisterDeviceRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12!\n" +
 	"\fdevice_token\x18\x02 \x01(\tR\vdeviceToken\x12\x1a\n" +
 	"\bplatform\x18\x03 \x01(\tR\bplatform\x12\x1f\n" +
 	"\vdevice_name\x18\x04 \x01(\tR\n" +
@@ -3326,12 +3326,12 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\x06device\x18\x01 \x01(\v2$.logistic.user_service.v1.UserDeviceR\x06device\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"-\n" +
 	"\x12ListDevicesRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"U\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\"U\n" +
 	"\x13ListDevicesResponse\x12>\n" +
 	"\adevices\x18\x01 \x03(\v2$.logistic.user_service.v1.UserDeviceR\adevices\">\n" +
 	"\x13DeleteDeviceRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\"0\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\fR\x06userId\"0\n" +
 	"\x14DeleteDeviceResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"\x8e\x01\n" +
 	"\x15AdminListUsersRequest\x12\x12\n" +
@@ -3346,7 +3346,7 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"pagination\x18\x02 \x01(\v2$.logistic.user_service.v1.PaginationR\n" +
 	"pagination\"^\n" +
 	"\x1cAdminUpdateUserStatusRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x16\n" +
 	"\x06reason\x18\x03 \x01(\tR\x06reason\"m\n" +
 	"\x1dAdminUpdateUserStatusResponse\x122\n" +
@@ -3361,10 +3361,10 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"pagination\x18\x02 \x01(\v2$.logistic.user_service.v1.PaginationR\n" +
 	"pagination\"\x81\x01\n" +
 	"\x15AdminReviewKYCRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
+	"\auser_id\x18\x01 \x01(\fR\x06userId\x12\x1a\n" +
 	"\bapproved\x18\x02 \x01(\bR\bapproved\x12\x12\n" +
 	"\x04note\x18\x03 \x01(\tR\x04note\x12\x1f\n" +
-	"\vreviewer_id\x18\x04 \x01(\tR\n" +
+	"\vreviewer_id\x18\x04 \x01(\fR\n" +
 	"reviewerId\"\x82\x01\n" +
 	"\x16AdminReviewKYCResponse\x12N\n" +
 	"\x0edriver_profile\x18\x01 \x01(\v2'.logistic.user_service.v1.DriverProfileR\rdriverProfile\x12\x18\n" +
@@ -3380,7 +3380,7 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\vpending_kyc\x18\x06 \x01(\x03R\n" +
 	"pendingKyc\"(\n" +
 	"\x16AdminDeleteUserRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"3\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\"3\n" +
 	"\x17AdminDeleteUserResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessageB9Z7github.com/logistic/api/logistic/user_service/v1;userv1b\x06proto3"
 

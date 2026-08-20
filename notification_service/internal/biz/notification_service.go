@@ -1,12 +1,3 @@
-// Package biz chứa luật nghiệp vụ của notification_service.
-//
-// Điểm khác biệt so với hai service kia: tầng này có HAI nguồn đầu vào.
-//
-//	gRPC     -> người dùng đọc inbox, admin quản lý template (luồng đọc).
-//	RabbitMQ -> matching_service phát sự kiện, ta sinh thông báo (luồng ghi).
-//
-// Cả hai đều đi qua cùng một NotificationEngine, nên quy tắc "tôn trọng cài đặt
-// nhận thông báo của người dùng" chỉ tồn tại đúng một chỗ.
 package biz
 
 import (
@@ -23,7 +14,6 @@ import (
 )
 
 type NotificationEngine interface {
-	// --- Luồng đọc (gRPC client) ---
 	List(ctx context.Context, param *entity.ListNotificationsParam) (*entity.ListNotificationsResult, error)
 	Get(ctx context.Context, id, userID uuid.UUID) (*entity.Notification, error)
 	MarkAsRead(ctx context.Context, id, userID uuid.UUID) (int64, error)
@@ -33,13 +23,9 @@ type NotificationEngine interface {
 	GetPreference(ctx context.Context, userID uuid.UUID) (*entity.NotificationPreference, error)
 	UpdatePreference(ctx context.Context, param *entity.UpdatePreferenceParam) (*entity.NotificationPreference, error)
 
-	// --- Luồng ghi (consumer + admin) ---
-	// DispatchEvent là điểm vào của consumer RabbitMQ: nó lọc theo cài đặt của
-	// từng người nhận rồi ghi tất cả trong một transaction có chống trùng.
 	DispatchEvent(ctx context.Context, eventID, routingKey, source string, params []entity.CreateNotificationParam) (int64, error)
 	AdminSend(ctx context.Context, param *entity.SendNotificationParam) (*entity.SendNotificationResult, error)
 
-	// --- Admin ---
 	AdminList(ctx context.Context, param *entity.AdminListNotificationsParam) (*entity.ListNotificationsResult, error)
 	AdminListTemplates(ctx context.Context, param *entity.ListTemplatesParam) ([]entity.NotificationTemplate, error)
 	AdminCreateTemplate(ctx context.Context, param *entity.CreateTemplateParam) (*entity.NotificationTemplate, error)
@@ -47,8 +33,6 @@ type NotificationEngine interface {
 	AdminDeleteTemplate(ctx context.Context, id uuid.UUID) error
 	AdminGetStats(ctx context.Context) (*entity.NotificationStats, error)
 
-	// RenderFromTemplate lấy template theo mã và điền biến. Không có template
-	// trong DB thì trả về (false, ...) để caller dùng câu chữ mặc định trong code.
 	RenderFromTemplate(ctx context.Context, code, channel, locale string, vars map[string]string) (string, string, bool)
 }
 
@@ -59,10 +43,6 @@ type notificationEngineImpl struct {
 func NewNotificationEngine(repo NotificationRepo) NotificationEngine {
 	return &notificationEngineImpl{repo: repo}
 }
-
-// ---------------------------------------------------------------------------
-// LUỒNG ĐỌC
-// ---------------------------------------------------------------------------
 
 func (e *notificationEngineImpl) List(ctx context.Context, param *entity.ListNotificationsParam) (*entity.ListNotificationsResult, error) {
 	if param.UserID == uuid.Nil {
@@ -96,7 +76,7 @@ func (e *notificationEngineImpl) Get(ctx context.Context, id, userID uuid.UUID) 
 	if err != nil {
 		return nil, err
 	}
-	// Inbox là dữ liệu riêng tư: đoán đúng id vẫn không được đọc của người khác.
+
 	if userID != uuid.Nil && n.UserID != userID {
 		return nil, cerr.ErrNotificationNotOwned
 	}
@@ -152,15 +132,6 @@ func (e *notificationEngineImpl) UpdatePreference(ctx context.Context, param *en
 	return e.repo.UpdatePreference(ctx, param)
 }
 
-// ---------------------------------------------------------------------------
-// LUỒNG GHI
-// ---------------------------------------------------------------------------
-
-// DispatchEvent nhận danh sách thông báo cần tạo, lọc theo cài đặt của từng
-// người nhận, rồi ghi tất cả trong một transaction có chống trùng theo eventID.
-//
-// Lọc TRƯỚC khi ghi chứ không phải trước khi gửi: người đã tắt nhận thông báo
-// ghép đơn thì không nên thấy chúng nằm trong inbox chờ sẵn.
 func (e *notificationEngineImpl) DispatchEvent(
 	ctx context.Context,
 	eventID, routingKey, source string,
@@ -187,8 +158,6 @@ func (e *notificationEngineImpl) DispatchEvent(
 
 		pref, err := e.repo.GetOrCreatePreference(ctx, p.UserID)
 		if err != nil {
-			// Không đọc được cài đặt thì vẫn gửi: bỏ sót một thông báo ghép đơn
-			// tốn kém hơn nhiều so với gửi thừa một thông báo.
 			log.Printf("[biz] không đọc được cài đặt của %s (%v) — vẫn gửi theo mặc định", p.UserID, err)
 			allowed = append(allowed, p)
 			continue
@@ -198,8 +167,6 @@ func (e *notificationEngineImpl) DispatchEvent(
 			continue
 		}
 
-		// Giờ yên lặng chỉ chặn PUSH. Thông báo vẫn vào inbox để sáng hôm sau
-		// người dùng mở app là thấy.
 		if p.Channel == entity.ChannelPush && pref.IsQuietHour(now) {
 			p.Channel = entity.ChannelInApp
 		}
@@ -208,8 +175,6 @@ func (e *notificationEngineImpl) DispatchEvent(
 	}
 
 	if len(allowed) == 0 {
-		// Vẫn phải ghi dấu event: nếu không, message sẽ được xử lý lại mãi mỗi
-		// lần broker giao lại, dù kết quả luôn là "không ai muốn nhận".
 		return e.repo.CreateWithEventGuard(ctx, eventID, routingKey, source, nil)
 	}
 
@@ -265,8 +230,6 @@ func (e *notificationEngineImpl) AdminSend(ctx context.Context, param *entity.Se
 	}
 
 	if len(params) == 0 {
-		// Broadcast theo vai trò cần danh sách người dùng từ user_service.
-		// Chưa nối luồng đó nên từ chối rõ ràng thay vì âm thầm không gửi gì.
 		return nil, cerr.ErrNoRecipient.WithMessage(
 			"broadcast theo vai trò chưa được hỗ trợ — hãy truyền danh sách user_ids cụ thể")
 	}
@@ -281,10 +244,6 @@ func (e *notificationEngineImpl) AdminSend(ctx context.Context, param *entity.Se
 		Message:   fmt.Sprintf("Đã gửi %d thông báo", sent),
 	}, nil
 }
-
-// ---------------------------------------------------------------------------
-// ADMIN
-// ---------------------------------------------------------------------------
 
 func (e *notificationEngineImpl) AdminList(ctx context.Context, param *entity.AdminListNotificationsParam) (*entity.ListNotificationsResult, error) {
 	if param.Status != "" && !entity.IsValidStatus(param.Status) {
@@ -388,8 +347,6 @@ func (e *notificationEngineImpl) RenderFromTemplate(ctx context.Context, code, c
 	return title, body, true
 }
 
-// MarshalData gói payload thành JSON để nhét vào cột data.
-// Lỗi marshal không được làm hỏng cả thông báo — mất deep-link còn hơn mất tin.
 func MarshalData(v any) string {
 	blob, err := json.Marshal(v)
 	if err != nil {

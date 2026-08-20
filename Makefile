@@ -64,6 +64,26 @@ ent-new:
 	go run -mod=mod entgo.io/ent/cmd/ent new ${name}
 
 
+# ==============================================================================
+# Auth — khoá ký JWT
+# ==============================================================================
+
+.PHONY: auth-keys auth-keys-show
+
+## auth-keys: Sinh cặp khoá RSA cho JWT (private cho auth_service, public cho gateway)
+auth-keys:
+	@bash scripts/generate-jwt-keys.sh
+
+## auth-keys-show: In dấu vân tay khoá để đối chiếu hai bên có khớp không
+# Triệu chứng khi lệch khoá là "mọi token bỗng dưng không hợp lệ" — rất khó đoán
+# nguyên nhân, nên có sẵn một lệnh đối chiếu là đáng.
+auth-keys-show:
+	@echo "public key trong secrets/:"
+	@openssl rsa -pubin -in secrets/jwt_public.pem -outform DER 2>/dev/null | openssl dgst -sha256 | cut -d" " -f2
+	@echo "public key suy ra từ private key:"
+	@openssl rsa -in secrets/jwt_private.pem -pubout -outform DER 2>/dev/null | openssl dgst -sha256 | cut -d" " -f2
+
+
 
 # ==============================================================================
 # Modules / Build Verification

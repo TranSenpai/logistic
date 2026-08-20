@@ -147,8 +147,8 @@ func (c *AppMapperImpl) EntityAddressListToPbList(source []entity.Address) []*v1
 }
 func (c *AppMapperImpl) EntityAddressToPb(source entity.Address) *v1.Address {
 	var userv1Address v1.Address
-	userv1Address.Id = mapper.UUIDToString(source.ID)
-	userv1Address.UserId = mapper.UUIDToString(source.UserID)
+	userv1Address.Id = mapper.UUIDToBytes(source.ID)
+	userv1Address.UserId = mapper.UUIDToBytes(source.UserID)
 	userv1Address.Label = source.Label
 	userv1Address.ContactName = source.ContactName
 	userv1Address.ContactPhone = source.ContactPhone
@@ -176,8 +176,8 @@ func (c *AppMapperImpl) EntityDriverProfileListToPbList(source []entity.DriverPr
 }
 func (c *AppMapperImpl) EntityDriverProfileToPb(source entity.DriverProfile) *v1.DriverProfile {
 	var userv1DriverProfile v1.DriverProfile
-	userv1DriverProfile.Id = mapper.UUIDToString(source.ID)
-	userv1DriverProfile.UserId = mapper.UUIDToString(source.UserID)
+	userv1DriverProfile.Id = mapper.UUIDToBytes(source.ID)
+	userv1DriverProfile.UserId = mapper.UUIDToBytes(source.UserID)
 	userv1DriverProfile.LicenseNumber = source.LicenseNumber
 	userv1DriverProfile.IdCard = source.IDCard
 	userv1DriverProfile.Rating = source.Rating
@@ -198,8 +198,8 @@ func (c *AppMapperImpl) EntityPaginationToPb(source entity.Pagination) *v1.Pagin
 }
 func (c *AppMapperImpl) EntityShipperProfileToPb(source entity.ShipperProfile) *v1.ShipperProfile {
 	var userv1ShipperProfile v1.ShipperProfile
-	userv1ShipperProfile.Id = mapper.UUIDToString(source.ID)
-	userv1ShipperProfile.UserId = mapper.UUIDToString(source.UserID)
+	userv1ShipperProfile.Id = mapper.UUIDToBytes(source.ID)
+	userv1ShipperProfile.UserId = mapper.UUIDToBytes(source.UserID)
 	userv1ShipperProfile.CompanyName = source.CompanyName
 	userv1ShipperProfile.TaxCode = source.TaxCode
 	userv1ShipperProfile.BusinessAddress = source.BusinessAddress
@@ -220,8 +220,8 @@ func (c *AppMapperImpl) EntityUserDeviceListToPbList(source []entity.UserDevice)
 }
 func (c *AppMapperImpl) EntityUserDeviceToPb(source entity.UserDevice) *v1.UserDevice {
 	var userv1UserDevice v1.UserDevice
-	userv1UserDevice.Id = mapper.UUIDToString(source.ID)
-	userv1UserDevice.UserId = mapper.UUIDToString(source.UserID)
+	userv1UserDevice.Id = mapper.UUIDToBytes(source.ID)
+	userv1UserDevice.UserId = mapper.UUIDToBytes(source.UserID)
 	userv1UserDevice.DeviceToken = source.DeviceToken
 	userv1UserDevice.Platform = source.Platform
 	userv1UserDevice.DeviceName = source.DeviceName
@@ -242,7 +242,7 @@ func (c *AppMapperImpl) EntityUserListToPbUserList(source []entity.User) []*v1.U
 }
 func (c *AppMapperImpl) EntityUserToPbUser(source entity.User) *v1.User {
 	var userv1User v1.User
-	userv1User.Id = mapper.UUIDToString(source.ID)
+	userv1User.Id = mapper.UUIDToBytes(source.ID)
 	userv1User.Phone = source.Phone
 	userv1User.Email = source.Email
 	userv1User.FullName = source.FullName
@@ -267,14 +267,14 @@ func (c *AppMapperImpl) PbAdminListUsersToFilter(source *v1.AdminListUsersReques
 func (c *AppMapperImpl) PbAdminReviewKycToParam(source *v1.AdminReviewKYCRequest) (entity.ReviewKYCParam, error) {
 	var entityReviewKYCParam entity.ReviewKYCParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).UserId)
+		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
 		if err != nil {
 			return entityReviewKYCParam, err
 		}
 		entityReviewKYCParam.UserID = uuidUUID
 		entityReviewKYCParam.Approved = (*source).Approved
 		entityReviewKYCParam.Note = (*source).Note
-		uuidUUID2, err := mapper.StringToUUID((*source).ReviewerId)
+		uuidUUID2, err := mapper.BytesToUUID((*source).ReviewerId)
 		if err != nil {
 			return entityReviewKYCParam, err
 		}
@@ -285,7 +285,7 @@ func (c *AppMapperImpl) PbAdminReviewKycToParam(source *v1.AdminReviewKYCRequest
 func (c *AppMapperImpl) PbAdminUpdateStatusToParam(source *v1.AdminUpdateUserStatusRequest) (entity.UpdateUserStatusParam, error) {
 	var entityUpdateUserStatusParam entity.UpdateUserStatusParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).Id)
+		uuidUUID, err := mapper.BytesToUUID((*source).Id)
 		if err != nil {
 			return entityUpdateUserStatusParam, err
 		}
@@ -298,7 +298,7 @@ func (c *AppMapperImpl) PbAdminUpdateStatusToParam(source *v1.AdminUpdateUserSta
 func (c *AppMapperImpl) PbCreateAddressToParam(source *v1.CreateAddressRequest) (entity.CreateAddressParam, error) {
 	var entityCreateAddressParam entity.CreateAddressParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).UserId)
+		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
 		if err != nil {
 			return entityCreateAddressParam, err
 		}
@@ -320,7 +320,7 @@ func (c *AppMapperImpl) PbCreateAddressToParam(source *v1.CreateAddressRequest) 
 func (c *AppMapperImpl) PbListAddressesToParam(source *v1.ListAddressesRequest) (entity.ListAddressesParam, error) {
 	var entityListAddressesParam entity.ListAddressesParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).UserId)
+		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
 		if err != nil {
 			return entityListAddressesParam, err
 		}
@@ -334,7 +334,7 @@ func (c *AppMapperImpl) PbListAddressesToParam(source *v1.ListAddressesRequest) 
 func (c *AppMapperImpl) PbRegisterDeviceToParam(source *v1.RegisterDeviceRequest) (entity.RegisterDeviceParam, error) {
 	var entityRegisterDeviceParam entity.RegisterDeviceParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).UserId)
+		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
 		if err != nil {
 			return entityRegisterDeviceParam, err
 		}
@@ -359,12 +359,12 @@ func (c *AppMapperImpl) PbRegisterUserToParam(source *v1.RegisterUserRequest) en
 func (c *AppMapperImpl) PbUpdateAddressToParam(source *v1.UpdateAddressRequest) (entity.UpdateAddressParam, error) {
 	var entityUpdateAddressParam entity.UpdateAddressParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).Id)
+		uuidUUID, err := mapper.BytesToUUID((*source).Id)
 		if err != nil {
 			return entityUpdateAddressParam, err
 		}
 		entityUpdateAddressParam.ID = uuidUUID
-		uuidUUID2, err := mapper.StringToUUID((*source).UserId)
+		uuidUUID2, err := mapper.BytesToUUID((*source).UserId)
 		if err != nil {
 			return entityUpdateAddressParam, err
 		}
@@ -386,7 +386,7 @@ func (c *AppMapperImpl) PbUpdateAddressToParam(source *v1.UpdateAddressRequest) 
 func (c *AppMapperImpl) PbUpdateDriverProfileToParam(source *v1.UpdateDriverProfileRequest) (entity.UpdateDriverProfileParam, error) {
 	var entityUpdateDriverProfileParam entity.UpdateDriverProfileParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).UserId)
+		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
 		if err != nil {
 			return entityUpdateDriverProfileParam, err
 		}
@@ -399,7 +399,7 @@ func (c *AppMapperImpl) PbUpdateDriverProfileToParam(source *v1.UpdateDriverProf
 func (c *AppMapperImpl) PbUpdateKycToParam(source *v1.UpdateDriverKYCRequest) (entity.UpdateDriverKYCParam, error) {
 	var entityUpdateDriverKYCParam entity.UpdateDriverKYCParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).UserId)
+		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
 		if err != nil {
 			return entityUpdateDriverKYCParam, err
 		}
@@ -412,7 +412,7 @@ func (c *AppMapperImpl) PbUpdateKycToParam(source *v1.UpdateDriverKYCRequest) (e
 func (c *AppMapperImpl) PbUpdateShipperProfileToParam(source *v1.UpdateShipperProfileRequest) (entity.UpdateShipperProfileParam, error) {
 	var entityUpdateShipperProfileParam entity.UpdateShipperProfileParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).UserId)
+		uuidUUID, err := mapper.BytesToUUID((*source).UserId)
 		if err != nil {
 			return entityUpdateShipperProfileParam, err
 		}
@@ -426,7 +426,7 @@ func (c *AppMapperImpl) PbUpdateShipperProfileToParam(source *v1.UpdateShipperPr
 func (c *AppMapperImpl) PbUpdateUserToParam(source *v1.UpdateUserRequest) (entity.UpdateUserParam, error) {
 	var entityUpdateUserParam entity.UpdateUserParam
 	if source != nil {
-		uuidUUID, err := mapper.StringToUUID((*source).Id)
+		uuidUUID, err := mapper.BytesToUUID((*source).Id)
 		if err != nil {
 			return entityUpdateUserParam, err
 		}

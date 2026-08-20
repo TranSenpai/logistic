@@ -1,4 +1,3 @@
-// Package entity là tầng giữa dao <-> entity <-> dto của notification_service.
 package entity
 
 import (
@@ -7,10 +6,6 @@ import (
 
 	"github.com/google/uuid"
 )
-
-// ---------------------------------------------------------------------------
-// HẰNG SỐ
-// ---------------------------------------------------------------------------
 
 const (
 	RoleDriver  = "driver"
@@ -32,18 +27,15 @@ const (
 	StatusRead    = "read"
 )
 
-// Mã loại thông báo. Đây là hợp đồng với app mobile: app dựa vào Type để chọn
-// icon và màn hình mở ra khi người dùng bấm vào.
 const (
-	TypeDriverCandidate = "driver_candidate" // tài xế: có đơn hàng phù hợp gần bạn
-	TypeMatchFound      = "match_found"      // cả hai phía: đã ghép được xe
-	TypeOfferReceived   = "offer_received"   // chủ hàng: tài xế vừa báo giá
-	TypeOfferRejected   = "offer_rejected"   // tài xế: chủ hàng từ chối giá
-	TypeCargoSuggested  = "cargo_suggested"  // tài xế: gợi ý đơn cho chuyến rỗng
-	TypeSystem          = "system"           // admin gửi thủ công
+	TypeDriverCandidate = "driver_candidate"
+	TypeMatchFound      = "match_found"
+	TypeOfferReceived   = "offer_received"
+	TypeOfferRejected   = "offer_rejected"
+	TypeCargoSuggested  = "cargo_suggested"
+	TypeSystem          = "system"
 )
 
-// Mã template mặc định, tương ứng với các loại ở trên.
 const (
 	TplDriverCandidate  = "DRIVER_CANDIDATE"
 	TplMatchFoundShip   = "MATCH_FOUND_SHIPPER"
@@ -79,10 +71,6 @@ func IsValidStatus(s string) bool {
 	return false
 }
 
-// ---------------------------------------------------------------------------
-// DOMAIN ENTITIES
-// ---------------------------------------------------------------------------
-
 type Notification struct {
 	ID            uuid.UUID `json:"id"`
 	UserID        uuid.UUID `json:"user_id"`
@@ -114,12 +102,6 @@ type NotificationTemplate struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
-// Render thay các placeholder {{key}} bằng giá trị tương ứng.
-//
-// Cố tình KHÔNG dùng text/template: template do admin nhập qua API, mà
-// text/template cho phép gọi hàm và truy cập field — mở đường cho việc một
-// template sai (hoặc cố ý) làm panic tiến trình gửi thông báo. Thay chuỗi
-// thuần thì trường hợp xấu nhất chỉ là câu chữ còn nguyên {{placeholder}}.
 func (t *NotificationTemplate) Render(vars map[string]string) (string, string) {
 	return replacePlaceholders(t.TitleTemplate, vars), replacePlaceholders(t.BodyTemplate, vars)
 }
@@ -149,8 +131,6 @@ type NotificationPreference struct {
 	UpdatedAt          time.Time `json:"updated_at"`
 }
 
-// DefaultPreference dùng khi người dùng chưa từng đụng vào phần cài đặt.
-// Mặc định bật in-app và push cho sự kiện ghép đơn — đó là lý do họ cài app.
 func DefaultPreference(userID uuid.UUID) NotificationPreference {
 	return NotificationPreference{
 		UserID:             userID,
@@ -163,7 +143,6 @@ func DefaultPreference(userID uuid.UUID) NotificationPreference {
 	}
 }
 
-// AllowsChannel trả lời "có được gửi qua kênh này không".
 func (p *NotificationPreference) AllowsChannel(channel string) bool {
 	switch channel {
 	case ChannelInApp:
@@ -179,23 +158,17 @@ func (p *NotificationPreference) AllowsChannel(channel string) bool {
 	}
 }
 
-// AllowsType lọc theo NHÓM sự kiện, độc lập với kênh gửi. Một người có thể vẫn
-// muốn nhận thông báo ghép đơn nhưng tắt hết khuyến mãi.
 func (p *NotificationPreference) AllowsType(notiType string) bool {
 	switch notiType {
 	case TypeDriverCandidate, TypeMatchFound, TypeOfferReceived, TypeOfferRejected, TypeCargoSuggested:
 		return p.MatchEventsEnabled
 	case TypeSystem:
-		return true // thông báo hệ thống luôn được gửi
+		return true
 	default:
 		return p.PromotionEnabled
 	}
 }
 
-// IsQuietHour cho biết thời điểm t có rơi vào khung giờ yên lặng không.
-//
-// Xử lý được cả khung qua đêm (22:00 -> 07:00): khi start > end thì khoảng
-// thời gian bị "gấp" qua nửa đêm, nên điều kiện là HOẶC chứ không phải VÀ.
 func (p *NotificationPreference) IsQuietHour(t time.Time) bool {
 	if p.QuietHoursStart == "" || p.QuietHoursEnd == "" {
 		return false
@@ -241,10 +214,6 @@ func atoi(s string) (int, bool) {
 	return n, true
 }
 
-// ---------------------------------------------------------------------------
-// PHÂN TRANG
-// ---------------------------------------------------------------------------
-
 type Pagination struct {
 	Page       int   `json:"page"`
 	PageSize   int   `json:"page_size"`
@@ -279,12 +248,6 @@ func BuildPagination(page, pageSize int, total int64) Pagination {
 	return Pagination{Page: page, PageSize: pageSize, TotalItems: total, TotalPages: totalPages}
 }
 
-// ---------------------------------------------------------------------------
-// PARAMS & RESULTS
-// ---------------------------------------------------------------------------
-
-// CreateNotificationParam là đầu vào của luồng tạo thông báo. Luồng này KHÔNG
-// có API public — nó chỉ được gọi từ consumer RabbitMQ và từ API admin.
 type CreateNotificationParam struct {
 	UserID        uuid.UUID
 	RecipientRole string

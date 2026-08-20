@@ -11,7 +11,6 @@ import (
 	"github.com/logistic/pkg/apperr"
 )
 
-// wrapError dịch lỗi ent/Postgres sang mã lỗi nghiệp vụ.
 func wrapError(err error, notFound *apperr.Error) error {
 	if err == nil {
 		return nil
@@ -35,7 +34,7 @@ func wrapError(err error, notFound *apperr.Error) error {
 		msg := strings.ToLower(err.Error())
 		switch {
 		case strings.Contains(msg, "event_id"):
-			// Đây KHÔNG phải lỗi thật: consumer dùng nó để nhận ra message trùng.
+
 			return ErrDuplicateEvent.WithCause(err)
 		case strings.Contains(msg, "code"):
 			return cerr.ErrTemplateCodeExists.WithCause(err)
@@ -56,8 +55,4 @@ func wrapError(err error, notFound *apperr.Error) error {
 	return cerr.ErrDatabase.WithCause(err)
 }
 
-// ErrDuplicateEvent báo rằng event_id đã được xử lý trước đó.
-//
-// Đây là tín hiệu BÌNH THƯỜNG trong hệ thống at-least-once, không phải sự cố:
-// consumer bắt được nó thì ACK message rồi đi tiếp, thay vì retry vô ích.
 var ErrDuplicateEvent = apperr.AlreadyExists("EVENT_ALREADY_PROCESSED", "sự kiện này đã được xử lý")

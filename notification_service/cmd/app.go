@@ -50,10 +50,6 @@ func NewApp(cfg *conf.Config) (*App, error) {
 	}, nil
 }
 
-// Run khởi động consumer RabbitMQ trong goroutine rồi block ở gRPC server.
-//
-// Consumer chạy nền vì Start() của nó block tới khi context bị huỷ; nếu để chung
-// luồng thì gRPC server sẽ không bao giờ được Serve.
 func (a *App) Run() error {
 	if a.container.HasConsumer() {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -62,8 +58,6 @@ func (a *App) Run() error {
 		go func() {
 			log.Println("NotificationService: consumer RabbitMQ bắt đầu chạy")
 			if err := a.container.StartConsumer(ctx); err != nil && !errors.Is(err, context.Canceled) {
-				// Consumer chết KHÔNG kéo theo cả service: API đọc inbox vẫn phải
-				// sống. Nhưng phải log rõ để bên vận hành biết luồng sự kiện đã đứt.
 				log.Printf("NotificationService: consumer RabbitMQ dừng bất thường: %v", err)
 			}
 		}()
@@ -80,8 +74,6 @@ func (a *App) Run() error {
 func (a *App) Stop() {
 	log.Println("Stopping NotificationService gracefully...")
 
-	// Dừng consumer TRƯỚC: message đang xử lý dở được chạy nốt, còn message mới
-	// thì nằm lại queue chờ instance khác — không mất mát gì.
 	if a.cancelCons != nil {
 		a.cancelCons()
 	}

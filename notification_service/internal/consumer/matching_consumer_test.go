@@ -15,13 +15,6 @@ import (
 	"github.com/logistic/pkg/mq"
 )
 
-// ---------------------------------------------------------------------------
-// FAKE ENGINE
-// ---------------------------------------------------------------------------
-
-// fakeEngine ghi lại những gì consumer định tạo, thay vì đụng vào Postgres.
-// Chỉ cài đặt DispatchEvent; các phương thức còn lại panic để test nào lỡ gọi
-// nhầm sẽ hỏng ngay chứ không âm thầm trả zero-value.
 type fakeEngine struct {
 	dispatched []entity.CreateNotificationParam
 	eventIDs   []string
@@ -88,17 +81,6 @@ func (f *fakeEngine) RenderFromTemplate(context.Context, string, string, string,
 	return "", "", false
 }
 
-// ---------------------------------------------------------------------------
-// HELPER: dựng message y hệt cách matching_service phát đi
-// ---------------------------------------------------------------------------
-
-// buildDelivery mô phỏng ĐÚNG đường đi thật:
-//
-//	payload struct -> map (như rabbitmq.toMap) -> Envelope -> JSON -> Delivery
-//
-// Nhờ đi qua đúng chuỗi đó, test này phát hiện được lệch tên trường JSON giữa
-// hai module — thứ mà trình biên dịch không thể bắt vì chúng là hai binary khác
-// nhau chỉ gặp nhau trên dây RabbitMQ.
 func buildDelivery(t *testing.T, routingKey string, payload any) mq.Delivery {
 	t.Helper()
 
@@ -126,10 +108,6 @@ func buildDelivery(t *testing.T, routingKey string, payload any) mq.Delivery {
 
 	return mq.Delivery{RoutingKey: routingKey, MessageID: env.EventID, Body: body}
 }
-
-// ---------------------------------------------------------------------------
-// NGHIỆP VỤ (1): chủ hàng đăng đơn -> báo cho từng tài xế tiềm năng
-// ---------------------------------------------------------------------------
 
 func TestHandleDriverCandidatesFound(t *testing.T) {
 	driverA := uuid.NewString()
@@ -170,7 +148,7 @@ func TestHandleDriverCandidatesFound(t *testing.T) {
 		if n.RecipientRole != entity.RoleDriver {
 			t.Errorf("recipient_role = %q, mong đợi %q", n.RecipientRole, entity.RoleDriver)
 		}
-		// Đây là thông báo cần đánh thức tài xế đang lái xe -> phải là push.
+
 		if n.Channel != entity.ChannelPush {
 			t.Errorf("channel = %q, mong đợi %q", n.Channel, entity.ChannelPush)
 		}
@@ -180,7 +158,7 @@ func TestHandleDriverCandidatesFound(t *testing.T) {
 		if n.Title == "" || n.Body == "" {
 			t.Error("thông báo thiếu tiêu đề hoặc nội dung")
 		}
-		// Data phải là JSON hợp lệ để app deep-link được.
+
 		var deepLink map[string]string
 		if err := json.Unmarshal([]byte(n.Data), &deepLink); err != nil {
 			t.Errorf("data không phải JSON hợp lệ: %v", err)
@@ -193,10 +171,6 @@ func TestHandleDriverCandidatesFound(t *testing.T) {
 		t.Errorf("thiếu tài xế trong danh sách nhận: %v", seen)
 	}
 }
-
-// ---------------------------------------------------------------------------
-// NGHIỆP VỤ (2): ghép được xe -> báo CẢ HAI phía
-// ---------------------------------------------------------------------------
 
 func TestHandleMatchFoundNotifiesBothSides(t *testing.T) {
 	shipperID := uuid.NewString()
@@ -246,9 +220,6 @@ func TestHandleMatchFoundNotifiesBothSides(t *testing.T) {
 		t.Errorf("vai trò người nhận phía tài xế = %q", driverNotif.RecipientRole)
 	}
 
-	// Hai thông báo phải có nội dung KHÁC nhau: chủ hàng được báo "đã tìm được
-	// xe", tài xế được báo "bạn vừa nhận đơn". Giống nhau là dấu hiệu code chỉ
-	// nhân bản một bản ghi cho hai người.
 	if shipperNotif.Title == driverNotif.Title {
 		t.Errorf("hai phía nhận cùng một tiêu đề %q — đáng lẽ phải khác nhau", shipperNotif.Title)
 	}
@@ -263,16 +234,10 @@ func TestHandleMatchFoundNotifiesBothSides(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// HÀNH VI ACK/NACK
-// ---------------------------------------------------------------------------
-
 func TestHandleAcksUnparsableMessage(t *testing.T) {
 	engine := &fakeEngine{}
 	c := NewMatchingConsumer(engine)
 
-	// JSON hỏng: retry bao nhiêu lần cũng hỏng -> phải ACK (trả nil) chứ không
-	// được giữ lại làm nghẽn queue.
 	err := c.Handle(context.Background(), mq.Delivery{
 		RoutingKey: events.RoutingKeyMatchFound,
 		MessageID:  uuid.NewString(),
@@ -290,7 +255,6 @@ func TestHandleIgnoresUnknownRoutingKey(t *testing.T) {
 	engine := &fakeEngine{}
 	c := NewMatchingConsumer(engine)
 
-	// Binding "matching.#" bắt cả sự kiện ta chưa quan tâm -> bỏ qua im lặng.
 	err := c.Handle(context.Background(), buildDelivery(t, "matching.something.unknown", map[string]string{"x": "y"}))
 	if err != nil {
 		t.Fatalf("routing key lạ phải được bỏ qua, nhận lỗi: %v", err)
@@ -312,7 +276,6 @@ func TestHandleAcksDuplicateEvent(t *testing.T) {
 		DriverID:   uuid.NewString(),
 	}
 
-	// Broker giao lại message đã xử lý -> ACK, không được coi là lỗi.
 	err := c.Handle(context.Background(), buildDelivery(t, events.RoutingKeyMatchFound, payload))
 	if err != nil {
 		t.Fatalf("event trùng phải được ACK (nil), nhận lỗi: %v", err)
@@ -331,7 +294,6 @@ func TestHandleNacksOnTransientError(t *testing.T) {
 		DriverID:   uuid.NewString(),
 	}
 
-	// Lỗi tạm thời (DB rớt) -> trả error để pkg/mq requeue rồi thử lại.
 	err := c.Handle(context.Background(), buildDelivery(t, events.RoutingKeyMatchFound, payload))
 	if err == nil {
 		t.Fatal("lỗi tạm thời phải trả error để message được retry")
@@ -357,7 +319,6 @@ func TestHandleSkipsInvalidDriverID(t *testing.T) {
 		t.Fatalf("Handle trả lỗi: %v", err)
 	}
 
-	// Một ứng viên hỏng không được làm mất thông báo của những người còn lại.
 	if len(engine.dispatched) != 1 {
 		t.Fatalf("mong đợi 1 thông báo (bỏ qua ứng viên id hỏng), nhận %d", len(engine.dispatched))
 	}

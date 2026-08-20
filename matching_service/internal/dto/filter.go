@@ -1,11 +1,11 @@
 package model
 
 type ArticleFilter struct {
-	Page    int    `form:"page" binding:"omitempty,min=1"`         // Mặc định >= 1
-	Limit   int    `form:"limit" binding:"omitempty,min=1,max=50"` // Khống chế giới hạn tải để chống DDoS DB
+	Page    int    `form:"page" binding:"omitempty,min=1"`
+	Limit   int    `form:"limit" binding:"omitempty,min=1,max=50"`
 	ID      int64  `form:"id" binding:"omitempty,min=1"`
 	Keyword string `form:"keyword"`
-	SortBy  string `form:"sortBy" binding:"omitempty,oneof=createdAt views likeCount"` // Chỉ cho phép sort theo các cột này
+	SortBy  string `form:"sortBy" binding:"omitempty,oneof=createdAt views likeCount"`
 	IsDesc  bool   `form:"isDesc"`
 }
 

@@ -1,19 +1,3 @@
-// Package mapper khai báo HỢP ĐỒNG chuyển đổi giữa 3 tầng dữ liệu; phần thân
-// hàm do goverter sinh ra trong package generated.
-//
-//	ent.*    (dao — do ent generate)      <->  entity.*  (viết tay)
-//	entity.* (viết tay)                   <->  pb.*      (dto — do protobuf generate)
-//
-// Cách làm giống hệt matching_service: interface + comment directive, chạy
-//
-//	go generate ./internal/mapper
-//
-// là ra file generated/generated.go. Không ai được sửa tay file đó.
-//
-// Vì sao không gán field thủ công? Với 5 entity x 3 tầng, viết tay là khoảng
-// 600 dòng gán lặp — và mỗi lần thêm cột lại phải nhớ sửa đủ 3 chỗ. Goverter
-// bắt lỗi ngay lúc BIÊN DỊCH nếu có field không map được, nên quên là không
-// build nổi chứ không phải chờ tới lúc chạy mới lòi ra field rỗng.
 package mapper
 
 import (
@@ -29,6 +13,8 @@ import (
 	"user_service/ent/user"
 	"user_service/ent/userdevice"
 	"user_service/internal/entity"
+
+	"github.com/logistic/pkg/uuidx"
 )
 
 // goverter:converter
@@ -36,8 +22,8 @@ import (
 // goverter:useZeroValueOnPointerInconsistency
 // goverter:ignoreUnexported
 // goverter:extend IdentityTime
-// goverter:extend UUIDToString
-// goverter:extend StringToUUID
+// goverter:extend UUIDToBytes
+// goverter:extend BytesToUUID
 // goverter:extend TimeToTimestamp
 // goverter:extend TimestampToTime
 // goverter:extend StringPtrToString
@@ -51,8 +37,6 @@ import (
 //
 //go:generate go run github.com/jmattheis/goverter/cmd/goverter@v1.9.4 gen ./
 type AppMapper interface {
-	// ==================== DAO -> ENTITY (tầng repo) ====================
-
 	EntUserToEntityUser(source *ent.User) entity.User
 	EntUserListToEntityUserList(source []*ent.User) []entity.User
 
@@ -66,8 +50,6 @@ type AppMapper interface {
 
 	EntUserDeviceToEntityUserDevice(source *ent.UserDevice) entity.UserDevice
 	EntUserDeviceListToEntityList(source []*ent.UserDevice) []entity.UserDevice
-
-	// ==================== ENTITY -> DTO (tầng controller) ====================
 
 	EntityUserToPbUser(source entity.User) *pb.User
 	EntityUserListToPbUserList(source []entity.User) []*pb.User
@@ -84,10 +66,6 @@ type AppMapper interface {
 	EntityUserDeviceListToPbList(source []entity.UserDevice) []*pb.UserDevice
 
 	EntityPaginationToPb(source entity.Pagination) *pb.Pagination
-
-	// ==================== DTO -> ENTITY (tầng controller) ====================
-	// Các hàm này trả (T, error) vì StringToUUID có thể thất bại khi client gửi
-	// chuỗi không phải UUID. Lỗi được controller bọc lại thành ErrInvalidUserID.
 
 	PbRegisterUserToParam(req *pb.RegisterUserRequest) entity.RegisterUserParam
 
@@ -115,27 +93,17 @@ type AppMapper interface {
 	PbAdminReviewKycToParam(req *pb.AdminReviewKYCRequest) (entity.ReviewKYCParam, error)
 }
 
-// ===========================================================================
-// HELPERS — được đăng ký qua `goverter:extend` ở trên nên goverter tự dùng
-// chúng cho MỌI cặp kiểu tương ứng, không cần khai báo lại ở từng field.
-// ===========================================================================
-
 func IdentityTime(t time.Time) time.Time { return t }
 
-func UUIDToString(u uuid.UUID) string {
+func UUIDToBytes(u uuid.UUID) []byte {
 	if u == uuid.Nil {
-		return ""
+		return nil
 	}
-	return u.String()
+	return uuidx.ToBytes(u)
 }
 
-// StringToUUID: chuỗi rỗng -> uuid.Nil (field không bắt buộc), chuỗi rác -> lỗi.
-// Tầng biz sẽ tự từ chối uuid.Nil ở những chỗ bắt buộc phải có id.
-func StringToUUID(s string) (uuid.UUID, error) {
-	if s == "" {
-		return uuid.Nil, nil
-	}
-	return uuid.Parse(s)
+func BytesToUUID(b []byte) (uuid.UUID, error) {
+	return uuidx.FromBytes(b)
 }
 
 func TimeToTimestamp(t time.Time) *timestamppb.Timestamp {
@@ -152,8 +120,6 @@ func TimestampToTime(ts *timestamppb.Timestamp) time.Time {
 	return time.Time{}
 }
 
-// StringPtrToString: cột nullable của Postgres về Go là *string. Tầng nghiệp vụ
-// không quan tâm phân biệt NULL với "" nên quy hết về chuỗi rỗng.
 func StringPtrToString(s *string) string {
 	if s == nil {
 		return ""
@@ -164,7 +130,6 @@ func StringPtrToString(s *string) string {
 func IntToInt32(i int) int32 { return int32(i) }
 func Int32ToInt(i int32) int { return int(i) }
 
-// Các enum của ent là kiểu string riêng; đưa về string thuần cho entity.
 func EntUserRoleToString(r user.Role) string                { return string(r) }
 func EntUserStatusToString(s user.Status) string            { return string(s) }
 func EntKycStatusToString(s driverprofile.KycStatus) string { return string(s) }

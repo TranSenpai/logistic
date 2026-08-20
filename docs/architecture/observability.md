@@ -1,80 +1,137 @@
-# Hướng dẫn triển khai OpenTelemetry (OTel) trong Logistic System
+# Quan sát hệ thống với OpenTelemetry
 
-Tài liệu này mô tả chi tiết lộ trình và cách thức tích hợp OpenTelemetry cho distributed tracing trong toàn bộ hệ thống microservices.
+Trace đi từ lúc request chạm gateway tới lúc rời khỏi service cuối cùng.
 
-## 1. Kiến trúc tổng quan của OpenTelemetry
+---
 
-Trong hệ thống này, chúng ta sử dụng kiến trúc sau cho Observability:
-- **Instrumentation**: Thư viện `go.opentelemetry.io/otel` và `otelgrpc` để tự động thu thập trace từ các request gRPC.
-- **Exporter**: Gửi data thu thập được qua giao thức **OTLP gRPC** (`OTEL_EXPORTER_OTLP_ENDPOINT`).
-- **Collector (Dự kiến)**: Một OpenTelemetry Collector container sẽ nhận trace từ các service và forward sang backend.
-- **Backend (Dự kiến)**: Jaeger hoặc Elastic APM để visualize các traces (sẽ được cấu hình trong `docker-compose.yml`).
+## Thành phần
 
-## 2. Shared Library: `pkg/tracer`
+| Thành phần | Vai trò |
+|---|---|
+| `pkg/tracer` | Khởi tạo OTLP exporter, gán `service.name`, cài propagator |
+| `otelgin` | Mở span gốc cho mỗi request HTTP ở gateway |
+| `otelgrpc` | Nối span giữa gateway và service nội bộ qua gRPC metadata |
+| Jaeger | Nhận trace qua OTLP gRPC, hiển thị tại `:16686` |
 
-Để tái sử dụng code khởi tạo Otel cho tất cả các services, một module dùng chung đã được tạo tại `pkg/tracer/tracer.go`.
-
-### Thành phần chính trong `tracer.go`:
-- Khởi tạo một `otlptracegrpc.Exporter` (OTLP Exporter) chỉ tới endpoint của Collector.
-- Cấu hình `resource.Resource` dùng để gán nhãn `service.name` (vd: `user_service`, `gateway_service`) nhằm định danh trace thuộc về service nào.
-- Cài đặt Global `TracerProvider` và `TextMapPropagator` (cho phép truyền trace ID context qua các network call giữa client và server thông qua gRPC metadata).
-
-## 3. Cách thức gắn (Instrument) OTel vào một Microservice
-
-### A. Gắn vào gRPC Server (Ví dụ: `user_service`, `vehicle_service`, `matching_service`)
-
-**Bước 1: Khởi tạo Tracer ở tầng `cmd/app.go`**
-```go
-import "github.com/logistic/pkg/tracer"
-
-func NewApp() *App {
-    // 1. Khởi tạo tracer với tên service
-    shutdownTracer, err := tracer.InitTracer("user_service", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
-    // ...
+```
+client ──HTTP──► gateway_service ──gRPC──► service nội bộ
+                      │                          │
+                      └────── OTLP :4317 ────────┘
+                                  ▼
+                               jaeger
 ```
 
-**Bước 2: Gắn Interceptor vào gRPC Server**
-Khi khởi tạo gRPC server, truyền interceptor `otelgrpc.NewServerHandler()` vào thông qua `grpc.StatsHandler`:
-```go
-import "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+## Xem trace
 
-grpcServer := grpc.NewServer(
-    grpc.StatsHandler(otelgrpc.NewServerHandler()),
+```bash
+docker compose up -d jaeger
+```
+
+Giao diện: <http://localhost:16686>
+
+Endpoint xuất trace được cấu hình bằng `OTEL_EXPORTER_OTLP_ENDPOINT=jaeger:4317`.
+Khi biến này rỗng, SDK dùng mặc định `localhost:4317`; trong container không có
+tiến trình nào nghe ở đó nên toàn bộ span bị loại bỏ. `BatchSpanProcessor` không
+ghi log khi gửi thất bại, nên triệu chứng duy nhất là giao diện Jaeger trống.
+
+> **Production.** Jaeger all-in-one giữ trace trong bộ nhớ và mất khi restart.
+> Môi trường thật cần OTel Collector đứng trước một backend có lưu trữ, kèm lấy
+> mẫu. Giữ 100% span ở nhịp báo GPS sẽ tốn hơn chính hệ thống đang được đo.
+
+## Span gốc
+
+Span gốc mở tại middleware đầu tiên của gateway:
+
+```go
+engine.Use(
+    otelgin.Middleware("gateway_service"),
+    middleware.RequestID(),
+    ...
 )
 ```
 
-**Bước 3: Graceful Shutdown Tracer**
-Đảm bảo gọi hàm `shutdownTracer` khi service bị stop để đẩy (flush) toàn bộ các trace cuối cùng ra ngoài trước khi process chết:
+Vị trí này quyết định phạm vi trace: toàn bộ tầng HTTP — bind, validate, xác
+thực, phân quyền — nằm trong span gốc, và mọi lời gọi gRPC phát sinh trong một
+request đều là span con của cùng một cha.
+
+`otelgin` cũng đọc header `traceparent` nếu client gửi lên, nên trace bắt đầu từ
+app di động nối liền được với trace phía máy chủ.
+
+## Một mã truy vết duy nhất
+
+`X-Request-ID` lấy giá trị từ `trace_id` của span đang chạy:
+
 ```go
-func (a *App) Stop() {
-    // ...
-    if a.shutdown != nil {
-        ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-        defer cancel()
-        a.shutdown(ctx)
-    }
+if sc := trace.SpanContextFromContext(ctx.Request.Context()); sc.IsValid() {
+    id = sc.TraceID().String()
 }
 ```
 
-### B. Gắn vào gRPC Client (Ví dụ: `gateway_service`)
+Mã này xuất hiện ở ba nơi cho cùng một request: header phản hồi, dòng access log,
+và trường `request_id` trong body lỗi. Cầm một mã tra được cả log lẫn trace.
 
-Để chuỗi trace không bị đứt đoạn, service gọi gRPC (Client) cũng cần gắn OTel vào `grpc.NewClient`.
+Khi chưa có tracer (chạy local không bật Jaeger), gateway sinh UUID v7 thay thế.
 
-**Ví dụ tại `gateway_service/internal/di/injection.go`:**
-```go
-conn, err := grpc.NewClient(
-    authGrpcAddr,
-    grpc.WithTransportCredentials(insecure.NewCredentials()),
-    grpc.WithStatsHandler(otelgrpc.NewClientHandler()), // Tự động inject TraceID vào gRPC Header
-)
+Client gửi sẵn `X-Request-ID` thì gateway dùng lại, giữ chuỗi truy vết xuyên
+nhiều hệ thống.
+
+## Span ở từng service
+
+| Service | Tracer | Instrumentation | Chain interceptor |
+|---|---|---|---|
+| gateway_service | có | otelgin + otelgrpc client | middleware HTTP riêng |
+| auth_service | có | otelgrpc server | có |
+| user_service | có | otelgrpc server | có |
+| vehicle_service | có | otelgrpc server | có |
+| matching_service | có | otelgrpc server | có |
+| media_service | có | otelgrpc server | có |
+| notification_service | có | otelgrpc server | có |
+| wallet_service | có | otelgrpc server | có |
+
+## Hình dạng một trace
+
+```
+gateway_service  POST /api/v1/vehicles/{id}/location          [span gốc]
+├─ verify JWT (~31µs, không chạm mạng, không chạm DB)
+└─ vehicle_service  VehicleService/ReportLocation             [span con]
+   ├─ redis GEOADD
+   └─ postgres UPDATE vehicle_locations
 ```
 
-## 4. Lộ trình triển khai hiện tại và tiếp theo
+Hai mức đầu có sẵn từ instrumentation tự động. Hai mức trong cùng chưa được
+instrument: trace cho biết "gọi vehicle_service mất 40ms" nhưng không cho biết
+40ms đó tiêu vào Redis hay Postgres.
 
-- [x] Tạo gói thư viện chung `pkg/tracer`.
-- [x] Gắn OTel vào gRPC Server: `user_service`, `vehicle_service`, `matching_service`.
-- [x] Gắn OTel vào gRPC Client: `gateway_service`.
-- [ ] **Sắp tới:** Khi implement `wallet_service` và `notification_service`, cần áp dụng ngay template gắn OTel tương tự như trên.
-- [ ] **Sắp tới (Messaging):** Khi tích hợp RabbitMQ/Kafka, cần setup propagate (truyền) trace context vào trong Message Header để có thể trace xuyên suốt từ HTTP -> gRPC -> Message Queue -> Consumer.
-- [ ] **Sắp tới (Database):** Cân nhắc gắn plugin Otel cho `ent` framework (nếu cần trace sâu đến từng câu query SQL).
-- [ ] **Sắp tới (Infrastructure):** Bổ sung Jaeger/OTel Collector vào file `docker-compose.yml` để xem được giao diện visualizing trace khi chạy trên local.
+## Gắn OTel vào service mới
+
+```go
+// 1. Khởi tạo, giữ lại hàm shutdown
+shutdownTracer, err := tracer.InitTracer("tên_service", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
+
+// 2. Gắn vào gRPC server
+grpcServer := grpc.NewServer(
+    grpc.StatsHandler(otelgrpc.NewServerHandler()),
+    middleware.ChainForService("tên_service"),
+)
+
+// 3. Flush lúc tắt
+func (a *App) Stop() {
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+    a.shutdown(ctx)
+}
+```
+
+Bước 3 không bỏ được: `BatchSpanProcessor` gom span theo lô, nên các span cuối
+cùng mất theo tiến trình nếu không flush.
+
+## Phạm vi chưa phủ
+
+| Hạng mục | Trạng thái |
+|---|---|
+| Trace context qua RabbitMQ/Kafka | chưa — trace đứt tại ranh giới hàng đợi, consumer mở trace mới |
+| Span cho truy vấn SQL (`ent`) | chưa |
+| Lấy mẫu | chưa — hiện giữ 100% span |
+| Metrics (RED theo endpoint) | chưa — chỉ suy ra được từ log |
+
+Hạng mục đầu ảnh hưởng lớn nhất, vì toàn bộ luồng thông báo đi qua hàng đợi.

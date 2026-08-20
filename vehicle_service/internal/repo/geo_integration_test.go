@@ -1,14 +1,5 @@
 //go:build integration
 
-// Test tích hợp cho CHỈ MỤC GEO — phần lõi của nghiệp vụ "tìm xe đang chạy".
-//
-// Không mock được phần này: điểm mấu chốt là hành vi thật của lệnh GEOSEARCH
-// trên Redis (bán kính tính theo mét trên mặt cầu, thứ tự gần->xa, cách xử lý
-// member bị xoá). Một bản giả tự viết sẽ chỉ chứng minh bản giả đó đúng.
-//
-// Chạy:
-//
-//	go test -tags=integration ./internal/repo/... -v
 package repo
 
 import (
@@ -33,7 +24,6 @@ func env(key, fallback string) string {
 	return fallback
 }
 
-// Toạ độ mốc: chợ Bến Thành, TP.HCM.
 const (
 	benThanhLat = 10.7721
 	benThanhLng = 106.6980
@@ -58,7 +48,6 @@ func setupVehicleRepo(t *testing.T) (*ent.Client, *cache.Client, *vehicleRepoImp
 		t.Fatalf("tạo schema thất bại: %v", err)
 	}
 
-	// Prefix riêng cho mỗi lần chạy để chỉ mục GEO của các test không lẫn nhau.
 	redisClient, err := cache.New(cache.Config{
 		Host:   env("IT_REDIS_HOST", "127.0.0.1"),
 		Port:   env("IT_REDIS_PORT", "6379"),
@@ -80,7 +69,6 @@ func setupVehicleRepo(t *testing.T) (*ent.Client, *cache.Client, *vehicleRepoImp
 	return client, redisClient, r
 }
 
-// seedOnlineVehicle tạo một chiếc xe ĐÃ DUYỆT, đang online, ở toạ độ cho trước.
 func seedOnlineVehicle(t *testing.T, r *vehicleRepoImpl, lat, lng, availWeight, availVolume float64, vType string) uuid.UUID {
 	t.Helper()
 	ctx := context.Background()
@@ -97,8 +85,6 @@ func seedOnlineVehicle(t *testing.T, r *vehicleRepoImpl, lat, lng, availWeight, 
 		t.Fatalf("tạo xe thất bại: %v", err)
 	}
 
-	// Xe phải được duyệt mới lọt vào kết quả tìm kiếm — đây là luật nghiệp vụ
-	// nằm trong matchesRequirement.
 	if _, err := r.UpdateVerification(ctx, &entity.VerifyVehicleParam{ID: v.ID}, entity.VerificationVerified); err != nil {
 		t.Fatalf("duyệt xe thất bại: %v", err)
 	}
@@ -118,16 +104,13 @@ func seedOnlineVehicle(t *testing.T, r *vehicleRepoImpl, lat, lng, availWeight, 
 	return v.ID
 }
 
-// TestSearchNearbyOrdersByDistance: kết quả phải sắp xếp gần -> xa, và xe ngoài
-// bán kính phải bị loại.
 func TestSearchNearbyOrdersByDistance(t *testing.T) {
 	_, _, r := setupVehicleRepo(t)
 	ctx := context.Background()
 
-	// ~0.009 độ vĩ tuyến ≈ 1 km.
 	near := seedOnlineVehicle(t, r, benThanhLat+0.009, benThanhLng, 5000, 20, entity.VehicleTypeTruck)
 	mid := seedOnlineVehicle(t, r, benThanhLat+0.027, benThanhLng, 5000, 20, entity.VehicleTypeTruck)
-	far := seedOnlineVehicle(t, r, benThanhLat+0.45, benThanhLng, 5000, 20, entity.VehicleTypeTruck) // ~50 km
+	far := seedOnlineVehicle(t, r, benThanhLat+0.45, benThanhLng, 5000, 20, entity.VehicleTypeTruck)
 
 	got, err := r.SearchNearby(ctx, &entity.SearchNearbyParam{
 		Latitude:  benThanhLat,
@@ -157,16 +140,12 @@ func TestSearchNearbyOrdersByDistance(t *testing.T) {
 	}
 }
 
-// TestSearchNearbyFiltersByCapacity: xe còn chỗ ít hơn yêu cầu phải bị loại,
-// dù nó đứng gần hơn. Đây là điểm Redis GEO một mình không làm được — nó chỉ
-// biết toạ độ, phần lọc sức chứa nằm ở matchesRequirement.
 func TestSearchNearbyFiltersByCapacity(t *testing.T) {
 	_, _, r := setupVehicleRepo(t)
 	ctx := context.Background()
 
-	// Xe nhỏ đứng RẤT gần nhưng chỉ còn 500kg.
 	small := seedOnlineVehicle(t, r, benThanhLat+0.001, benThanhLng, 500, 2, entity.VehicleTypeVan)
-	// Xe lớn đứng xa hơn nhưng đủ chỗ.
+
 	big := seedOnlineVehicle(t, r, benThanhLat+0.02, benThanhLng, 8000, 30, entity.VehicleTypeTruck)
 
 	got, err := r.SearchNearby(ctx, &entity.SearchNearbyParam{
@@ -212,9 +191,6 @@ func TestSearchNearbyFiltersByVehicleType(t *testing.T) {
 	}
 }
 
-// TestGoingOfflineRemovesFromIndex: tài xế tắt nhận đơn thì phải BIẾN MẤT khỏi
-// kết quả tìm kiếm ngay. Thiếu bước này, matching sẽ gán đơn cho một tài xế đã
-// nghỉ và đơn hàng treo ở đó.
 func TestGoingOfflineRemovesFromIndex(t *testing.T) {
 	client, _, r := setupVehicleRepo(t)
 	ctx := context.Background()
@@ -257,7 +233,6 @@ func TestGoingOfflineRemovesFromIndex(t *testing.T) {
 	}
 }
 
-// TestMaintenanceRemovesFromIndex: xe vào bảo dưỡng cũng phải rời chỉ mục.
 func TestMaintenanceRemovesFromIndex(t *testing.T) {
 	_, _, r := setupVehicleRepo(t)
 	ctx := context.Background()
@@ -279,13 +254,10 @@ func TestMaintenanceRemovesFromIndex(t *testing.T) {
 	}
 }
 
-// TestReportLocationMovesVehicleInIndex: tài xế ping GPS -> vị trí trong chỉ mục
-// phải đổi theo, nếu không kết quả tìm kiếm sẽ mãi trỏ về chỗ xe đứng lúc bật máy.
 func TestReportLocationMovesVehicleInIndex(t *testing.T) {
 	client, _, r := setupVehicleRepo(t)
 	ctx := context.Background()
 
-	// Bật nhận đơn ở XA điểm tìm kiếm.
 	vehicleID := seedOnlineVehicle(t, r, benThanhLat+0.4, benThanhLng, 5000, 20, entity.VehicleTypeTruck)
 
 	got, err := r.SearchNearby(ctx, &entity.SearchNearbyParam{
@@ -303,7 +275,6 @@ func TestReportLocationMovesVehicleInIndex(t *testing.T) {
 		t.Fatalf("đọc xe thất bại: %v", err)
 	}
 
-	// Tài xế chạy về gần điểm lấy hàng và ping GPS.
 	newLat, newLng := benThanhLat+0.005, benThanhLng
 	if _, err := r.UpsertLocation(ctx, &entity.ReportLocationParam{
 		VehicleID: vehicleID,
@@ -329,7 +300,6 @@ func TestReportLocationMovesVehicleInIndex(t *testing.T) {
 	}
 }
 
-// TestUnverifiedVehicleIsExcluded: xe chưa duyệt giấy tờ không được nhận đơn.
 func TestUnverifiedVehicleIsExcluded(t *testing.T) {
 	_, _, r := setupVehicleRepo(t)
 	ctx := context.Background()
@@ -346,7 +316,6 @@ func TestUnverifiedVehicleIsExcluded(t *testing.T) {
 		t.Fatalf("tạo xe thất bại: %v", err)
 	}
 
-	// KHÔNG duyệt, nhưng vẫn nhét thẳng vào chỉ mục để kiểm tra lớp lọc cuối.
 	if _, err := r.UpsertAvailability(ctx, &entity.SetAvailabilityParam{
 		DriverID:           driverID,
 		VehicleID:          v.ID,

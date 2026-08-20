@@ -77,7 +77,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -200,7 +201,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -238,7 +240,8 @@
             "name": "driverId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -266,7 +269,8 @@
             "name": "driverId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -304,7 +308,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -334,7 +339,8 @@
             "name": "driverId",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "status",
@@ -453,7 +459,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -481,13 +488,15 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "driverId",
             "in": "query",
             "required": false,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -515,7 +524,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -553,7 +563,8 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -591,7 +602,8 @@
             "name": "vehicleId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "reviewStatus",
@@ -625,7 +637,8 @@
             "name": "vehicleId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -663,7 +676,8 @@
             "name": "vehicleId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -691,7 +705,8 @@
             "name": "vehicleId",
             "in": "path",
             "required": true,
-            "type": "string"
+            "type": "string",
+            "format": "byte"
           },
           {
             "name": "body",
@@ -719,7 +734,8 @@
           "type": "string"
         },
         "reviewerId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         }
       }
     },
@@ -733,7 +749,8 @@
           "type": "string"
         },
         "reviewerId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         }
       }
     },
@@ -741,7 +758,8 @@
       "type": "object",
       "properties": {
         "driverId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "latitude": {
           "type": "number",
@@ -765,7 +783,8 @@
       "type": "object",
       "properties": {
         "vehicleId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "isOnline": {
           "type": "boolean"
@@ -973,13 +992,16 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "driverId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "vehicleId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "isOnline": {
           "type": "boolean"
@@ -1065,10 +1087,12 @@
       "type": "object",
       "properties": {
         "vehicleId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "driverId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "licensePlate": {
           "type": "string"
@@ -1123,7 +1147,8 @@
       "type": "object",
       "properties": {
         "driverId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "licensePlate": {
           "type": "string"
@@ -1155,7 +1180,8 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "message": {
           "type": "string"
@@ -1274,10 +1300,12 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "driverId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "licensePlate": {
           "type": "string"
@@ -1326,10 +1354,12 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "vehicleId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "documentType": {
           "type": "string",
@@ -1367,10 +1397,12 @@
       "type": "object",
       "properties": {
         "vehicleId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "driverId": {
-          "type": "string"
+          "type": "string",
+          "format": "byte"
         },
         "latitude": {
           "type": "number",

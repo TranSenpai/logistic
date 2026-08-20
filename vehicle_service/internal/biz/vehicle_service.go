@@ -1,4 +1,3 @@
-// Package biz chứa luật nghiệp vụ của vehicle_service.
 package biz
 
 import (
@@ -11,7 +10,6 @@ import (
 )
 
 type VehicleEngine interface {
-	// --- Client ---
 	RegisterVehicle(ctx context.Context, param *entity.RegisterVehicleParam) (*entity.Vehicle, error)
 	GetVehicle(ctx context.Context, id uuid.UUID) (*entity.Vehicle, error)
 	ListVehicles(ctx context.Context, param *entity.ListVehiclesParam) (*entity.ListVehiclesResult, error)
@@ -31,7 +29,6 @@ type VehicleEngine interface {
 
 	SearchNearby(ctx context.Context, param *entity.SearchNearbyParam) ([]entity.NearbyVehicle, error)
 
-	// --- Admin ---
 	AdminListVehicles(ctx context.Context, param *entity.AdminListVehiclesParam) (*entity.ListVehiclesResult, error)
 	AdminVerifyVehicle(ctx context.Context, param *entity.VerifyVehicleParam) (*entity.Vehicle, error)
 	AdminListPendingDocuments(ctx context.Context, page, pageSize int) (*entity.ListDocumentsResult, error)
@@ -47,10 +44,6 @@ func NewVehicleEngine(repo VehicleRepo) VehicleEngine {
 	return &vehicleEngineImpl{repo: repo}
 }
 
-// ---------------------------------------------------------------------------
-// PHƯƠNG TIỆN
-// ---------------------------------------------------------------------------
-
 func (e *vehicleEngineImpl) RegisterVehicle(ctx context.Context, param *entity.RegisterVehicleParam) (*entity.Vehicle, error) {
 	if param.DriverID == uuid.Nil {
 		return nil, cerr.ErrInvalidDriverID
@@ -61,7 +54,7 @@ func (e *vehicleEngineImpl) RegisterVehicle(ctx context.Context, param *entity.R
 	if !entity.IsValidVehicleType(param.VehicleType) {
 		return nil, cerr.ErrInvalidType.WithDetail("vehicle_type", param.VehicleType)
 	}
-	// Sức chứa bằng 0 làm mọi phép so khớp tải trọng vô nghĩa, nên chặn từ đầu.
+
 	if param.CapacityWeightKg <= 0 || param.CapacityVolumeCbm <= 0 {
 		return nil, cerr.ErrInvalidCapacity
 	}
@@ -115,7 +108,7 @@ func (e *vehicleEngineImpl) DeleteVehicle(ctx context.Context, id, driverID uuid
 	if err != nil {
 		return err
 	}
-	// Tài xế chỉ được xoá xe của chính mình; driverID rỗng nghĩa là admin gọi.
+
 	if driverID != uuid.Nil && v.DriverID != driverID {
 		return cerr.ErrVehicleNotOwned
 	}
@@ -131,10 +124,6 @@ func (e *vehicleEngineImpl) UpdateVehicleStatus(ctx context.Context, id uuid.UUI
 	}
 	return e.repo.UpdateVehicleStatus(ctx, id, status)
 }
-
-// ---------------------------------------------------------------------------
-// GIẤY TỜ
-// ---------------------------------------------------------------------------
 
 func (e *vehicleEngineImpl) UploadDocument(ctx context.Context, param *entity.UploadDocumentParam) (*entity.VehicleDocument, error) {
 	if param.VehicleID == uuid.Nil {
@@ -172,10 +161,6 @@ func (e *vehicleEngineImpl) DeleteDocument(ctx context.Context, id uuid.UUID) er
 	return e.repo.DeleteDocument(ctx, id)
 }
 
-// ---------------------------------------------------------------------------
-// VỊ TRÍ & TRẠNG THÁI NHẬN ĐƠN
-// ---------------------------------------------------------------------------
-
 func (e *vehicleEngineImpl) ReportLocation(ctx context.Context, param *entity.ReportLocationParam) (*entity.VehicleLocation, error) {
 	if param.VehicleID == uuid.Nil {
 		return nil, cerr.ErrInvalidVehicleID
@@ -190,7 +175,7 @@ func (e *vehicleEngineImpl) ReportLocation(ctx context.Context, param *entity.Re
 	if err != nil {
 		return nil, err
 	}
-	// driver_id không gửi lên thì lấy từ hồ sơ xe, để bản ghi vị trí luôn đủ.
+
 	if param.DriverID == uuid.Nil {
 		param.DriverID = v.DriverID
 	}
@@ -206,11 +191,6 @@ func (e *vehicleEngineImpl) GetLocation(ctx context.Context, vehicleID uuid.UUID
 	return e.repo.GetLocation(ctx, vehicleID)
 }
 
-// SetAvailability là công tắc tài xế bật/tắt nhận đơn.
-//
-// Khi BẬT, ta kiểm tra đủ ba điều kiện trước: xe có thật, đúng chủ, đã qua kiểm
-// duyệt và không đang bảo dưỡng. Đây là chốt chặn quan trọng nhất của luồng
-// matching — một chiếc xe lọt qua đây sẽ được engine coi là sẵn sàng chở hàng.
 func (e *vehicleEngineImpl) SetAvailability(ctx context.Context, param *entity.SetAvailabilityParam) (*entity.DriverAvailability, error) {
 	if param.DriverID == uuid.Nil {
 		return nil, cerr.ErrInvalidDriverID
@@ -237,14 +217,14 @@ func (e *vehicleEngineImpl) SetAvailability(ctx context.Context, param *entity.S
 		if !entity.IsValidCoordinate(param.CurrentLat, param.CurrentLng) {
 			return nil, cerr.ErrInvalidCoordinate
 		}
-		// Không khai sức chứa còn trống thì mặc định là toàn bộ sức chứa xe.
+
 		if param.AvailableWeightKg <= 0 {
 			param.AvailableWeightKg = v.CapacityWeightKg
 		}
 		if param.AvailableVolumeCbm <= 0 {
 			param.AvailableVolumeCbm = v.CapacityVolumeCbm
 		}
-		// Không cho khai khống vượt quá sức chứa thật của xe.
+
 		if param.AvailableWeightKg > v.CapacityWeightKg {
 			param.AvailableWeightKg = v.CapacityWeightKg
 		}
@@ -274,10 +254,6 @@ func (e *vehicleEngineImpl) SearchNearby(ctx context.Context, param *entity.Sear
 	param.Normalize()
 	return e.repo.SearchNearby(ctx, param)
 }
-
-// ---------------------------------------------------------------------------
-// ADMIN
-// ---------------------------------------------------------------------------
 
 func (e *vehicleEngineImpl) AdminListVehicles(ctx context.Context, param *entity.AdminListVehiclesParam) (*entity.ListVehiclesResult, error) {
 	if param.Status != "" && !entity.IsValidVehicleStatus(param.Status) {
