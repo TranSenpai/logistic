@@ -147,7 +147,7 @@ func renderDrawio(d Diagram) string {
 // HTML — một trang duy nhất xem được toàn bộ sơ đồ
 // ---------------------------------------------------------------------------
 
-func renderHTMLIndex(ds []Diagram) string {
+func renderHTMLIndex(ds []rendered) string {
 	var b strings.Builder
 	b.WriteString(`<!DOCTYPE html>
 <html lang="vi">
@@ -176,6 +176,8 @@ func renderHTMLIndex(ds []Diagram) string {
   .scroll { overflow-x:auto; }
   svg { display:block; }
   footer { margin:40px 32px; font-size:12.5px; color:#78909C; }
+  table.legend { border-collapse:collapse; font-size:13px; }
+  table.legend td { padding:5px 12px 5px 0; vertical-align:middle; }
   code { background:#ECEFF1; padding:1px 5px; border-radius:3px; font-size:12px; }
 </style>
 </head>
@@ -187,28 +189,49 @@ func renderHTMLIndex(ds []Diagram) string {
 <nav>
 `)
 
-	writeNav := func(title string, names map[string]bool) {
+	writeNav := func(title, group string) {
 		fmt.Fprintf(&b, "  <strong>%s</strong>\n", title)
 		for _, d := range ds {
-			if names[d.Name] {
-				fmt.Fprintf(&b, `  <a href="#%s">%s</a>`+"\n", d.Name, esc(d.Title))
+			if d.group == group {
+				fmt.Fprintf(&b, `  <a href="#%s">%s</a>`+"\n", d.name, esc(d.title))
 			}
 		}
 	}
-	writeNav("Kiến trúc", map[string]bool{"system-overview": true, "service-layering": true})
-	writeNav("Luồng nghiệp vụ", flowNames())
-	writeNav("Service", serviceNames())
+	writeNav("Kiến trúc", "arch")
+	writeNav("Luồng nghiệp vụ — sequence diagram", "flow")
+	writeNav("Service — sơ đồ thành phần", "service")
 
 	b.WriteString("</nav>\n")
 
+	// Chú giải ký hiệu sequence, đặt ngay đầu trang để người đọc không phải đoán.
+	b.WriteString(`<section id="legend">
+  <h2>Chú giải ký hiệu</h2>
+  <p class="cap">Áp dụng cho các sequence diagram bên dưới.</p>
+  <table class="legend">
+    <tr><td><svg width="90" height="16"><line x1="4" y1="8" x2="72" y2="8" stroke="#37474F" stroke-width="1.5"/><path d="M72 4 L82 8 L72 12 z" fill="#37474F"/></svg></td>
+        <td><strong>Gọi đồng bộ</strong> — bên gửi chờ kết quả</td></tr>
+    <tr><td><svg width="90" height="16"><line x1="4" y1="8" x2="72" y2="8" stroke="#546E7A" stroke-width="1.5" stroke-dasharray="7 4"/><path d="M72 4 L82 8 L72 12" fill="none" stroke="#546E7A" stroke-width="1.4"/></svg></td>
+        <td><strong>Giá trị trả về</strong></td></tr>
+    <tr><td><svg width="90" height="16"><line x1="4" y1="8" x2="72" y2="8" stroke="#37474F" stroke-width="1.5"/><path d="M72 4 L82 8 L72 12" fill="none" stroke="#37474F" stroke-width="1.4"/></svg></td>
+        <td><strong>Bất đồng bộ</strong> — phát rồi đi tiếp, không chờ</td></tr>
+    <tr><td><svg width="90" height="26"><polyline points="4,6 40,6 40,20 10,20" fill="none" stroke="#37474F" stroke-width="1.5"/><path d="M14 16 L4 20 L14 24" fill="#37474F"/></svg></td>
+        <td><strong>Tự gọi</strong> — tính toán hoặc kiểm tra nội bộ</td></tr>
+    <tr><td><svg width="90" height="26"><rect x="38" y="2" width="12" height="22" fill="#CFD8DC" stroke="#78909C"/></svg></td>
+        <td><strong>Thanh activation</strong> — khoảng thời gian đối tượng đang xử lý</td></tr>
+    <tr><td><svg width="90" height="26"><rect x="4" y="2" width="82" height="22" fill="#FAFAFA" stroke="#90A4AE"/><path d="M4 2 h30 l8 8 v6 h-38 z" fill="#ECEFF1" stroke="#90A4AE"/><text x="8" y="12" font-size="9" font-weight="700" fill="#37474F">alt</text></svg></td>
+        <td><strong>Khung alt / opt</strong> — nhánh rẽ, đường đứt bên trong ngăn nhánh else</td></tr>
+  </table>
+</section>
+`)
+
 	for _, d := range ds {
-		fmt.Fprintf(&b, `<section id="%s">`+"\n", d.Name)
-		fmt.Fprintf(&b, `  <h2>%s</h2>`+"\n", esc(d.Title))
-		if d.Caption != "" {
-			fmt.Fprintf(&b, `  <p class="cap">%s</p>`+"\n", esc(d.Caption))
+		fmt.Fprintf(&b, `<section id="%s">`+"\n", d.name)
+		fmt.Fprintf(&b, `  <h2>%s</h2>`+"\n", esc(d.title))
+		if d.caption != "" {
+			fmt.Fprintf(&b, `  <p class="cap">%s</p>`+"\n", esc(d.caption))
 		}
 		b.WriteString(`  <div class="scroll">` + "\n  ")
-		b.WriteString(renderSVG(d))
+		b.WriteString(d.svg)
 		b.WriteString("\n  </div>\n</section>\n")
 	}
 

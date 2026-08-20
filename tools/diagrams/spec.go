@@ -54,12 +54,6 @@ type Diagram struct {
 func diagrams() []Diagram {
 	return []Diagram{
 		systemOverview(),
-		matchingNotificationFlow(),
-		driverOnboardingFlow(),
-		shipperOrderFlow(),
-		driverLocationFlow(),
-		authenticationFlow(),
-		errorHandlingFlow(),
 		serviceLayering(),
 		gatewayService(),
 		authService(),

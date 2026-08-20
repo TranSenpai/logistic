@@ -99,20 +99,51 @@ docs/diagrams/svg/<tên>.svg      ← bản nhúng vào .md
 docs/rendered/diagrams.html      ← xem tất cả trong một trang
 ```
 
-### Sơ đồ sinh tự động
+### Hai loại sơ đồ cho hai loại tài liệu
 
-16 sơ đồ dưới đây do `make diagrams` sinh ra từ khai báo trong
-`tools/diagrams/`. **Đừng sửa tay** — sửa spec rồi chạy lại, vì cả `.drawio` lẫn
-`.svg` đều đến từ một nguồn nên không thể lệch nhau.
+Loại sơ đồ phải khớp với thứ mà tài liệu đang mô tả:
+
+| Tài liệu | Loại sơ đồ | Vì sao |
+|---|---|---|
+| `flows/` | **Sequence diagram** (UML) | Nghiệp vụ có TRỤC THỜI GIAN: thứ tự bước, ai gọi ai, nhánh rẽ |
+| `services/`, `architecture/` | **Sơ đồ thành phần** | Mô tả cấu trúc tĩnh, không có trục thời gian |
+
+Sơ đồ hộp - mũi tên KHÔNG dùng cho flow được, vì nó làm mất ba thứ quan trọng
+nhất của một luồng: thứ tự các bước, phân biệt gọi đồng bộ / trả về / bất đồng
+bộ, và nhánh alt/else. Test `TestFlowsAreNotComponentDiagrams` khoá lại quyết
+định này — khai báo một flow ở `diagrams()` thay vì `sequences()` là test đỏ.
+
+### Ký hiệu trong sequence diagram
+
+| Ký hiệu | Nghĩa |
+|---|---|
+| Nét liền, đầu mũi tên **đặc** | Gọi đồng bộ — bên gửi chờ kết quả |
+| Nét **đứt**, đầu mũi tên mảnh | Giá trị trả về |
+| Nét liền, đầu mũi tên **mảnh** | Bất đồng bộ — phát rồi đi tiếp, không chờ |
+| Vòng cung về chính mình | Tính toán / kiểm tra nội bộ |
+| Thanh xám dọc trên lifeline | Activation — khoảng thời gian đối tượng đang xử lý |
+| Khung có tab góc trên trái | `alt` / `opt`; đường đứt bên trong ngăn nhánh else |
+
+Message được đánh số theo đúng thứ tự thực thi. Chữ nghiêng dưới mũi tên là ghi
+chú kỹ thuật, không phải một bước riêng.
+
+### Bảng màu (sơ đồ thành phần)
+
+client (tím nhạt) · Nginx (đỏ nhạt) · gateway (xanh dương) · service (xanh lá) ·
+kho dữ liệu (cam) · broker (tím) · dịch vụ ngoài (xám) · ghi chú (vàng).
+
+### Sinh lại
+
+16 sơ đồ do `make diagrams` sinh từ khai báo trong `tools/diagrams/`:
+`sequence.go` cho flow, `spec.go` + `services.go` cho sơ đồ thành phần.
+**Đừng sửa tay file sinh ra** — sửa spec rồi chạy lại, vì cả `.drawio` lẫn `.svg`
+đều đến từ một nguồn nên không thể lệch nhau.
 
 | Nhóm | Sơ đồ |
 |---|---|
 | Kiến trúc | `system-overview` · `service-layering` |
-| Flow | `matching-notification-flow` · `driver-onboarding-flow` · `shipper-order-flow` · `driver-location-flow` · `authentication-flow` · `error-handling-flow` |
-| Service | `gateway-service` · `auth-service` · `user-service` · `vehicle-service` · `matching-service` · `notification-service` · `media-service` · `wallet-service` |
-
-Bảng màu theo loại hộp: client (tím nhạt) · Nginx (đỏ nhạt) · gateway (xanh
-dương) · service (xanh lá) · kho dữ liệu (cam) · broker (tím) · ghi chú (vàng).
+| Flow (sequence) | `matching-notification-flow` · `driver-onboarding-flow` · `shipper-order-flow` · `driver-location-flow` · `authentication-flow` · `error-handling-flow` |
+| Service (thành phần) | `gateway-service` · `auth-service` · `user-service` · `vehicle-service` · `matching-service` · `notification-service` · `media-service` · `wallet-service` |
 
 ### Sơ đồ vẽ tay
 

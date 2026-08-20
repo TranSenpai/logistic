@@ -130,18 +130,12 @@ func TestRouteIsOrthogonal(t *testing.T) {
 	}
 }
 
-// TestEveryFlowAndServiceHasDiagram: mỗi tài liệu trong docs/flows/ và
-// docs/services/ phải có đúng một sơ đồ cùng tên gốc (quy ước ở docs/README.md).
-func TestEveryFlowAndServiceHasDiagram(t *testing.T) {
+// TestEveryServiceHasDiagram: mỗi tài liệu trong docs/services/ phải có đúng một
+// sơ đồ thành phần cùng tên gốc.
+func TestEveryServiceHasDiagram(t *testing.T) {
 	have := map[string]bool{}
 	for _, d := range diagrams() {
 		have[d.Name] = true
-	}
-
-	for name := range flowNames() {
-		if !have[name] {
-			t.Errorf("docs/flows/%s.md được khai báo nhưng thiếu sơ đồ", name)
-		}
 	}
 	for name := range serviceNames() {
 		if !have[name] {

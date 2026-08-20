@@ -17,17 +17,16 @@ const (
 	htmlOut   = "docs/rendered/diagrams.html"
 )
 
-// flowNames / serviceNames dùng cho phần điều hướng của trang HTML và để
-// doclint biết sơ đồ nào thuộc nhóm nào.
+// Hai loại sơ đồ, hai loại tài liệu:
+//
+//	sequence  -> docs/flows/     : nghiệp vụ có TRỤC THỜI GIAN
+//	component -> docs/services/  : cấu trúc bên trong một service
 func flowNames() map[string]bool {
-	return map[string]bool{
-		"matching-notification-flow": true,
-		"driver-onboarding-flow":     true,
-		"shipper-order-flow":         true,
-		"driver-location-flow":       true,
-		"authentication-flow":        true,
-		"error-handling-flow":        true,
+	out := map[string]bool{}
+	for _, s := range sequences() {
+		out[s.Name] = true
 	}
+	return out
 }
 
 func serviceNames() map[string]bool {
@@ -43,17 +42,52 @@ func serviceNames() map[string]bool {
 	}
 }
 
+// rendered gom kết quả của cả hai loại về một dạng chung để ghi file và dựng
+// trang HTML.
+type rendered struct {
+	name    string
+	title   string
+	caption string
+	svg     string
+	drawio  string
+	group   string // "arch" | "flow" | "service"
+}
+
+func renderAll() []rendered {
+	var out []rendered
+
+	for _, d := range diagrams() {
+		group := "arch"
+		if serviceNames()[d.Name] {
+			group = "service"
+		}
+		out = append(out, rendered{
+			name: d.Name, title: d.Title, caption: d.Caption,
+			svg: renderSVG(d), drawio: renderDrawio(d), group: group,
+		})
+	}
+
+	for _, s := range sequences() {
+		out = append(out, rendered{
+			name: s.Name, title: s.Title, caption: s.Caption,
+			svg: renderSequenceSVG(s), drawio: renderSequenceDrawio(s), group: "flow",
+		})
+	}
+
+	return out
+}
+
 func main() {
-	ds := diagrams()
+	all := renderAll()
 
 	// Bắt trùng tên sớm: hai sơ đồ cùng tên sẽ ghi đè nhau trong im lặng.
 	seen := map[string]bool{}
-	for _, d := range ds {
-		if seen[d.Name] {
-			fmt.Fprintf(os.Stderr, "diagrams: trùng tên sơ đồ %q\n", d.Name)
+	for _, r := range all {
+		if seen[r.name] {
+			fmt.Fprintf(os.Stderr, "diagrams: trùng tên sơ đồ %q\n", r.name)
 			os.Exit(1)
 		}
-		seen[d.Name] = true
+		seen[r.name] = true
 	}
 
 	for _, dir := range []string{svgDir, drawioDir, filepath.Dir(htmlOut)} {
@@ -63,25 +97,26 @@ func main() {
 		}
 	}
 
-	for _, d := range ds {
-		svgPath := filepath.Join(svgDir, d.Name+".svg")
-		if err := os.WriteFile(svgPath, []byte(renderSVG(d)), 0o644); err != nil {
+	for _, r := range all {
+		svgPath := filepath.Join(svgDir, r.name+".svg")
+		if err := os.WriteFile(svgPath, []byte(r.svg), 0o644); err != nil {
 			fmt.Fprintf(os.Stderr, "diagrams: ghi %s: %v\n", svgPath, err)
 			os.Exit(1)
 		}
 
-		drawioPath := filepath.Join(drawioDir, d.Name+".drawio")
-		if err := os.WriteFile(drawioPath, []byte(renderDrawio(d)), 0o644); err != nil {
+		drawioPath := filepath.Join(drawioDir, r.name+".drawio")
+		if err := os.WriteFile(drawioPath, []byte(r.drawio), 0o644); err != nil {
 			fmt.Fprintf(os.Stderr, "diagrams: ghi %s: %v\n", drawioPath, err)
 			os.Exit(1)
 		}
 	}
 
-	if err := os.WriteFile(htmlOut, []byte(renderHTMLIndex(ds)), 0o644); err != nil {
+	if err := os.WriteFile(htmlOut, []byte(renderHTMLIndex(all)), 0o644); err != nil {
 		fmt.Fprintf(os.Stderr, "diagrams: ghi %s: %v\n", htmlOut, err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("diagrams: đã sinh %d sơ đồ → %s/*.svg, %s/*.drawio, %s\n",
-		len(ds), svgDir, drawioDir, htmlOut)
+	nSeq := len(sequences())
+	fmt.Printf("diagrams: %d sơ đồ (%d sequence + %d thành phần) → %s/*.svg, %s/*.drawio, %s\n",
+		len(all), nSeq, len(all)-nSeq, svgDir, drawioDir, htmlOut)
 }
