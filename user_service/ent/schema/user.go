@@ -6,32 +6,44 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
-// User holds the schema definition for the User entity.
+// User là danh tính gốc. Mọi bảng khác trong user_service đều treo vào bảng này.
 type User struct {
 	ent.Schema
 }
 
-// Fields of the User.
 func (User) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
 		field.String("phone").Unique(),
 		field.String("email").Unique().Optional(),
-		field.String("password_hash"),
+		field.String("full_name").Optional(),
+		field.String("avatar_url").Optional(),
+		field.String("password_hash").Sensitive(),
 		field.Enum("role").Values("driver", "shipper", "admin"),
-		field.Enum("status").Values("active", "banned").Default("active"),
-		field.Time("created_at").Default(time.Now),
+		field.Enum("status").Values("active", "banned", "suspended").Default("active"),
+		field.String("status_reason").Optional(),
+		field.Time("created_at").Default(time.Now).Immutable(),
 		field.Time("updated_at").Default(time.Now).UpdateDefault(time.Now),
 	}
 }
 
-// Edges of the User.
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("driver_profile", DriverProfile.Type).Unique(),
 		edge.To("shipper_profile", ShipperProfile.Type).Unique(),
+		edge.To("addresses", Address.Type),
+		edge.To("devices", UserDevice.Type),
+	}
+}
+
+// Index trên (role, status) vì màn admin luôn lọc theo đúng cặp này.
+func (User) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("role", "status"),
+		index.Fields("created_at"),
 	}
 }

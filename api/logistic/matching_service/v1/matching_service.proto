@@ -17,4 +17,10 @@ service MatchingEngineService {
 
   // AcceptMatch is called by Customers who agree the trip
   rpc AcceptMatch(AcceptMatchRequest) returns (AcceptMatchResponse);
+
+  // SubmitOffer is called by Drivers who want to bid a price on a cargo
+  rpc SubmitOffer(SubmitOfferRequest) returns (SubmitOfferResponse);
+
+  // RejectOffer is called by Customers who turn down a driver price
+  rpc RejectOffer(RejectOfferRequest) returns (RejectOfferResponse);
 }

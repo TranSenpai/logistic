@@ -1,0 +1,57 @@
+package repo
+
+import (
+	"context"
+	"errors"
+	"strings"
+
+	"vehicle_service/ent"
+	cerr "vehicle_service/internal/common/errors"
+
+	"github.com/logistic/pkg/apperr"
+)
+
+// wrapError dịch lỗi ent/Postgres sang mã lỗi nghiệp vụ.
+// Xem ghi chú đầy đủ ở user_service/internal/repo/repo_error.go.
+func wrapError(err error, notFound *apperr.Error) error {
+	if err == nil {
+		return nil
+	}
+
+	if errors.Is(err, context.Canceled) {
+		return apperr.New(apperr.KindTimeout, "REQUEST_CANCELLED", "yêu cầu đã bị huỷ").WithCause(err)
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return apperr.New(apperr.KindTimeout, "REQUEST_TIMEOUT", "yêu cầu quá thời gian chờ").WithCause(err)
+	}
+
+	if ent.IsNotFound(err) {
+		if notFound == nil {
+			notFound = cerr.ErrVehicleNotFound
+		}
+		return notFound.WithCause(err)
+	}
+
+	if ent.IsConstraintError(err) {
+		msg := strings.ToLower(err.Error())
+		switch {
+		case strings.Contains(msg, "license_plate"):
+			return cerr.ErrPlateAlreadyUsed.WithCause(err)
+		case strings.Contains(msg, "driver_id"):
+			return apperr.AlreadyExists("AVAILABILITY_EXISTS", "tài xế đã có bản ghi trạng thái nhận đơn").WithCause(err)
+		case strings.Contains(msg, "vehicle_id"):
+			return apperr.AlreadyExists("LOCATION_EXISTS", "phương tiện đã có bản ghi vị trí").WithCause(err)
+		default:
+			return apperr.Conflict("CONSTRAINT_VIOLATION", "dữ liệu vi phạm ràng buộc của hệ thống").WithCause(err)
+		}
+	}
+
+	if ent.IsValidationError(err) {
+		return apperr.InvalidArgument("VALIDATION_FAILED", "dữ liệu không hợp lệ").WithCause(err)
+	}
+	if ent.IsNotSingular(err) {
+		return apperr.Conflict("NOT_SINGULAR", "truy vấn trả về nhiều hơn một bản ghi").WithCause(err)
+	}
+
+	return cerr.ErrDatabase.WithCause(err)
+}

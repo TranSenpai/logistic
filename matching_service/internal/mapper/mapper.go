@@ -16,7 +16,7 @@ import (
 // goverter:ignoreUnexported
 // goverter:extend IdentityTime
 //
-//go:generate go run github.com/jmattheis/goverter/cmd/goverter@latest gen ./
+//go:generate go run github.com/jmattheis/goverter/cmd/goverter@v1.9.4 gen ./
 type MatchingMapper interface {
 	// ==================== REPO MAPPER ====================
 

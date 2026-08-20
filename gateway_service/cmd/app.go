@@ -15,9 +15,10 @@ import (
 )
 
 type App struct {
-	engine   *gin.Engine
-	server   *http.Server
-	shutdown func(context.Context) error
+	engine    *gin.Engine
+	container *di.Container
+	server    *http.Server
+	shutdown  func(context.Context) error
 }
 
 func NewApp() (*App, error) {
@@ -26,7 +27,11 @@ func NewApp() (*App, error) {
 		log.Printf("Failed to initialize tracer: %v", err)
 	}
 
-	ginEngine := gin.Default()
+	// gin.New() thay vì gin.Default(): Logger và Recovery mặc định của gin ghi
+	// log dạng text và trả về body 500 không theo khung lỗi chung của hệ thống.
+	// RegisterGatewayRoutes tự gắn middleware.AccessLog + middleware.Recovery
+	// để mọi phản hồi — kể cả khi panic — đều cùng một định dạng JSON.
+	ginEngine := gin.New()
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"http://localhost:3000", "http://localhost:8080"}
@@ -37,14 +42,15 @@ func NewApp() (*App, error) {
 	corsConfig.MaxAge = 12 * time.Hour
 	ginEngine.Use(cors.New(corsConfig))
 
-	err = di.Injection(ginEngine)
+	container, err := di.Injection(ginEngine)
 	if err != nil {
 		return nil, err
 	}
 
 	return &App{
-		engine:   ginEngine,
-		shutdown: shutdownTracer,
+		engine:    ginEngine,
+		container: container,
+		shutdown:  shutdownTracer,
 	}, nil
 }
 
@@ -73,10 +79,12 @@ func (a *App) Stop() {
 	log.Println("Stopping Gateway Service gracefully...")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	if err := a.server.Shutdown(ctx); err != nil {
 		log.Printf("Gateway Service forced to shutdown: %v", err)
 	}
+
+	a.container.Close()
 
 	if a.shutdown != nil {
 		if err := a.shutdown(ctx); err != nil {

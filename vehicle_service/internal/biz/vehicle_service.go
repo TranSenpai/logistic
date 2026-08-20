@@ -1,21 +1,42 @@
+// Package biz chứa luật nghiệp vụ của vehicle_service.
 package biz
 
 import (
 	"context"
-	"fmt"
 
-	"vehicle_service/ent"
-	"vehicle_service/ent/vehicle"
+	cerr "vehicle_service/internal/common/errors"
 	"vehicle_service/internal/entity"
 
 	"github.com/google/uuid"
 )
 
 type VehicleEngine interface {
-	RegisterVehicle(ctx context.Context, param *entity.RegisterVehicleParam) (*entity.RegisterVehicleResult, error)
-	GetVehicle(ctx context.Context, param *entity.GetVehicleParam) (*entity.Vehicle, error)
-	ListVehicles(ctx context.Context, param *entity.ListVehiclesParam) ([]*entity.Vehicle, error)
-	UpdateVehicleStatus(ctx context.Context, param *entity.UpdateVehicleStatusParam) (*entity.UpdateVehicleStatusResult, error)
+	// --- Client ---
+	RegisterVehicle(ctx context.Context, param *entity.RegisterVehicleParam) (*entity.Vehicle, error)
+	GetVehicle(ctx context.Context, id uuid.UUID) (*entity.Vehicle, error)
+	ListVehicles(ctx context.Context, param *entity.ListVehiclesParam) (*entity.ListVehiclesResult, error)
+	UpdateVehicle(ctx context.Context, param *entity.UpdateVehicleParam) (*entity.Vehicle, error)
+	DeleteVehicle(ctx context.Context, id, driverID uuid.UUID) error
+	UpdateVehicleStatus(ctx context.Context, id uuid.UUID, status string) (*entity.Vehicle, error)
+
+	UploadDocument(ctx context.Context, param *entity.UploadDocumentParam) (*entity.VehicleDocument, error)
+	ListDocuments(ctx context.Context, param *entity.ListDocumentsParam) ([]entity.VehicleDocument, error)
+	DeleteDocument(ctx context.Context, id uuid.UUID) error
+
+	ReportLocation(ctx context.Context, param *entity.ReportLocationParam) (*entity.VehicleLocation, error)
+	GetLocation(ctx context.Context, vehicleID uuid.UUID) (*entity.VehicleLocation, error)
+
+	SetAvailability(ctx context.Context, param *entity.SetAvailabilityParam) (*entity.DriverAvailability, error)
+	GetAvailability(ctx context.Context, driverID uuid.UUID) (*entity.DriverAvailability, error)
+
+	SearchNearby(ctx context.Context, param *entity.SearchNearbyParam) ([]entity.NearbyVehicle, error)
+
+	// --- Admin ---
+	AdminListVehicles(ctx context.Context, param *entity.AdminListVehiclesParam) (*entity.ListVehiclesResult, error)
+	AdminVerifyVehicle(ctx context.Context, param *entity.VerifyVehicleParam) (*entity.Vehicle, error)
+	AdminListPendingDocuments(ctx context.Context, page, pageSize int) (*entity.ListDocumentsResult, error)
+	AdminReviewDocument(ctx context.Context, param *entity.ReviewDocumentParam) (*entity.VehicleDocument, error)
+	AdminGetStats(ctx context.Context) (*entity.VehicleStats, error)
 }
 
 type vehicleEngineImpl struct {
@@ -26,93 +47,339 @@ func NewVehicleEngine(repo VehicleRepo) VehicleEngine {
 	return &vehicleEngineImpl{repo: repo}
 }
 
-func (e *vehicleEngineImpl) RegisterVehicle(ctx context.Context, param *entity.RegisterVehicleParam) (*entity.RegisterVehicleResult, error) {
-	driverID, err := uuid.Parse(param.DriverID)
+// ---------------------------------------------------------------------------
+// PHƯƠNG TIỆN
+// ---------------------------------------------------------------------------
+
+func (e *vehicleEngineImpl) RegisterVehicle(ctx context.Context, param *entity.RegisterVehicleParam) (*entity.Vehicle, error) {
+	if param.DriverID == uuid.Nil {
+		return nil, cerr.ErrInvalidDriverID
+	}
+	if param.LicensePlate == "" {
+		return nil, cerr.ErrPlateRequired
+	}
+	if !entity.IsValidVehicleType(param.VehicleType) {
+		return nil, cerr.ErrInvalidType.WithDetail("vehicle_type", param.VehicleType)
+	}
+	// Sức chứa bằng 0 làm mọi phép so khớp tải trọng vô nghĩa, nên chặn từ đầu.
+	if param.CapacityWeightKg <= 0 || param.CapacityVolumeCbm <= 0 {
+		return nil, cerr.ErrInvalidCapacity
+	}
+	return e.repo.CreateVehicle(ctx, param)
+}
+
+func (e *vehicleEngineImpl) GetVehicle(ctx context.Context, id uuid.UUID) (*entity.Vehicle, error) {
+	if id == uuid.Nil {
+		return nil, cerr.ErrInvalidVehicleID
+	}
+	return e.repo.GetVehicleByID(ctx, id)
+}
+
+func (e *vehicleEngineImpl) ListVehicles(ctx context.Context, param *entity.ListVehiclesParam) (*entity.ListVehiclesResult, error) {
+	if param.Status != "" && !entity.IsValidVehicleStatus(param.Status) {
+		return nil, cerr.ErrInvalidStatus.WithDetail("status", param.Status)
+	}
+	if param.VehicleType != "" && !entity.IsValidVehicleType(param.VehicleType) {
+		return nil, cerr.ErrInvalidType.WithDetail("vehicle_type", param.VehicleType)
+	}
+
+	page, pageSize, _ := entity.NormalizePaging(param.Page, param.PageSize)
+	list, total, err := e.repo.ListVehicles(ctx, param)
 	if err != nil {
-		return nil, fmt.Errorf("invalid driver ID")
+		return nil, err
 	}
-
-	v := &ent.Vehicle{
-		DriverID:          driverID,
-		LicensePlate:      param.LicensePlate,
-		Brand:             param.Brand,
-		Model:             param.Model,
-		VehicleType:       vehicle.VehicleType(param.VehicleType),
-		CapacityWeightKg:  param.CapacityWeightKg,
-		CapacityVolumeCbm: param.CapacityVolumeCbm,
-	}
-
-	created, err := e.repo.CreateVehicle(ctx, v)
-	if err != nil {
-		return nil, fmt.Errorf("failed to register vehicle: %w", err)
-	}
-
-	return &entity.RegisterVehicleResult{
-		ID:      created.ID.String(),
-		Message: "Vehicle registered successfully",
+	return &entity.ListVehiclesResult{
+		Vehicles:   list,
+		Pagination: entity.BuildPagination(page, pageSize, total),
 	}, nil
 }
 
-func (e *vehicleEngineImpl) GetVehicle(ctx context.Context, param *entity.GetVehicleParam) (*entity.Vehicle, error) {
-	vid, err := uuid.Parse(param.ID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid vehicle ID")
+func (e *vehicleEngineImpl) UpdateVehicle(ctx context.Context, param *entity.UpdateVehicleParam) (*entity.Vehicle, error) {
+	if param.ID == uuid.Nil {
+		return nil, cerr.ErrInvalidVehicleID
 	}
-
-	v, err := e.repo.GetVehicleByID(ctx, vid)
-	if err != nil {
-		return nil, fmt.Errorf("vehicle not found")
+	if param.VehicleType != "" && !entity.IsValidVehicleType(param.VehicleType) {
+		return nil, cerr.ErrInvalidType.WithDetail("vehicle_type", param.VehicleType)
 	}
-
-	return mapEntToEntity(v), nil
+	if _, err := e.repo.GetVehicleByID(ctx, param.ID); err != nil {
+		return nil, err
+	}
+	return e.repo.UpdateVehicle(ctx, param)
 }
 
-func (e *vehicleEngineImpl) ListVehicles(ctx context.Context, param *entity.ListVehiclesParam) ([]*entity.Vehicle, error) {
-	driverID, err := uuid.Parse(param.DriverID)
+func (e *vehicleEngineImpl) DeleteVehicle(ctx context.Context, id, driverID uuid.UUID) error {
+	if id == uuid.Nil {
+		return cerr.ErrInvalidVehicleID
+	}
+	v, err := e.repo.GetVehicleByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("invalid driver ID")
+		return err
 	}
-
-	vehicles, err := e.repo.ListVehiclesByDriverID(ctx, driverID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list vehicles: %w", err)
+	// Tài xế chỉ được xoá xe của chính mình; driverID rỗng nghĩa là admin gọi.
+	if driverID != uuid.Nil && v.DriverID != driverID {
+		return cerr.ErrVehicleNotOwned
 	}
-
-	var result []*entity.Vehicle
-	for _, v := range vehicles {
-		result = append(result, mapEntToEntity(v))
-	}
-
-	return result, nil
+	return e.repo.DeleteVehicle(ctx, id)
 }
 
-func (e *vehicleEngineImpl) UpdateVehicleStatus(ctx context.Context, param *entity.UpdateVehicleStatusParam) (*entity.UpdateVehicleStatusResult, error) {
-	vid, err := uuid.Parse(param.ID)
+func (e *vehicleEngineImpl) UpdateVehicleStatus(ctx context.Context, id uuid.UUID, status string) (*entity.Vehicle, error) {
+	if id == uuid.Nil {
+		return nil, cerr.ErrInvalidVehicleID
+	}
+	if !entity.IsValidVehicleStatus(status) {
+		return nil, cerr.ErrInvalidStatus.WithDetail("status", status)
+	}
+	return e.repo.UpdateVehicleStatus(ctx, id, status)
+}
+
+// ---------------------------------------------------------------------------
+// GIẤY TỜ
+// ---------------------------------------------------------------------------
+
+func (e *vehicleEngineImpl) UploadDocument(ctx context.Context, param *entity.UploadDocumentParam) (*entity.VehicleDocument, error) {
+	if param.VehicleID == uuid.Nil {
+		return nil, cerr.ErrInvalidVehicleID
+	}
+	if !entity.IsValidDocumentType(param.DocumentType) {
+		return nil, cerr.ErrInvalidDocType.WithDetail("document_type", param.DocumentType)
+	}
+	if param.FileURL == "" {
+		return nil, cerr.ErrFileURLRequired
+	}
+	if _, err := e.repo.GetVehicleByID(ctx, param.VehicleID); err != nil {
+		return nil, err
+	}
+	return e.repo.CreateDocument(ctx, param)
+}
+
+func (e *vehicleEngineImpl) ListDocuments(ctx context.Context, param *entity.ListDocumentsParam) ([]entity.VehicleDocument, error) {
+	if param.VehicleID == uuid.Nil {
+		return nil, cerr.ErrInvalidVehicleID
+	}
+	if param.ReviewStatus != "" && !entity.IsValidReviewStatus(param.ReviewStatus) {
+		return nil, cerr.ErrInvalidReviewStat.WithDetail("review_status", param.ReviewStatus)
+	}
+	return e.repo.ListDocuments(ctx, param)
+}
+
+func (e *vehicleEngineImpl) DeleteDocument(ctx context.Context, id uuid.UUID) error {
+	if id == uuid.Nil {
+		return cerr.ErrInvalidDocumentID
+	}
+	if _, err := e.repo.GetDocument(ctx, id); err != nil {
+		return err
+	}
+	return e.repo.DeleteDocument(ctx, id)
+}
+
+// ---------------------------------------------------------------------------
+// VỊ TRÍ & TRẠNG THÁI NHẬN ĐƠN
+// ---------------------------------------------------------------------------
+
+func (e *vehicleEngineImpl) ReportLocation(ctx context.Context, param *entity.ReportLocationParam) (*entity.VehicleLocation, error) {
+	if param.VehicleID == uuid.Nil {
+		return nil, cerr.ErrInvalidVehicleID
+	}
+	if !entity.IsValidCoordinate(param.Latitude, param.Longitude) {
+		return nil, cerr.ErrInvalidCoordinate.
+			WithDetail("latitude", formatFloat(param.Latitude)).
+			WithDetail("longitude", formatFloat(param.Longitude))
+	}
+
+	v, err := e.repo.GetVehicleByID(ctx, param.VehicleID)
 	if err != nil {
-		return nil, fmt.Errorf("invalid vehicle ID")
+		return nil, err
+	}
+	// driver_id không gửi lên thì lấy từ hồ sơ xe, để bản ghi vị trí luôn đủ.
+	if param.DriverID == uuid.Nil {
+		param.DriverID = v.DriverID
 	}
 
-	if err := e.repo.UpdateVehicleStatus(ctx, vid, param.Status); err != nil {
-		return nil, fmt.Errorf("failed to update status: %w", err)
+	zoneID := entity.ComputeZoneID(param.Latitude, param.Longitude)
+	return e.repo.UpsertLocation(ctx, param, zoneID)
+}
+
+func (e *vehicleEngineImpl) GetLocation(ctx context.Context, vehicleID uuid.UUID) (*entity.VehicleLocation, error) {
+	if vehicleID == uuid.Nil {
+		return nil, cerr.ErrInvalidVehicleID
+	}
+	return e.repo.GetLocation(ctx, vehicleID)
+}
+
+// SetAvailability là công tắc tài xế bật/tắt nhận đơn.
+//
+// Khi BẬT, ta kiểm tra đủ ba điều kiện trước: xe có thật, đúng chủ, đã qua kiểm
+// duyệt và không đang bảo dưỡng. Đây là chốt chặn quan trọng nhất của luồng
+// matching — một chiếc xe lọt qua đây sẽ được engine coi là sẵn sàng chở hàng.
+func (e *vehicleEngineImpl) SetAvailability(ctx context.Context, param *entity.SetAvailabilityParam) (*entity.DriverAvailability, error) {
+	if param.DriverID == uuid.Nil {
+		return nil, cerr.ErrInvalidDriverID
+	}
+	if param.VehicleID == uuid.Nil {
+		return nil, cerr.ErrInvalidVehicleID
 	}
 
-	return &entity.UpdateVehicleStatusResult{
-		Message: "Vehicle status updated successfully",
+	v, err := e.repo.GetVehicleByID(ctx, param.VehicleID)
+	if err != nil {
+		return nil, err
+	}
+	if v.DriverID != param.DriverID {
+		return nil, cerr.ErrVehicleNotOwned
+	}
+
+	if param.IsOnline {
+		if v.VerificationStatus != entity.VerificationVerified {
+			return nil, cerr.ErrVehicleNotVerified.WithDetail("verification_status", v.VerificationStatus)
+		}
+		if v.Status == entity.VehicleStatusMaintenance {
+			return nil, cerr.ErrVehicleInMaintenance
+		}
+		if !entity.IsValidCoordinate(param.CurrentLat, param.CurrentLng) {
+			return nil, cerr.ErrInvalidCoordinate
+		}
+		// Không khai sức chứa còn trống thì mặc định là toàn bộ sức chứa xe.
+		if param.AvailableWeightKg <= 0 {
+			param.AvailableWeightKg = v.CapacityWeightKg
+		}
+		if param.AvailableVolumeCbm <= 0 {
+			param.AvailableVolumeCbm = v.CapacityVolumeCbm
+		}
+		// Không cho khai khống vượt quá sức chứa thật của xe.
+		if param.AvailableWeightKg > v.CapacityWeightKg {
+			param.AvailableWeightKg = v.CapacityWeightKg
+		}
+		if param.AvailableVolumeCbm > v.CapacityVolumeCbm {
+			param.AvailableVolumeCbm = v.CapacityVolumeCbm
+		}
+	}
+
+	zoneID := entity.ComputeZoneID(param.CurrentLat, param.CurrentLng)
+	return e.repo.UpsertAvailability(ctx, param, zoneID)
+}
+
+func (e *vehicleEngineImpl) GetAvailability(ctx context.Context, driverID uuid.UUID) (*entity.DriverAvailability, error) {
+	if driverID == uuid.Nil {
+		return nil, cerr.ErrInvalidDriverID
+	}
+	return e.repo.GetAvailability(ctx, driverID)
+}
+
+func (e *vehicleEngineImpl) SearchNearby(ctx context.Context, param *entity.SearchNearbyParam) ([]entity.NearbyVehicle, error) {
+	if !entity.IsValidCoordinate(param.Latitude, param.Longitude) {
+		return nil, cerr.ErrInvalidCoordinate
+	}
+	if param.VehicleType != "" && !entity.IsValidVehicleType(param.VehicleType) {
+		return nil, cerr.ErrInvalidType.WithDetail("vehicle_type", param.VehicleType)
+	}
+	param.Normalize()
+	return e.repo.SearchNearby(ctx, param)
+}
+
+// ---------------------------------------------------------------------------
+// ADMIN
+// ---------------------------------------------------------------------------
+
+func (e *vehicleEngineImpl) AdminListVehicles(ctx context.Context, param *entity.AdminListVehiclesParam) (*entity.ListVehiclesResult, error) {
+	if param.Status != "" && !entity.IsValidVehicleStatus(param.Status) {
+		return nil, cerr.ErrInvalidStatus.WithDetail("status", param.Status)
+	}
+	if param.VerificationStatus != "" && !entity.IsValidVerificationStatus(param.VerificationStatus) {
+		return nil, cerr.ErrInvalidReviewStat.WithDetail("verification_status", param.VerificationStatus)
+	}
+	if param.VehicleType != "" && !entity.IsValidVehicleType(param.VehicleType) {
+		return nil, cerr.ErrInvalidType.WithDetail("vehicle_type", param.VehicleType)
+	}
+
+	page, pageSize, _ := entity.NormalizePaging(param.Page, param.PageSize)
+	list, total, err := e.repo.AdminListVehicles(ctx, param)
+	if err != nil {
+		return nil, err
+	}
+	return &entity.ListVehiclesResult{
+		Vehicles:   list,
+		Pagination: entity.BuildPagination(page, pageSize, total),
 	}, nil
 }
 
-func mapEntToEntity(v *ent.Vehicle) *entity.Vehicle {
-	return &entity.Vehicle{
-		ID:                v.ID,
-		DriverID:          v.DriverID,
-		LicensePlate:      v.LicensePlate,
-		Brand:             v.Brand,
-		Model:             v.Model,
-		VehicleType:       string(v.VehicleType),
-		CapacityWeightKg:  v.CapacityWeightKg,
-		CapacityVolumeCbm: v.CapacityVolumeCbm,
-		Status:            string(v.Status),
-		CreatedAt:         v.CreatedAt,
-		UpdatedAt:         v.UpdatedAt,
+func (e *vehicleEngineImpl) AdminVerifyVehicle(ctx context.Context, param *entity.VerifyVehicleParam) (*entity.Vehicle, error) {
+	if param.ID == uuid.Nil {
+		return nil, cerr.ErrInvalidVehicleID
 	}
+	if _, err := e.repo.GetVehicleByID(ctx, param.ID); err != nil {
+		return nil, err
+	}
+
+	status := entity.VerificationRejected
+	if param.Approved {
+		status = entity.VerificationVerified
+	}
+	return e.repo.UpdateVerification(ctx, param, status)
+}
+
+func (e *vehicleEngineImpl) AdminListPendingDocuments(ctx context.Context, page, pageSize int) (*entity.ListDocumentsResult, error) {
+	page, pageSize, _ = entity.NormalizePaging(page, pageSize)
+	list, total, err := e.repo.ListPendingDocuments(ctx, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	return &entity.ListDocumentsResult{
+		Documents:  list,
+		Pagination: entity.BuildPagination(page, pageSize, total),
+	}, nil
+}
+
+func (e *vehicleEngineImpl) AdminReviewDocument(ctx context.Context, param *entity.ReviewDocumentParam) (*entity.VehicleDocument, error) {
+	if param.ID == uuid.Nil {
+		return nil, cerr.ErrInvalidDocumentID
+	}
+
+	current, err := e.repo.GetDocument(ctx, param.ID)
+	if err != nil {
+		return nil, err
+	}
+	if current.ReviewStatus != entity.ReviewPending {
+		return nil, cerr.ErrDocAlreadyReviewed.WithDetail("current_status", current.ReviewStatus)
+	}
+
+	status := entity.ReviewRejected
+	if param.Approved {
+		status = entity.ReviewApproved
+	}
+	return e.repo.ReviewDocument(ctx, param, status)
+}
+
+func (e *vehicleEngineImpl) AdminGetStats(ctx context.Context) (*entity.VehicleStats, error) {
+	total, err := e.repo.CountVehicles(ctx, "", "")
+	if err != nil {
+		return nil, err
+	}
+	active, err := e.repo.CountVehicles(ctx, entity.VehicleStatusActive, "")
+	if err != nil {
+		return nil, err
+	}
+	maintenance, err := e.repo.CountVehicles(ctx, entity.VehicleStatusMaintenance, "")
+	if err != nil {
+		return nil, err
+	}
+	pendingVerify, err := e.repo.CountVehicles(ctx, "", entity.VerificationPending)
+	if err != nil {
+		return nil, err
+	}
+	online, err := e.repo.CountOnlineDrivers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	pendingDocs, err := e.repo.CountPendingDocuments(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entity.VehicleStats{
+		TotalVehicles:       total,
+		ActiveVehicles:      active,
+		MaintenanceVehicles: maintenance,
+		PendingVerification: pendingVerify,
+		OnlineDrivers:       online,
+		PendingDocuments:    pendingDocs,
+	}, nil
 }

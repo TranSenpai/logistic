@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
+	"gateway_service/internal/response"
+
 	pb "github.com/logistic/api/logistic/auth_service/v1"
 
 	"github.com/gin-gonic/gin"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type AuthController struct {
@@ -50,7 +50,7 @@ type LoginRequest struct {
 func (c *AuthController) Register(ctx *gin.Context) {
 	var req RegisterRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "validation_failed", "message": err.Error()})
+		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
 		return
 	}
 
@@ -60,23 +60,19 @@ func (c *AuthController) Register(ctx *gin.Context) {
 		Password: req.Password,
 	})
 	if err != nil {
-		st, _ := status.FromError(err)
-		if st.Code() == codes.AlreadyExists {
-			ctx.JSON(http.StatusConflict, gin.H{"error": "email_already_exists", "message": st.Message()})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal_server_error", "message": st.Message()})
+		// response.Error dịch codes.AlreadyExists sang HTTP 409 sẵn.
+		response.Error(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{
+	response.Created(ctx, gin.H{
 		"user": gin.H{
 			"id":        resp.Profile.Id,
 			"email":     resp.Profile.Email,
 			"full_name": resp.Profile.FullName,
 			"avatar":    resp.Profile.Avatar,
 		},
-	})
+	}, "Đăng ký tài khoản thành công")
 }
 
 // Login godoc
@@ -94,7 +90,7 @@ func (c *AuthController) Register(ctx *gin.Context) {
 func (c *AuthController) Login(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "validation_failed", "message": err.Error()})
+		response.BadRequest(ctx, "VALIDATION_FAILED", err.Error())
 		return
 	}
 
@@ -103,16 +99,12 @@ func (c *AuthController) Login(ctx *gin.Context) {
 		Password: req.Password,
 	})
 	if err != nil {
-		st, _ := status.FromError(err)
-		if st.Code() == codes.Unauthenticated {
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_credentials", "message": st.Message()})
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal_server_error", "message": st.Message()})
+		// response.Error dịch codes.Unauthenticated sang HTTP 401 sẵn.
+		response.Error(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
+	response.OK(ctx, gin.H{
 		"access_token":  resp.TokenPair.AccessToken,
 		"refresh_token": resp.TokenPair.RefreshToken,
 		"expires_in":    resp.TokenPair.ExpiresIn,
@@ -136,7 +128,7 @@ func (c *AuthController) GoogleLogin(ctx *gin.Context) {
 		State: state,
 	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal_server_error"})
+		response.Error(ctx, err)
 		return
 	}
 
@@ -159,16 +151,16 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	urlState := ctx.Query("state")
 	cookieState, err := ctx.Cookie("oauth_state")
 	if err != nil || urlState != cookieState {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid_state", "message": "State không hợp lệ."})
+		response.BadRequest(ctx, "INVALID_OAUTH_STATE", "State không hợp lệ.")
 		return
 	}
-	
+
 	code := ctx.Query("code")
 	resp, err := c.authClient.GoogleCallback(ctx.Request.Context(), &pb.GoogleCallbackRequest{
 		Code: code,
 	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal_server_error"})
+		response.Error(ctx, err)
 		return
 	}
 
@@ -201,7 +193,7 @@ func (c *AuthController) GetInfo(ctx *gin.Context) {
 	}
 
 	if token == "" {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Không tìm thấy token."})
+		response.Unauthorized(ctx, "Không tìm thấy token.")
 		return
 	}
 
@@ -209,22 +201,17 @@ func (c *AuthController) GetInfo(ctx *gin.Context) {
 		Token: token,
 	})
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid_token", "message": "Token không hợp lệ hoặc đã hết hạn."})
+		response.Unauthorized(ctx, "Token không hợp lệ hoặc đã hết hạn.")
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"status":     "success",
-		"statusCode": 200,
-		"message":    "Get info successfully",
-		"data": gin.H{
-			"user": gin.H{
-				"id":        resp.Profile.Id,
-				"email":     resp.Profile.Email,
-				"full_name": resp.Profile.FullName,
-				"avatar":    resp.Profile.Avatar,
-			},
-			"isTotp": false,
+	response.OKMessage(ctx, gin.H{
+		"user": gin.H{
+			"id":        resp.Profile.Id,
+			"email":     resp.Profile.Email,
+			"full_name": resp.Profile.FullName,
+			"avatar":    resp.Profile.Avatar,
 		},
-	})
+		"isTotp": false,
+	}, "Get info successfully")
 }

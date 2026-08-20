@@ -27,16 +27,33 @@ type matchingEngineImpl struct {
 	matchChan    chan *entity.MatchContract
 	kafkaPub     EventPublisher
 	natsPub      EventPublisher
-	mu           sync.RWMutex
+	// notifier đẩy thông báo BỀN sang notification_service qua RabbitMQ.
+	// Xem notifier.go để hiểu vì sao cần thêm kênh này bên cạnh Kafka/NATS.
+	notifier Notifier
+	mu       sync.RWMutex
 }
 
-func NewMatchingEngine(repo MatchingRepo, spatial SpatialEngine, walletClient WalletClient, kafkaPub EventPublisher, natsPub EventPublisher) MatchingEngine {
+func NewMatchingEngine(
+	repo MatchingRepo,
+	spatial SpatialEngine,
+	walletClient WalletClient,
+	kafkaPub EventPublisher,
+	natsPub EventPublisher,
+	notifier Notifier,
+) MatchingEngine {
+	// notifier nil (RabbitMQ chưa dựng được) không được phép làm engine panic:
+	// ghép đơn quan trọng hơn thông báo, nên rơi về bản không làm gì.
+	if notifier == nil {
+		notifier = NoopNotifier{}
+	}
+
 	return &matchingEngineImpl{
 		repo:         repo,
 		spatial:      spatial,
 		walletClient: walletClient,
 		kafkaPub:     kafkaPub,
 		natsPub:      natsPub,
+		notifier:     notifier,
 		matchChan:    make(chan *entity.MatchContract, 1000),
 	}
 }
@@ -69,6 +86,18 @@ func (e *matchingEngineImpl) broadcastBidToDrivers(ctx context.Context, bid *ent
 		Payload: *bid,
 	})
 
+	// NGHIỆP VỤ (1): chủ hàng tìm xe -> báo cho từng tài xế tiềm năng.
+	//
+	// NATS ở trên chỉ tới được app đang MỞ. Tài xế đang lái xe, app ở chế độ nền
+	// hoặc mất sóng thì message NATS bay mất. RabbitMQ giữ message tới khi
+	// notification_service ghi được vào inbox và đẩy push, nên đây mới là kênh
+	// bảo đảm tài xế thực sự biết có đơn hàng.
+	if err := e.notifier.NotifyDriverCandidates(ctx, bid, asks); err != nil {
+		// Thông báo hỏng KHÔNG được làm hỏng việc đăng đơn: đơn đã nằm trong DB
+		// và vẫn ghép được qua các luồng khác.
+		log.Printf("[NOTIFY] gửi thông báo ứng viên cho Bid %s thất bại: %v", bid.ID, err)
+	}
+
 	log.Printf("[BROADCAST] Found %d potential drivers for Bid %s", len(asks), bid.ID)
 }
 
@@ -95,6 +124,11 @@ func (e *matchingEngineImpl) suggestBidsToDriver(ctx context.Context, ask *entit
 			Key:     ask.ID.String(),
 			Payload: *ask,
 		})
+
+		// Chiều ngược lại: tài xế đăng chuyến rỗng -> gợi ý đơn hàng phù hợp.
+		if err := e.notifier.NotifyCargoSuggested(ctx, ask, bids); err != nil {
+			log.Printf("[NOTIFY] gửi gợi ý đơn hàng cho Ask %s thất bại: %v", ask.ID, err)
+		}
 
 		log.Printf("[SUGGESTION] Found %d pending bids for Driver %s", len(bids), ask.DriverID)
 	}
@@ -208,6 +242,10 @@ func (e *matchingEngineImpl) ProcessOfferQueue(ctx context.Context, bidID uuid.U
 		Payload: *offerAsk,
 	})
 
+	if err := e.notifier.NotifyOfferReceived(ctx, bid, offerAsk, offerAsk.MinPrice); err != nil {
+		log.Printf("[NOTIFY] gửi thông báo báo giá cho Bid %s thất bại: %v", bidID, err)
+	}
+
 	log.Printf("[OFFER FORWARDED] Driver %s sent to Shipper %s for Bid %s", offerAsk.DriverID, bid.ShipperID, bidID)
 
 	return nil // ACK message
@@ -232,12 +270,23 @@ func (e *matchingEngineImpl) RejectOffer(ctx context.Context, bidID uuid.UUID, a
 	}
 
 	ask, err := e.repo.GetAsk(ctx, askID)
-	if err == nil {
-		e.natsPub.Publish(ctx, &EventMessage{
-			Topic:   fmt.Sprintf("matching.drivers.rejected.%s", ask.DriverID.String()),
-			Key:     bidID.String(),
-			Payload: []byte("Shipper has rejected your offer."),
-		})
+	if err != nil {
+		// Bid đã được trả về PENDING ở trên nên nghiệp vụ coi như xong. Không
+		// đọc được ask thì chỉ mất phần báo cho tài xế, không phải lỗi chí mạng.
+		// (Trước đây đoạn log bên dưới dùng ask.DriverID ngoài nhánh err == nil
+		// nên sẽ panic đúng vào lúc này.)
+		log.Printf("[OFFER REJECTED] Bid %s đã mở lại, nhưng không đọc được Ask %s: %v", bidID, askID, err)
+		return nil
+	}
+
+	e.natsPub.Publish(ctx, &EventMessage{
+		Topic:   fmt.Sprintf("matching.drivers.rejected.%s", ask.DriverID.String()),
+		Key:     bidID.String(),
+		Payload: []byte("Shipper has rejected your offer."),
+	})
+
+	if nErr := e.notifier.NotifyOfferRejected(ctx, bid, ask, ""); nErr != nil {
+		log.Printf("[NOTIFY] gửi thông báo từ chối cho Ask %s thất bại: %v", askID, nErr)
 	}
 
 	log.Printf("[OFFER REJECTED] Shipper %s rejected Driver %s for Bid %s", bid.ShipperID, ask.DriverID, bidID)
@@ -316,6 +365,13 @@ func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, a
 		Key:     contract.ID.String(),
 		Payload: *contract,
 	})
+
+	// NGHIỆP VỤ (2): đã tìm được xe -> báo CẢ HAI phía.
+	// notification_service sẽ tách sự kiện này thành hai thông báo: một cho chủ
+	// hàng ("đã tìm được xe cho đơn của bạn"), một cho tài xế ("bạn nhận đơn").
+	if nErr := e.notifier.NotifyMatchFound(ctx, contract, bid, ask); nErr != nil {
+		log.Printf("[NOTIFY] gửi thông báo ghép đơn cho Contract %s thất bại: %v", contract.ID, nErr)
+	}
 
 	log.Printf("[DEAL CLOSED] MatchContract %s created! Shipper: %s, Driver: %s, Price: %.2f",
 		contract.ID, bid.ShipperID, ask.DriverID, contract.ConsensusPrice)

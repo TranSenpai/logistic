@@ -2,12 +2,14 @@ package conf
 
 import (
 	"fmt"
+
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
+	Redis    RedisConfig
 }
 
 type ServerConfig struct {
@@ -23,12 +25,23 @@ type DatabaseConfig struct {
 	DBName   string `env:"VEHICLE_DB_NAME" env-required:"true"`
 }
 
+// RedisConfig ở vehicle_service quan trọng hơn ở user_service: ngoài vai trò
+// cache, Redis còn giữ CHỈ MỤC GEO của các xe đang online. Mất Redis thì
+// SearchNearby rơi về đường quét Postgres — vẫn chạy nhưng chậm hơn đáng kể.
+type RedisConfig struct {
+	Host     string `env:"REDIS_HOST" env-default:"redis"`
+	Port     string `env:"REDIS_PORT" env-default:"6379"`
+	Password string `env:"REDIS_PASSWORD" env-default:""`
+	DB       int    `env:"VEHICLE_REDIS_DB" env-default:"1"`
+	Prefix   string `env:"VEHICLE_REDIS_PREFIX" env-default:"vehicle"`
+	Enabled  bool   `env:"VEHICLE_REDIS_ENABLED" env-default:"true"`
+}
+
 func (db *DatabaseConfig) GetDataSource() string {
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		db.Host, db.Port, db.User, db.Password, db.DBName)
 }
 
-// LoadConfig loads configuration from environment variables
 func LoadConfig() (*Config, error) {
 	cfg := &Config{}
 	err := cleanenv.ReadEnv(cfg)

@@ -25,32 +25,123 @@ var File_logistic_user_service_v1_user_service_proto protoreflect.FileDescriptor
 
 const file_logistic_user_service_v1_user_service_proto_rawDesc = "" +
 	"\n" +
-	"+logistic/user_service/v1/user_service.proto\x12\x18logistic.user_service.v1\x1a,logistic/user_service/v1/user_messages.proto\x1a\x1cgoogle/api/annotations.proto2\xb1\x03\n" +
+	"+logistic/user_service/v1/user_service.proto\x12\x18logistic.user_service.v1\x1a,logistic/user_service/v1/user_messages.proto\x1a\x1cgoogle/api/annotations.proto2\xc4\x19\n" +
 	"\vUserService\x12\x8c\x01\n" +
 	"\fRegisterUser\x12-.logistic.user_service.v1.RegisterUserRequest\x1a..logistic.user_service.v1.RegisterUserResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/users/register\x12v\n" +
-	"\aGetUser\x12(.logistic.user_service.v1.GetUserRequest\x1a).logistic.user_service.v1.GetUserResponse\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/users/{id}\x12\x9a\x01\n" +
-	"\x0fUpdateDriverKYC\x120.logistic.user_service.v1.UpdateDriverKYCRequest\x1a1.logistic.user_service.v1.UpdateDriverKYCResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\x1a\x17/v1/users/{user_id}/kycB9Z7github.com/logistic/api/logistic/user_service/v1;userv1b\x06proto3"
+	"\aGetUser\x12(.logistic.user_service.v1.GetUserRequest\x1a).logistic.user_service.v1.GetUserResponse\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/users/{id}\x12\x82\x01\n" +
+	"\n" +
+	"UpdateUser\x12+.logistic.user_service.v1.UpdateUserRequest\x1a,.logistic.user_service.v1.UpdateUserResponse\"\x19\x82\xd3\xe4\x93\x02\x13:\x01*\x1a\x0e/v1/users/{id}\x12\xa5\x01\n" +
+	"\x10GetDriverProfile\x121.logistic.user_service.v1.GetDriverProfileRequest\x1a2.logistic.user_service.v1.GetDriverProfileResponse\"*\x82\xd3\xe4\x93\x02$\x12\"/v1/users/{user_id}/driver-profile\x12\xb1\x01\n" +
+	"\x13UpdateDriverProfile\x124.logistic.user_service.v1.UpdateDriverProfileRequest\x1a5.logistic.user_service.v1.UpdateDriverProfileResponse\"-\x82\xd3\xe4\x93\x02':\x01*\x1a\"/v1/users/{user_id}/driver-profile\x12\xa9\x01\n" +
+	"\x11GetShipperProfile\x122.logistic.user_service.v1.GetShipperProfileRequest\x1a3.logistic.user_service.v1.GetShipperProfileResponse\"+\x82\xd3\xe4\x93\x02%\x12#/v1/users/{user_id}/shipper-profile\x12\xb5\x01\n" +
+	"\x14UpdateShipperProfile\x125.logistic.user_service.v1.UpdateShipperProfileRequest\x1a6.logistic.user_service.v1.UpdateShipperProfileResponse\".\x82\xd3\xe4\x93\x02(:\x01*\x1a#/v1/users/{user_id}/shipper-profile\x12\x9a\x01\n" +
+	"\x0fUpdateDriverKYC\x120.logistic.user_service.v1.UpdateDriverKYCRequest\x1a1.logistic.user_service.v1.UpdateDriverKYCResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\x1a\x17/v1/users/{user_id}/kyc\x12\x9a\x01\n" +
+	"\rCreateAddress\x12..logistic.user_service.v1.CreateAddressRequest\x1a/.logistic.user_service.v1.CreateAddressResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/users/{user_id}/addresses\x12\x97\x01\n" +
+	"\rListAddresses\x12..logistic.user_service.v1.ListAddressesRequest\x1a/.logistic.user_service.v1.ListAddressesResponse\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/users/{user_id}/addresses\x12\x8f\x01\n" +
+	"\rUpdateAddress\x12..logistic.user_service.v1.UpdateAddressRequest\x1a/.logistic.user_service.v1.UpdateAddressResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\x1a\x12/v1/addresses/{id}\x12\x8c\x01\n" +
+	"\rDeleteAddress\x12..logistic.user_service.v1.DeleteAddressRequest\x1a/.logistic.user_service.v1.DeleteAddressResponse\"\x1a\x82\xd3\xe4\x93\x02\x14*\x12/v1/addresses/{id}\x12\x9b\x01\n" +
+	"\x0eRegisterDevice\x12/.logistic.user_service.v1.RegisterDeviceRequest\x1a0.logistic.user_service.v1.RegisterDeviceResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/users/{user_id}/devices\x12\x8f\x01\n" +
+	"\vListDevices\x12,.logistic.user_service.v1.ListDevicesRequest\x1a-.logistic.user_service.v1.ListDevicesResponse\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/v1/users/{user_id}/devices\x12\x87\x01\n" +
+	"\fDeleteDevice\x12-.logistic.user_service.v1.DeleteDeviceRequest\x1a..logistic.user_service.v1.DeleteDeviceResponse\"\x18\x82\xd3\xe4\x93\x02\x12*\x10/v1/devices/{id}\x12\x8c\x01\n" +
+	"\x0eAdminListUsers\x12/.logistic.user_service.v1.AdminListUsersRequest\x1a0.logistic.user_service.v1.AdminListUsersResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/v1/admin/users\x12\xb0\x01\n" +
+	"\x15AdminUpdateUserStatus\x126.logistic.user_service.v1.AdminUpdateUserStatusRequest\x1a7.logistic.user_service.v1.AdminUpdateUserStatusResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\x1a\x1b/v1/admin/users/{id}/status\x12\xa1\x01\n" +
+	"\x13AdminListPendingKYC\x124.logistic.user_service.v1.AdminListPendingKYCRequest\x1a5.logistic.user_service.v1.AdminListPendingKYCResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/admin/kyc/pending\x12\x9e\x01\n" +
+	"\x0eAdminReviewKYC\x12/.logistic.user_service.v1.AdminReviewKYCRequest\x1a0.logistic.user_service.v1.AdminReviewKYCResponse\")\x82\xd3\xe4\x93\x02#:\x01*\x1a\x1e/v1/admin/kyc/{user_id}/review\x12\x9b\x01\n" +
+	"\x11AdminGetUserStats\x122.logistic.user_service.v1.AdminGetUserStatsRequest\x1a3.logistic.user_service.v1.AdminGetUserStatsResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/admin/users/stats\x12\x94\x01\n" +
+	"\x0fAdminDeleteUser\x120.logistic.user_service.v1.AdminDeleteUserRequest\x1a1.logistic.user_service.v1.AdminDeleteUserResponse\"\x1c\x82\xd3\xe4\x93\x02\x16*\x14/v1/admin/users/{id}B9Z7github.com/logistic/api/logistic/user_service/v1;userv1b\x06proto3"
 
 var file_logistic_user_service_v1_user_service_proto_goTypes = []any{
-	(*RegisterUserRequest)(nil),     // 0: logistic.user_service.v1.RegisterUserRequest
-	(*GetUserRequest)(nil),          // 1: logistic.user_service.v1.GetUserRequest
-	(*UpdateDriverKYCRequest)(nil),  // 2: logistic.user_service.v1.UpdateDriverKYCRequest
-	(*RegisterUserResponse)(nil),    // 3: logistic.user_service.v1.RegisterUserResponse
-	(*GetUserResponse)(nil),         // 4: logistic.user_service.v1.GetUserResponse
-	(*UpdateDriverKYCResponse)(nil), // 5: logistic.user_service.v1.UpdateDriverKYCResponse
+	(*RegisterUserRequest)(nil),           // 0: logistic.user_service.v1.RegisterUserRequest
+	(*GetUserRequest)(nil),                // 1: logistic.user_service.v1.GetUserRequest
+	(*UpdateUserRequest)(nil),             // 2: logistic.user_service.v1.UpdateUserRequest
+	(*GetDriverProfileRequest)(nil),       // 3: logistic.user_service.v1.GetDriverProfileRequest
+	(*UpdateDriverProfileRequest)(nil),    // 4: logistic.user_service.v1.UpdateDriverProfileRequest
+	(*GetShipperProfileRequest)(nil),      // 5: logistic.user_service.v1.GetShipperProfileRequest
+	(*UpdateShipperProfileRequest)(nil),   // 6: logistic.user_service.v1.UpdateShipperProfileRequest
+	(*UpdateDriverKYCRequest)(nil),        // 7: logistic.user_service.v1.UpdateDriverKYCRequest
+	(*CreateAddressRequest)(nil),          // 8: logistic.user_service.v1.CreateAddressRequest
+	(*ListAddressesRequest)(nil),          // 9: logistic.user_service.v1.ListAddressesRequest
+	(*UpdateAddressRequest)(nil),          // 10: logistic.user_service.v1.UpdateAddressRequest
+	(*DeleteAddressRequest)(nil),          // 11: logistic.user_service.v1.DeleteAddressRequest
+	(*RegisterDeviceRequest)(nil),         // 12: logistic.user_service.v1.RegisterDeviceRequest
+	(*ListDevicesRequest)(nil),            // 13: logistic.user_service.v1.ListDevicesRequest
+	(*DeleteDeviceRequest)(nil),           // 14: logistic.user_service.v1.DeleteDeviceRequest
+	(*AdminListUsersRequest)(nil),         // 15: logistic.user_service.v1.AdminListUsersRequest
+	(*AdminUpdateUserStatusRequest)(nil),  // 16: logistic.user_service.v1.AdminUpdateUserStatusRequest
+	(*AdminListPendingKYCRequest)(nil),    // 17: logistic.user_service.v1.AdminListPendingKYCRequest
+	(*AdminReviewKYCRequest)(nil),         // 18: logistic.user_service.v1.AdminReviewKYCRequest
+	(*AdminGetUserStatsRequest)(nil),      // 19: logistic.user_service.v1.AdminGetUserStatsRequest
+	(*AdminDeleteUserRequest)(nil),        // 20: logistic.user_service.v1.AdminDeleteUserRequest
+	(*RegisterUserResponse)(nil),          // 21: logistic.user_service.v1.RegisterUserResponse
+	(*GetUserResponse)(nil),               // 22: logistic.user_service.v1.GetUserResponse
+	(*UpdateUserResponse)(nil),            // 23: logistic.user_service.v1.UpdateUserResponse
+	(*GetDriverProfileResponse)(nil),      // 24: logistic.user_service.v1.GetDriverProfileResponse
+	(*UpdateDriverProfileResponse)(nil),   // 25: logistic.user_service.v1.UpdateDriverProfileResponse
+	(*GetShipperProfileResponse)(nil),     // 26: logistic.user_service.v1.GetShipperProfileResponse
+	(*UpdateShipperProfileResponse)(nil),  // 27: logistic.user_service.v1.UpdateShipperProfileResponse
+	(*UpdateDriverKYCResponse)(nil),       // 28: logistic.user_service.v1.UpdateDriverKYCResponse
+	(*CreateAddressResponse)(nil),         // 29: logistic.user_service.v1.CreateAddressResponse
+	(*ListAddressesResponse)(nil),         // 30: logistic.user_service.v1.ListAddressesResponse
+	(*UpdateAddressResponse)(nil),         // 31: logistic.user_service.v1.UpdateAddressResponse
+	(*DeleteAddressResponse)(nil),         // 32: logistic.user_service.v1.DeleteAddressResponse
+	(*RegisterDeviceResponse)(nil),        // 33: logistic.user_service.v1.RegisterDeviceResponse
+	(*ListDevicesResponse)(nil),           // 34: logistic.user_service.v1.ListDevicesResponse
+	(*DeleteDeviceResponse)(nil),          // 35: logistic.user_service.v1.DeleteDeviceResponse
+	(*AdminListUsersResponse)(nil),        // 36: logistic.user_service.v1.AdminListUsersResponse
+	(*AdminUpdateUserStatusResponse)(nil), // 37: logistic.user_service.v1.AdminUpdateUserStatusResponse
+	(*AdminListPendingKYCResponse)(nil),   // 38: logistic.user_service.v1.AdminListPendingKYCResponse
+	(*AdminReviewKYCResponse)(nil),        // 39: logistic.user_service.v1.AdminReviewKYCResponse
+	(*AdminGetUserStatsResponse)(nil),     // 40: logistic.user_service.v1.AdminGetUserStatsResponse
+	(*AdminDeleteUserResponse)(nil),       // 41: logistic.user_service.v1.AdminDeleteUserResponse
 }
 var file_logistic_user_service_v1_user_service_proto_depIdxs = []int32{
-	0, // 0: logistic.user_service.v1.UserService.RegisterUser:input_type -> logistic.user_service.v1.RegisterUserRequest
-	1, // 1: logistic.user_service.v1.UserService.GetUser:input_type -> logistic.user_service.v1.GetUserRequest
-	2, // 2: logistic.user_service.v1.UserService.UpdateDriverKYC:input_type -> logistic.user_service.v1.UpdateDriverKYCRequest
-	3, // 3: logistic.user_service.v1.UserService.RegisterUser:output_type -> logistic.user_service.v1.RegisterUserResponse
-	4, // 4: logistic.user_service.v1.UserService.GetUser:output_type -> logistic.user_service.v1.GetUserResponse
-	5, // 5: logistic.user_service.v1.UserService.UpdateDriverKYC:output_type -> logistic.user_service.v1.UpdateDriverKYCResponse
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0,  // 0: logistic.user_service.v1.UserService.RegisterUser:input_type -> logistic.user_service.v1.RegisterUserRequest
+	1,  // 1: logistic.user_service.v1.UserService.GetUser:input_type -> logistic.user_service.v1.GetUserRequest
+	2,  // 2: logistic.user_service.v1.UserService.UpdateUser:input_type -> logistic.user_service.v1.UpdateUserRequest
+	3,  // 3: logistic.user_service.v1.UserService.GetDriverProfile:input_type -> logistic.user_service.v1.GetDriverProfileRequest
+	4,  // 4: logistic.user_service.v1.UserService.UpdateDriverProfile:input_type -> logistic.user_service.v1.UpdateDriverProfileRequest
+	5,  // 5: logistic.user_service.v1.UserService.GetShipperProfile:input_type -> logistic.user_service.v1.GetShipperProfileRequest
+	6,  // 6: logistic.user_service.v1.UserService.UpdateShipperProfile:input_type -> logistic.user_service.v1.UpdateShipperProfileRequest
+	7,  // 7: logistic.user_service.v1.UserService.UpdateDriverKYC:input_type -> logistic.user_service.v1.UpdateDriverKYCRequest
+	8,  // 8: logistic.user_service.v1.UserService.CreateAddress:input_type -> logistic.user_service.v1.CreateAddressRequest
+	9,  // 9: logistic.user_service.v1.UserService.ListAddresses:input_type -> logistic.user_service.v1.ListAddressesRequest
+	10, // 10: logistic.user_service.v1.UserService.UpdateAddress:input_type -> logistic.user_service.v1.UpdateAddressRequest
+	11, // 11: logistic.user_service.v1.UserService.DeleteAddress:input_type -> logistic.user_service.v1.DeleteAddressRequest
+	12, // 12: logistic.user_service.v1.UserService.RegisterDevice:input_type -> logistic.user_service.v1.RegisterDeviceRequest
+	13, // 13: logistic.user_service.v1.UserService.ListDevices:input_type -> logistic.user_service.v1.ListDevicesRequest
+	14, // 14: logistic.user_service.v1.UserService.DeleteDevice:input_type -> logistic.user_service.v1.DeleteDeviceRequest
+	15, // 15: logistic.user_service.v1.UserService.AdminListUsers:input_type -> logistic.user_service.v1.AdminListUsersRequest
+	16, // 16: logistic.user_service.v1.UserService.AdminUpdateUserStatus:input_type -> logistic.user_service.v1.AdminUpdateUserStatusRequest
+	17, // 17: logistic.user_service.v1.UserService.AdminListPendingKYC:input_type -> logistic.user_service.v1.AdminListPendingKYCRequest
+	18, // 18: logistic.user_service.v1.UserService.AdminReviewKYC:input_type -> logistic.user_service.v1.AdminReviewKYCRequest
+	19, // 19: logistic.user_service.v1.UserService.AdminGetUserStats:input_type -> logistic.user_service.v1.AdminGetUserStatsRequest
+	20, // 20: logistic.user_service.v1.UserService.AdminDeleteUser:input_type -> logistic.user_service.v1.AdminDeleteUserRequest
+	21, // 21: logistic.user_service.v1.UserService.RegisterUser:output_type -> logistic.user_service.v1.RegisterUserResponse
+	22, // 22: logistic.user_service.v1.UserService.GetUser:output_type -> logistic.user_service.v1.GetUserResponse
+	23, // 23: logistic.user_service.v1.UserService.UpdateUser:output_type -> logistic.user_service.v1.UpdateUserResponse
+	24, // 24: logistic.user_service.v1.UserService.GetDriverProfile:output_type -> logistic.user_service.v1.GetDriverProfileResponse
+	25, // 25: logistic.user_service.v1.UserService.UpdateDriverProfile:output_type -> logistic.user_service.v1.UpdateDriverProfileResponse
+	26, // 26: logistic.user_service.v1.UserService.GetShipperProfile:output_type -> logistic.user_service.v1.GetShipperProfileResponse
+	27, // 27: logistic.user_service.v1.UserService.UpdateShipperProfile:output_type -> logistic.user_service.v1.UpdateShipperProfileResponse
+	28, // 28: logistic.user_service.v1.UserService.UpdateDriverKYC:output_type -> logistic.user_service.v1.UpdateDriverKYCResponse
+	29, // 29: logistic.user_service.v1.UserService.CreateAddress:output_type -> logistic.user_service.v1.CreateAddressResponse
+	30, // 30: logistic.user_service.v1.UserService.ListAddresses:output_type -> logistic.user_service.v1.ListAddressesResponse
+	31, // 31: logistic.user_service.v1.UserService.UpdateAddress:output_type -> logistic.user_service.v1.UpdateAddressResponse
+	32, // 32: logistic.user_service.v1.UserService.DeleteAddress:output_type -> logistic.user_service.v1.DeleteAddressResponse
+	33, // 33: logistic.user_service.v1.UserService.RegisterDevice:output_type -> logistic.user_service.v1.RegisterDeviceResponse
+	34, // 34: logistic.user_service.v1.UserService.ListDevices:output_type -> logistic.user_service.v1.ListDevicesResponse
+	35, // 35: logistic.user_service.v1.UserService.DeleteDevice:output_type -> logistic.user_service.v1.DeleteDeviceResponse
+	36, // 36: logistic.user_service.v1.UserService.AdminListUsers:output_type -> logistic.user_service.v1.AdminListUsersResponse
+	37, // 37: logistic.user_service.v1.UserService.AdminUpdateUserStatus:output_type -> logistic.user_service.v1.AdminUpdateUserStatusResponse
+	38, // 38: logistic.user_service.v1.UserService.AdminListPendingKYC:output_type -> logistic.user_service.v1.AdminListPendingKYCResponse
+	39, // 39: logistic.user_service.v1.UserService.AdminReviewKYC:output_type -> logistic.user_service.v1.AdminReviewKYCResponse
+	40, // 40: logistic.user_service.v1.UserService.AdminGetUserStats:output_type -> logistic.user_service.v1.AdminGetUserStatsResponse
+	41, // 41: logistic.user_service.v1.UserService.AdminDeleteUser:output_type -> logistic.user_service.v1.AdminDeleteUserResponse
+	21, // [21:42] is the sub-list for method output_type
+	0,  // [0:21] is the sub-list for method input_type
+	0,  // [0:0] is the sub-list for extension type_name
+	0,  // [0:0] is the sub-list for extension extendee
+	0,  // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_logistic_user_service_v1_user_service_proto_init() }

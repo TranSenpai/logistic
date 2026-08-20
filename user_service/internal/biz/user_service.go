@@ -1,20 +1,48 @@
+// Package biz chứa LUẬT NGHIỆP VỤ của user_service.
+//
+// Tầng này không biết gRPC, không biết Postgres, không biết Redis. Nó chỉ nói
+// chuyện bằng entity và UserRepo. Nhờ vậy các quy tắc dạng "chỉ tài xế mới có
+// hồ sơ KYC" hay "mỗi người chỉ có một địa chỉ mặc định" nằm đúng một chỗ, thay
+// vì rải rác trong controller rồi lệch nhau giữa API client và API admin.
 package biz
 
 import (
 	"context"
-	"fmt"
 
-	"user_service/ent"
-	"user_service/ent/user"
+	cerr "user_service/internal/common/errors"
 	"user_service/internal/entity"
 
 	"github.com/google/uuid"
 )
 
 type UserEngine interface {
+	// --- Client ---
 	RegisterUser(ctx context.Context, param *entity.RegisterUserParam) (*entity.RegisterUserResult, error)
-	GetUser(ctx context.Context, param *entity.GetUserParam) (*entity.GetUserResult, error)
-	UpdateDriverKYC(ctx context.Context, param *entity.UpdateDriverKYCParam) (*entity.UpdateDriverKYCResult, error)
+	GetUser(ctx context.Context, id uuid.UUID) (*entity.GetUserResult, error)
+	UpdateUser(ctx context.Context, param *entity.UpdateUserParam) (*entity.User, error)
+
+	GetDriverProfile(ctx context.Context, userID uuid.UUID) (*entity.DriverProfile, error)
+	UpdateDriverProfile(ctx context.Context, param *entity.UpdateDriverProfileParam) (*entity.DriverProfile, error)
+	GetShipperProfile(ctx context.Context, userID uuid.UUID) (*entity.ShipperProfile, error)
+	UpdateShipperProfile(ctx context.Context, param *entity.UpdateShipperProfileParam) (*entity.ShipperProfile, error)
+	UpdateDriverKYC(ctx context.Context, param *entity.UpdateDriverKYCParam) (*entity.DriverProfile, error)
+
+	CreateAddress(ctx context.Context, param *entity.CreateAddressParam) (*entity.Address, error)
+	ListAddresses(ctx context.Context, param *entity.ListAddressesParam) (*entity.ListAddressesResult, error)
+	UpdateAddress(ctx context.Context, param *entity.UpdateAddressParam) (*entity.Address, error)
+	DeleteAddress(ctx context.Context, id, userID uuid.UUID) error
+
+	RegisterDevice(ctx context.Context, param *entity.RegisterDeviceParam) (*entity.UserDevice, error)
+	ListDevices(ctx context.Context, userID uuid.UUID) ([]entity.UserDevice, error)
+	DeleteDevice(ctx context.Context, id, userID uuid.UUID) error
+
+	// --- Admin ---
+	AdminListUsers(ctx context.Context, filter *entity.ListUsersFilter) (*entity.ListUsersResult, error)
+	AdminUpdateUserStatus(ctx context.Context, param *entity.UpdateUserStatusParam) (*entity.User, error)
+	AdminListPendingKYC(ctx context.Context, page, pageSize int) (*entity.ListDriverProfilesResult, error)
+	AdminReviewKYC(ctx context.Context, param *entity.ReviewKYCParam) (*entity.DriverProfile, error)
+	AdminGetUserStats(ctx context.Context) (*entity.UserStats, error)
+	AdminDeleteUser(ctx context.Context, id uuid.UUID) error
 }
 
 type userEngineImpl struct {
@@ -25,102 +53,443 @@ func NewUserEngine(repo UserRepo) UserEngine {
 	return &userEngineImpl{repo: repo}
 }
 
+// ---------------------------------------------------------------------------
+// ĐĂNG KÝ & HỒ SƠ
+// ---------------------------------------------------------------------------
+
 func (e *userEngineImpl) RegisterUser(ctx context.Context, param *entity.RegisterUserParam) (*entity.RegisterUserResult, error) {
-	if _, err := e.repo.GetUserByPhone(ctx, param.Phone); err == nil {
-		return nil, fmt.Errorf("phone number already registered")
+	if param.Phone == "" {
+		return nil, cerr.ErrPhoneRequired
+	}
+	if len(param.Password) < 6 {
+		return nil, cerr.ErrPasswordTooShort
+	}
+	if !entity.IsValidRole(param.Role) {
+		return nil, cerr.ErrInvalidRole.WithDetail("role", param.Role)
 	}
 
-	u := &ent.User{
+	// Kiểm tra trước để trả về lỗi rõ nghĩa. Vẫn có khe hở đua nhau giữa lúc
+	// kiểm tra và lúc INSERT, nhưng unique index ở DB là chốt chặn thật —
+	// wrapError sẽ dịch lỗi trùng khoá đó về đúng ErrPhoneAlreadyUsed.
+	exists, err := e.repo.ExistsByPhone(ctx, param.Phone)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, cerr.ErrPhoneAlreadyUsed.WithDetail("phone", param.Phone)
+	}
+
+	if param.Email != "" {
+		emailTaken, eErr := e.repo.ExistsByEmail(ctx, param.Email)
+		if eErr != nil {
+			return nil, eErr
+		}
+		if emailTaken {
+			return nil, cerr.ErrEmailAlreadyUsed.WithDetail("email", param.Email)
+		}
+	}
+
+	created, err := e.repo.CreateUser(ctx, &entity.User{
 		Phone:        param.Phone,
 		Email:        param.Email,
-		PasswordHash: param.Password, 
-		Role:         user.Role(param.Role),
-	}
-
-	createdUser, err := e.repo.CreateUser(ctx, u)
+		FullName:     param.FullName,
+		PasswordHash: param.Password,
+		Role:         param.Role,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
+		return nil, err
 	}
 
-	if param.Role == "driver" {
-		dp := &ent.DriverProfile{}
-		dp.Edges.User = createdUser
-		if err := e.repo.CreateDriverProfile(ctx, dp); err != nil {
-			return nil, fmt.Errorf("failed to create driver profile: %w", err)
+	// Hồ sơ phụ được tạo rỗng ngay lúc đăng ký để mọi API sau đó có chỗ ghi vào,
+	// khỏi phải xử lý riêng trường hợp "user có mà hồ sơ chưa có".
+	switch param.Role {
+	case entity.RoleDriver:
+		if _, err := e.repo.CreateDriverProfile(ctx, created.ID, &entity.DriverProfile{}); err != nil {
+			return nil, err
 		}
-	} else if param.Role == "shipper" {
-		sp := &ent.ShipperProfile{}
-		sp.Edges.User = createdUser
-		if err := e.repo.CreateShipperProfile(ctx, sp); err != nil {
-			return nil, fmt.Errorf("failed to create shipper profile: %w", err)
+	case entity.RoleShipper:
+		if _, err := e.repo.CreateShipperProfile(ctx, created.ID, &entity.ShipperProfile{}); err != nil {
+			return nil, err
 		}
 	}
 
 	return &entity.RegisterUserResult{
-		ID:      createdUser.ID.String(),
-		Message: "User registered successfully",
+		ID:      created.ID,
+		User:    created,
+		Message: "Đăng ký người dùng thành công",
 	}, nil
 }
 
-func (e *userEngineImpl) GetUser(ctx context.Context, param *entity.GetUserParam) (*entity.GetUserResult, error) {
-	uid, err := uuid.Parse(param.ID)
+func (e *userEngineImpl) GetUser(ctx context.Context, id uuid.UUID) (*entity.GetUserResult, error) {
+	if id == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+
+	u, err := e.repo.GetUserByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("invalid user ID")
+		return nil, err
 	}
 
-	u, err := e.repo.GetUserByID(ctx, uid)
-	if err != nil {
-		return nil, fmt.Errorf("user not found")
-	}
+	result := &entity.GetUserResult{User: u}
 
-	result := &entity.GetUserResult{
-		User: &entity.User{
-			ID:        u.ID,
-			Phone:     u.Phone,
-			Email:     u.Email,
-			Role:      string(u.Role),
-			Status:    string(u.Status),
-			CreatedAt: u.CreatedAt,
-			UpdatedAt: u.UpdatedAt,
-		},
-	}
-
-	if string(u.Role) == "driver" {
-		dp, err := e.repo.GetDriverProfile(ctx, uid)
-		if err == nil && dp != nil {
-			result.DriverProfile = &entity.DriverProfile{
-				UserID:        uid,
-				LicenseNumber: dp.LicenseNumber,
-				IDCard:        dp.IDCard,
-				Rating:        dp.Rating,
-				KycStatus:     string(dp.KycStatus),
-			}
+	// Hồ sơ phụ thiếu không phải lỗi chí mạng: vẫn trả về thông tin user chính.
+	switch u.Role {
+	case entity.RoleDriver:
+		if dp, dErr := e.repo.GetDriverProfile(ctx, id); dErr == nil {
+			result.DriverProfile = dp
 		}
-	} else if string(u.Role) == "shipper" {
-		sp, err := e.repo.GetShipperProfile(ctx, uid)
-		if err == nil && sp != nil {
-			result.ShipperProfile = &entity.ShipperProfile{
-				UserID:      uid,
-				CompanyName: sp.CompanyName,
-				TaxCode:     sp.TaxCode,
-			}
+	case entity.RoleShipper:
+		if sp, sErr := e.repo.GetShipperProfile(ctx, id); sErr == nil {
+			result.ShipperProfile = sp
 		}
 	}
 
 	return result, nil
 }
 
-func (e *userEngineImpl) UpdateDriverKYC(ctx context.Context, param *entity.UpdateDriverKYCParam) (*entity.UpdateDriverKYCResult, error) {
-	uid, err := uuid.Parse(param.UserID)
+func (e *userEngineImpl) UpdateUser(ctx context.Context, param *entity.UpdateUserParam) (*entity.User, error) {
+	if param.ID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+	if param.Email != "" {
+		taken, err := e.repo.ExistsByEmail(ctx, param.Email)
+		if err != nil {
+			return nil, err
+		}
+		if taken {
+			// Email chính chủ thì không tính là trùng.
+			current, cErr := e.repo.GetUserByID(ctx, param.ID)
+			if cErr != nil {
+				return nil, cErr
+			}
+			if current.Email != param.Email {
+				return nil, cerr.ErrEmailAlreadyUsed.WithDetail("email", param.Email)
+			}
+		}
+	}
+	return e.repo.UpdateUser(ctx, param)
+}
+
+func (e *userEngineImpl) GetDriverProfile(ctx context.Context, userID uuid.UUID) (*entity.DriverProfile, error) {
+	if userID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+	if err := e.mustBeRole(ctx, userID, entity.RoleDriver); err != nil {
+		return nil, err
+	}
+	return e.repo.GetDriverProfile(ctx, userID)
+}
+
+func (e *userEngineImpl) UpdateDriverProfile(ctx context.Context, param *entity.UpdateDriverProfileParam) (*entity.DriverProfile, error) {
+	if param.UserID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+	if err := e.mustBeRole(ctx, param.UserID, entity.RoleDriver); err != nil {
+		return nil, err
+	}
+	return e.repo.UpdateDriverProfile(ctx, param)
+}
+
+func (e *userEngineImpl) GetShipperProfile(ctx context.Context, userID uuid.UUID) (*entity.ShipperProfile, error) {
+	if userID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+	if err := e.mustBeRole(ctx, userID, entity.RoleShipper); err != nil {
+		return nil, err
+	}
+	return e.repo.GetShipperProfile(ctx, userID)
+}
+
+func (e *userEngineImpl) UpdateShipperProfile(ctx context.Context, param *entity.UpdateShipperProfileParam) (*entity.ShipperProfile, error) {
+	if param.UserID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+	if err := e.mustBeRole(ctx, param.UserID, entity.RoleShipper); err != nil {
+		return nil, err
+	}
+	return e.repo.UpdateShipperProfile(ctx, param)
+}
+
+func (e *userEngineImpl) UpdateDriverKYC(ctx context.Context, param *entity.UpdateDriverKYCParam) (*entity.DriverProfile, error) {
+	if param.UserID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+	if !entity.IsValidKycStatus(param.KycStatus) {
+		return nil, cerr.ErrInvalidKycStatus.WithDetail("kyc_status", param.KycStatus)
+	}
+	if err := e.mustBeRole(ctx, param.UserID, entity.RoleDriver); err != nil {
+		return nil, err
+	}
+	return e.repo.UpdateDriverKYC(ctx, param)
+}
+
+// mustBeRole chặn thao tác đặt nhầm chỗ, ví dụ gọi API hồ sơ tài xế trên một
+// tài khoản chủ hàng. Không có bước này thì repo sẽ trả "không tìm thấy hồ sơ",
+// một câu vừa sai nguyên nhân vừa khiến client đi dò mò.
+func (e *userEngineImpl) mustBeRole(ctx context.Context, userID uuid.UUID, role string) error {
+	u, err := e.repo.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("invalid user ID")
+		return err
+	}
+	if u.Role != role {
+		if role == entity.RoleDriver {
+			return cerr.ErrNotADriver.WithDetail("actual_role", u.Role)
+		}
+		return cerr.ErrNotAShipper.WithDetail("actual_role", u.Role)
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// SỔ ĐỊA CHỈ
+// ---------------------------------------------------------------------------
+
+func (e *userEngineImpl) CreateAddress(ctx context.Context, param *entity.CreateAddressParam) (*entity.Address, error) {
+	if param.UserID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+	if param.Line1 == "" {
+		return nil, cerr.ErrAddressRequired
+	}
+	if param.AddressType == "" {
+		param.AddressType = entity.AddressTypeBoth
+	}
+	if !entity.IsValidAddressType(param.AddressType) {
+		return nil, cerr.ErrInvalidAddrType.WithDetail("address_type", param.AddressType)
 	}
 
-	if err := e.repo.UpdateDriverKYC(ctx, uid, param.KycStatus); err != nil {
-		return nil, fmt.Errorf("failed to update KYC status: %w", err)
+	if _, err := e.repo.GetUserByID(ctx, param.UserID); err != nil {
+		return nil, err
 	}
 
-	return &entity.UpdateDriverKYCResult{
-		Message: "KYC status updated successfully",
+	// "Mặc định" phải là duy nhất: hạ cờ của các địa chỉ cũ trước khi dựng cờ mới.
+	if param.IsDefault {
+		if err := e.repo.ClearDefaultAddress(ctx, param.UserID); err != nil {
+			return nil, err
+		}
+	}
+
+	return e.repo.CreateAddress(ctx, param)
+}
+
+func (e *userEngineImpl) ListAddresses(ctx context.Context, param *entity.ListAddressesParam) (*entity.ListAddressesResult, error) {
+	if param.UserID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+	if param.AddressType != "" && !entity.IsValidAddressType(param.AddressType) {
+		return nil, cerr.ErrInvalidAddrType.WithDetail("address_type", param.AddressType)
+	}
+
+	page, pageSize, _ := entity.NormalizePaging(param.Page, param.PageSize)
+	list, total, err := e.repo.ListAddresses(ctx, param)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entity.ListAddressesResult{
+		Addresses:  list,
+		Pagination: entity.BuildPagination(page, pageSize, total),
 	}, nil
+}
+
+func (e *userEngineImpl) UpdateAddress(ctx context.Context, param *entity.UpdateAddressParam) (*entity.Address, error) {
+	if param.ID == uuid.Nil {
+		return nil, cerr.ErrInvalidAddressID
+	}
+	if param.AddressType != "" && !entity.IsValidAddressType(param.AddressType) {
+		return nil, cerr.ErrInvalidAddrType.WithDetail("address_type", param.AddressType)
+	}
+
+	current, err := e.repo.GetAddress(ctx, param.ID)
+	if err != nil {
+		return nil, err
+	}
+	// Không cho sửa địa chỉ của người khác dù có đoán đúng id.
+	if param.UserID != uuid.Nil && current.UserID != param.UserID {
+		return nil, cerr.ErrAddressNotOwned
+	}
+
+	if param.IsDefault && !current.IsDefault {
+		if err := e.repo.ClearDefaultAddress(ctx, current.UserID); err != nil {
+			return nil, err
+		}
+	}
+
+	return e.repo.UpdateAddress(ctx, param)
+}
+
+func (e *userEngineImpl) DeleteAddress(ctx context.Context, id, userID uuid.UUID) error {
+	if id == uuid.Nil {
+		return cerr.ErrInvalidAddressID
+	}
+	current, err := e.repo.GetAddress(ctx, id)
+	if err != nil {
+		return err
+	}
+	if userID != uuid.Nil && current.UserID != userID {
+		return cerr.ErrAddressNotOwned
+	}
+	return e.repo.DeleteAddress(ctx, id)
+}
+
+// ---------------------------------------------------------------------------
+// THIẾT BỊ NHẬN PUSH
+// ---------------------------------------------------------------------------
+
+func (e *userEngineImpl) RegisterDevice(ctx context.Context, param *entity.RegisterDeviceParam) (*entity.UserDevice, error) {
+	if param.UserID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+	if param.DeviceToken == "" {
+		return nil, cerr.ErrDeviceTokenEmpty
+	}
+	if param.Platform == "" {
+		param.Platform = entity.PlatformAndroid
+	}
+	if !entity.IsValidPlatform(param.Platform) {
+		return nil, cerr.ErrInvalidPlatform.WithDetail("platform", param.Platform)
+	}
+
+	if _, err := e.repo.GetUserByID(ctx, param.UserID); err != nil {
+		return nil, err
+	}
+	return e.repo.UpsertDevice(ctx, param)
+}
+
+func (e *userEngineImpl) ListDevices(ctx context.Context, userID uuid.UUID) ([]entity.UserDevice, error) {
+	if userID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+	return e.repo.ListDevices(ctx, userID)
+}
+
+func (e *userEngineImpl) DeleteDevice(ctx context.Context, id, userID uuid.UUID) error {
+	if id == uuid.Nil {
+		return cerr.ErrInvalidDeviceID
+	}
+	current, err := e.repo.GetDevice(ctx, id)
+	if err != nil {
+		return err
+	}
+	if userID != uuid.Nil && current.UserID != userID {
+		return cerr.ErrDeviceNotOwned
+	}
+	return e.repo.DeleteDevice(ctx, id)
+}
+
+// ---------------------------------------------------------------------------
+// ADMIN
+// ---------------------------------------------------------------------------
+
+func (e *userEngineImpl) AdminListUsers(ctx context.Context, filter *entity.ListUsersFilter) (*entity.ListUsersResult, error) {
+	if filter.Role != "" && !entity.IsValidRole(filter.Role) {
+		return nil, cerr.ErrInvalidRole.WithDetail("role", filter.Role)
+	}
+	if filter.Status != "" && !entity.IsValidStatus(filter.Status) {
+		return nil, cerr.ErrInvalidStatus.WithDetail("status", filter.Status)
+	}
+
+	page, pageSize, _ := entity.NormalizePaging(filter.Page, filter.PageSize)
+	users, total, err := e.repo.ListUsers(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entity.ListUsersResult{
+		Users:      users,
+		Pagination: entity.BuildPagination(page, pageSize, total),
+	}, nil
+}
+
+func (e *userEngineImpl) AdminUpdateUserStatus(ctx context.Context, param *entity.UpdateUserStatusParam) (*entity.User, error) {
+	if param.ID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+	if !entity.IsValidStatus(param.Status) {
+		return nil, cerr.ErrInvalidStatus.WithDetail("status", param.Status)
+	}
+	return e.repo.UpdateUserStatus(ctx, param.ID, param.Status, param.Reason)
+}
+
+func (e *userEngineImpl) AdminListPendingKYC(ctx context.Context, page, pageSize int) (*entity.ListDriverProfilesResult, error) {
+	page, pageSize, _ = entity.NormalizePaging(page, pageSize)
+	list, total, err := e.repo.ListPendingKYC(ctx, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	return &entity.ListDriverProfilesResult{
+		DriverProfiles: list,
+		Pagination:     entity.BuildPagination(page, pageSize, total),
+	}, nil
+}
+
+func (e *userEngineImpl) AdminReviewKYC(ctx context.Context, param *entity.ReviewKYCParam) (*entity.DriverProfile, error) {
+	if param.UserID == uuid.Nil {
+		return nil, cerr.ErrInvalidUserID
+	}
+
+	current, err := e.repo.GetDriverProfile(ctx, param.UserID)
+	if err != nil {
+		return nil, err
+	}
+	// Chặn duyệt hai lần: nếu không, một cú bấm nhầm sẽ lật ngược quyết định cũ
+	// mà không để lại dấu vết là ai đã đổi.
+	if current.KycStatus != entity.KycPending {
+		return nil, cerr.ErrKycAlreadyReviewed.WithDetail("current_status", current.KycStatus)
+	}
+
+	status := entity.KycRejected
+	if param.Approved {
+		status = entity.KycApproved
+	}
+
+	return e.repo.UpdateDriverKYC(ctx, &entity.UpdateDriverKYCParam{
+		UserID:     param.UserID,
+		KycStatus:  status,
+		Note:       param.Note,
+		ReviewerID: param.ReviewerID,
+	})
+}
+
+func (e *userEngineImpl) AdminGetUserStats(ctx context.Context) (*entity.UserStats, error) {
+	total, err := e.repo.CountUsers(ctx, "", "")
+	if err != nil {
+		return nil, err
+	}
+	drivers, err := e.repo.CountUsers(ctx, entity.RoleDriver, "")
+	if err != nil {
+		return nil, err
+	}
+	shippers, err := e.repo.CountUsers(ctx, entity.RoleShipper, "")
+	if err != nil {
+		return nil, err
+	}
+	active, err := e.repo.CountUsers(ctx, "", entity.StatusActive)
+	if err != nil {
+		return nil, err
+	}
+	banned, err := e.repo.CountUsers(ctx, "", entity.StatusBanned)
+	if err != nil {
+		return nil, err
+	}
+	pendingKyc, err := e.repo.CountPendingKYC(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &entity.UserStats{
+		TotalUsers:    total,
+		TotalDrivers:  drivers,
+		TotalShippers: shippers,
+		ActiveUsers:   active,
+		BannedUsers:   banned,
+		PendingKyc:    pendingKyc,
+	}, nil
+}
+
+func (e *userEngineImpl) AdminDeleteUser(ctx context.Context, id uuid.UUID) error {
+	if id == uuid.Nil {
+		return cerr.ErrInvalidUserID
+	}
+	return e.repo.DeleteUser(ctx, id)
 }

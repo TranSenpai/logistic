@@ -12,7 +12,9 @@ type Config struct {
 	SlaveDatabase  SlaveDatabaseConfig
 	NatConfig      NatConfig
 	KafkaConfig    KafkaConfig
+	RabbitMQ       RabbitMQConfig
 	WalletService  WalletServiceConfig
+	VehicleService VehicleServiceConfig
 }
 
 type ServerConfig struct {
@@ -67,4 +69,24 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{}
 	err := cleanenv.ReadEnv(cfg)
 	return cfg, err
+}
+
+// RabbitMQConfig cấu hình kênh phát thông báo sang notification_service.
+//
+// Không đặt env-required: RabbitMQ chết thì matching_service vẫn phải ghép được
+// đơn — chỉ là người dùng không nhận được thông báo. DI sẽ rơi về NoopNotifier
+// và ghi log cảnh báo.
+type RabbitMQConfig struct {
+	Host     string `env:"RABBITMQ_HOST" env-default:"rabbitmq"`
+	Port     string `env:"RABBITMQ_PORT" env-default:"5672"`
+	User     string `env:"RABBITMQ_USER" env-default:"guest"`
+	Password string `env:"RABBITMQ_PASSWORD" env-default:"guest"`
+	VHost    string `env:"RABBITMQ_VHOST" env-default:"/"`
+	Exchange string `env:"RABBITMQ_EXCHANGE" env-default:"logistic.events"`
+	Enabled  bool   `env:"MATCHING_MQ_ENABLED" env-default:"true"`
+}
+
+// VehicleServiceConfig trỏ tới vehicle_service — nơi giữ chỉ mục "xe đang chạy".
+type VehicleServiceConfig struct {
+	GrpcAddr string `env:"MATCHING_VEHICLE_GRPC_ADDR" env-default:"vehicle-service:9005"`
 }

@@ -5,8 +5,13 @@ networks:
 services:
   gateway-service:
     build:
-      context: ./gateway_service
-      dockerfile: Dockerfile
+      # Context = gốc repo, để Docker nhìn thấy được api/ và pkg/
+      # (go.mod của service có replace => ../api, ../pkg)
+      context: .
+      dockerfile: gateway_service/Dockerfile
+    # Image do GitHub Actions build sẵn và đẩy lên GHCR. EC2 chỉ pull, không compile.
+    # IMAGE_TAG được CI ghi vào .env (= git sha) => pin đúng phiên bản, dễ rollback.
+    image: ghcr.io/transenpai/logistic/gateway-service:${IMAGE_TAG:-latest}
     ports:
       - "8080:8080"
     env_file:
@@ -18,8 +23,13 @@ services:
 
   auth-service:
     build:
-      context: ./auth_service
-      dockerfile: Dockerfile
+      # Context = gốc repo, để Docker nhìn thấy được api/ và pkg/
+      # (go.mod của service có replace => ../api, ../pkg)
+      context: .
+      dockerfile: auth_service/Dockerfile
+    # Image do GitHub Actions build sẵn và đẩy lên GHCR. EC2 chỉ pull, không compile.
+    # IMAGE_TAG được CI ghi vào .env (= git sha) => pin đúng phiên bản, dễ rollback.
+    image: ghcr.io/transenpai/logistic/auth-service:${IMAGE_TAG:-latest}
     ports: 
       - "9001:9001"
     env_file:
@@ -31,8 +41,13 @@ services:
   
   media-service:
     build:
-      context: ./media_service
-      dockerfile: Dockerfile
+      # Context = gốc repo, để Docker nhìn thấy được api/ và pkg/
+      # (go.mod của service có replace => ../api, ../pkg)
+      context: .
+      dockerfile: media_service/Dockerfile
+    # Image do GitHub Actions build sẵn và đẩy lên GHCR. EC2 chỉ pull, không compile.
+    # IMAGE_TAG được CI ghi vào .env (= git sha) => pin đúng phiên bản, dễ rollback.
+    image: ghcr.io/transenpai/logistic/media-service:${IMAGE_TAG:-latest}
     ports:
       - "9002:9002"
     env_file:
@@ -44,8 +59,13 @@ services:
 
   matching-service:
     build:
-      context: ./matching_service
-      dockerfile: Dockerfile
+      # Context = gốc repo, để Docker nhìn thấy được api/ và pkg/
+      # (go.mod của service có replace => ../api, ../pkg)
+      context: .
+      dockerfile: matching_service/Dockerfile
+    # Image do GitHub Actions build sẵn và đẩy lên GHCR. EC2 chỉ pull, không compile.
+    # IMAGE_TAG được CI ghi vào .env (= git sha) => pin đúng phiên bản, dễ rollback.
+    image: ghcr.io/transenpai/logistic/matching-service:${IMAGE_TAG:-latest}
     ports:
       - "9003:9003"
     env_file:
@@ -57,8 +77,13 @@ services:
 
   user-service:
     build:
-      context: ./user_service
-      dockerfile: Dockerfile
+      # Context = gốc repo, để Docker nhìn thấy được api/ và pkg/
+      # (go.mod của service có replace => ../api, ../pkg)
+      context: .
+      dockerfile: user_service/Dockerfile
+    # Image do GitHub Actions build sẵn và đẩy lên GHCR. EC2 chỉ pull, không compile.
+    # IMAGE_TAG được CI ghi vào .env (= git sha) => pin đúng phiên bản, dễ rollback.
+    image: ghcr.io/transenpai/logistic/user-service:${IMAGE_TAG:-latest}
     ports:
       - "9004:9004"
     env_file:
@@ -70,14 +95,131 @@ services:
 
   vehicle-service:
     build:
-      context: ./vehicle_service
-      dockerfile: Dockerfile
+      # Context = gốc repo, để Docker nhìn thấy được api/ và pkg/
+      # (go.mod của service có replace => ../api, ../pkg)
+      context: .
+      dockerfile: vehicle_service/Dockerfile
+    # Image do GitHub Actions build sẵn và đẩy lên GHCR. EC2 chỉ pull, không compile.
+    # IMAGE_TAG được CI ghi vào .env (= git sha) => pin đúng phiên bản, dễ rollback.
+    image: ghcr.io/transenpai/logistic/vehicle-service:${IMAGE_TAG:-latest}
     ports:
       - "9005:9005"
     env_file:
       - .env
     volumes:
       - vehicle-data:/app/data
+    networks:
+      - logistic_net
+
+
+  notification-service:
+    build:
+      # Context = gốc repo, để Docker nhìn thấy được api/ và pkg/
+      context: .
+      dockerfile: notification_service/Dockerfile
+    image: ghcr.io/transenpai/logistic/notification-service:${IMAGE_TAG:-latest}
+    ports:
+      - "9006:9006"
+    env_file:
+      - .env
+    # Consumer chỉ bind được queue khi RabbitMQ đã sẵn sàng. Không có
+    # depends_on healthy thì lần khởi động đầu tiên gần như chắc chắn trượt và
+    # phải chờ vòng reconnect.
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      notification-db:
+        condition: service_started
+    volumes:
+      - notification-data:/app/data
+    networks:
+      - logistic_net
+
+  # ==========================================================================
+  # REDIS — cache đọc + CHỈ MỤC GEO cho "tìm xe đang chạy"
+  # ==========================================================================
+  # Ba service dùng chung một instance nhưng TÁCH database index và key prefix:
+  #   db 0 = user_service     (cache hồ sơ, địa chỉ, thiết bị)
+  #   db 1 = vehicle_service  (cache xe + sorted set GEO của xe đang online)
+  #   db 2 = notification_service (bộ đếm thông báo chưa đọc)
+  #
+  # appendonly yes: chỉ mục GEO dựng lại từ Postgres được, nhưng AOF giúp sau
+  # khi restart không có khoảng trống mà mọi xe đều "biến mất" khỏi kết quả tìm.
+  redis:
+    image: docker.io/library/redis:7.4-alpine
+    container_name: redis
+    command:
+      - "redis-server"
+      - "--appendonly"
+      - "yes"
+      - "--maxmemory"
+      - "512mb"
+      # allkeys-lru: khi đầy thì loại key ít dùng nhất. An toàn vì Redis ở đây
+      # KHÔNG phải nguồn sự thật — mọi thứ đều dựng lại được từ Postgres.
+      - "--maxmemory-policy"
+      - "allkeys-lru"
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - logistic_net
+
+  # ==========================================================================
+  # RABBITMQ — hàng đợi thông báo matching_service -> notification_service
+  # ==========================================================================
+  # Topology (exchange, queue, binding, DLQ) được code tự khai báo lúc khởi động
+  # (xem pkg/mq/rabbitmq.go DeclareTopology), nên ở đây không cần definitions.json.
+  # Giao diện quản trị: http://localhost:15672
+  rabbitmq:
+    image: docker.io/library/rabbitmq:4-management-alpine
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - logistic_net
+
+  # ==========================================================================
+  # NOTIFICATION DB
+  # ==========================================================================
+  # Chỉ một node: bảng notifications ghi nhiều đọc ít, và dữ liệu không mang
+  # tính giao dịch tiền bạc như matching/wallet nên chưa cần replica.
+  notification-db:
+    image: docker.io/library/postgres:16-alpine
+    container_name: notification-db
+    ports:
+      - "5438:5432"
+    environment:
+      POSTGRES_USER: ${NOTIFICATION_DB_USER}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME}
+    volumes:
+      - notification-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${NOTIFICATION_DB_USER} -d ${NOTIFICATION_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       - logistic_net
 
@@ -479,6 +621,10 @@ services:
 
 volumes:
   nats-data:
+  redis-data:
+  rabbitmq-data:
+  notification-data:
+  notification-db-data:
   gateway-data:
   auth-data:
   media-data:
