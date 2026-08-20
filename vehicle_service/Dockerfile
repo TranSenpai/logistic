@@ -1,6 +1,6 @@
 # Build context = gốc repo, KHÔNG phải ./vehicle_service
 #   podman build -f vehicle_service/Dockerfile -t vehicle_service .
-# Giải thích từng bước + cơ chế cache: xem BUILD_PROCESS.md
+# Giải thích từng bước + cơ chế cache: xem docs/operations/build-process.md
 
 FROM docker.io/library/golang:1.26-alpine AS builder
 

@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: logistic/matching_service/v1/matching_service.proto
 
-package v1
+package matchingv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -30,7 +30,7 @@ const file_logistic_matching_service_v1_matching_service_proto_rawDesc = "" +
 	"\tSubmitAsk\x12..logistic.matching_service.v1.SubmitAskRequest\x1a/.logistic.matching_service.v1.SubmitAskResponse\x12r\n" +
 	"\vAcceptMatch\x120.logistic.matching_service.v1.AcceptMatchRequest\x1a1.logistic.matching_service.v1.AcceptMatchResponse\x12r\n" +
 	"\vSubmitOffer\x120.logistic.matching_service.v1.SubmitOfferRequest\x1a1.logistic.matching_service.v1.SubmitOfferResponse\x12r\n" +
-	"\vRejectOffer\x120.logistic.matching_service.v1.RejectOfferRequest\x1a1.logistic.matching_service.v1.RejectOfferResponseB+Z)logistic_project/api/logistic/matching/v1b\x06proto3"
+	"\vRejectOffer\x120.logistic.matching_service.v1.RejectOfferRequest\x1a1.logistic.matching_service.v1.RejectOfferResponseBAZ?github.com/logistic/api/logistic/matching_service/v1;matchingv1b\x06proto3"
 
 var file_logistic_matching_service_v1_matching_service_proto_goTypes = []any{
 	(*SubmitBidRequest)(nil),    // 0: logistic.matching_service.v1.SubmitBidRequest

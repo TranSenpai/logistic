@@ -105,9 +105,9 @@ func (c *UserController) RegisterUser(ctx *gin.Context) {
 // @Summary      Lấy thông tin người dùng
 // @Tags         User
 // @Produce      json
-// @Param        id path string true "User ID"
+// @Param        user_id path string true "User ID"
 // @Success      200 {object} response.Envelope
-// @Router       /api/v1/users/{id} [get]
+// @Router       /api/v1/users/{user_id} [get]
 func (c *UserController) GetUser(ctx *gin.Context) {
 	resp, err := c.userClient.GetUser(ctx.Request.Context(), &pb.GetUserRequest{
 		Id: resolveUserID(ctx, "id"),
@@ -135,9 +135,9 @@ type UpdateUserReq struct {
 // @Tags         User
 // @Accept       json
 // @Produce      json
-// @Param        id path string true "User ID"
+// @Param        user_id path string true "User ID"
 // @Success      200 {object} response.Envelope
-// @Router       /api/v1/users/{id} [put]
+// @Router       /api/v1/users/{user_id} [put]
 func (c *UserController) UpdateUser(ctx *gin.Context) {
 	var req UpdateUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -526,7 +526,7 @@ type AdminUpdateUserStatusReq struct {
 // @Tags         Admin-User
 // @Accept       json
 // @Produce      json
-// @Param        id path string true "User ID"
+// @Param        user_id path string true "User ID"
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/admin/users/{id}/status [put]
 func (c *UserController) AdminUpdateUserStatus(ctx *gin.Context) {
@@ -618,7 +618,7 @@ func (c *UserController) AdminGetUserStats(ctx *gin.Context) {
 // @Summary      [Admin] Xoá người dùng
 // @Tags         Admin-User
 // @Produce      json
-// @Param        id path string true "User ID"
+// @Param        user_id path string true "User ID"
 // @Success      200 {object} response.Envelope
 // @Router       /api/v1/admin/users/{id} [delete]
 func (c *UserController) AdminDeleteUser(ctx *gin.Context) {
@@ -631,5 +631,3 @@ func (c *UserController) AdminDeleteUser(ctx *gin.Context) {
 	}
 	response.OKMessage(ctx, nil, resp.Message)
 }
-
-var _ = queryBool

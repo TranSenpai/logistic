@@ -61,3 +61,7 @@ Makefile
 
 # Chốt lại cho chắc: swagger docs của gateway là source code, phải giữ.
 !gateway_service/docs
+
+# --- Sơ đồ nguồn: nặng (~1.2MB) và không có tác dụng gì lúc build ---
+*.drawio
+.$*.drawio.bkp

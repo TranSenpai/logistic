@@ -51,7 +51,7 @@ type KafkaConfig struct {
 }
 
 type WalletServiceConfig struct {
-	GrpcAddr string `env:"MATCHING_WALLET_GRPC_ADDR" env-default:"wallet_service:9005"`
+	GrpcAddr string `env:"MATCHING_WALLET_GRPC_ADDR" env-default:"wallet-service:9007"`
 }
 
 func (db *MasterDatabaseConfig) GetDataSource() string {

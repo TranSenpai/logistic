@@ -144,3 +144,23 @@ proto-buf:
 	@echo "==> buf generate..."
 	@( cd api && buf lint && buf generate )
 	@echo "    Xong. Nhớ chạy 'make tidy-modules' nếu thêm import mới."
+
+# ==============================================================================
+# Tài liệu
+# ==============================================================================
+
+.PHONY: docs-lint
+
+## docs-lint: Kiểm tra liên kết chết + quy ước đặt tên trong docs/
+# Tài liệu không được biên dịch nên link chết là lỗi im lặng. Chạy trước khi push
+# nếu có đổi tên hoặc di chuyển file tài liệu.
+docs-lint:
+	@GOWORK=off go run ./tools/doclint
+
+.PHONY: diagrams
+
+## diagrams: Sinh lại .drawio + .svg + trang HTML từ tools/diagrams/
+# Mỗi tài liệu trong architecture/, services/, flows/ có đúng một sơ đồ cùng tên.
+# Sửa spec trong tools/diagrams/ rồi chạy lệnh này — đừng sửa tay file sinh ra.
+diagrams:
+	@GOWORK=off go run ./tools/diagrams

@@ -107,3 +107,6 @@ chuong_accessKeys.csv
 # Bỏ qua các file thực thi (executable)
 *.exe
 *_bin
+
+# Draw.io tự tạo file backup dạng ".$Ten.drawio.bkp" mỗi lần lưu
+.$*.drawio.bkp

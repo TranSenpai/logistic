@@ -4,7 +4,7 @@ package logistic.matching_service.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "logistic_project/api/logistic/matching/v1";
+option go_package = "github.com/logistic/api/logistic/matching_service/v1;matchingv1";
 
 // Location represents a geographic point and a logical zone for simplified matching
 message Location {

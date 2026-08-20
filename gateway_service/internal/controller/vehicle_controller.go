@@ -213,9 +213,9 @@ type UploadDocumentReq struct {
 // @Tags         Vehicle
 // @Accept       json
 // @Produce      json
-// @Param        vehicle_id path string true "Vehicle ID"
+// @Param        id path string true "Vehicle ID"
 // @Success      201 {object} response.Envelope
-// @Router       /api/v1/vehicles/{vehicle_id}/documents [post]
+// @Router       /api/v1/vehicles/{id}/documents [post]
 func (c *VehicleController) UploadVehicleDocument(ctx *gin.Context) {
 	var req UploadDocumentReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -240,9 +240,9 @@ func (c *VehicleController) UploadVehicleDocument(ctx *gin.Context) {
 // @Summary      Danh sách giấy tờ xe
 // @Tags         Vehicle
 // @Produce      json
-// @Param        vehicle_id path string true "Vehicle ID"
+// @Param        id path string true "Vehicle ID"
 // @Success      200 {object} response.Envelope
-// @Router       /api/v1/vehicles/{vehicle_id}/documents [get]
+// @Router       /api/v1/vehicles/{id}/documents [get]
 func (c *VehicleController) ListVehicleDocuments(ctx *gin.Context) {
 	resp, err := c.vehicleClient.ListVehicleDocuments(ctx.Request.Context(), &pb.ListVehicleDocumentsRequest{
 		VehicleId:    vehicleIDParam(ctx),
@@ -291,9 +291,9 @@ type ReportLocationReq struct {
 // @Tags         Vehicle
 // @Accept       json
 // @Produce      json
-// @Param        vehicle_id path string true "Vehicle ID"
+// @Param        id path string true "Vehicle ID"
 // @Success      200 {object} response.Envelope
-// @Router       /api/v1/vehicles/{vehicle_id}/location [post]
+// @Router       /api/v1/vehicles/{id}/location [post]
 func (c *VehicleController) ReportLocation(ctx *gin.Context) {
 	var req ReportLocationReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -325,9 +325,9 @@ func (c *VehicleController) ReportLocation(ctx *gin.Context) {
 // @Summary      Vị trí hiện tại của xe
 // @Tags         Vehicle
 // @Produce      json
-// @Param        vehicle_id path string true "Vehicle ID"
+// @Param        id path string true "Vehicle ID"
 // @Success      200 {object} response.Envelope
-// @Router       /api/v1/vehicles/{vehicle_id}/location [get]
+// @Router       /api/v1/vehicles/{id}/location [get]
 func (c *VehicleController) GetVehicleLocation(ctx *gin.Context) {
 	resp, err := c.vehicleClient.GetVehicleLocation(ctx.Request.Context(), &pb.GetVehicleLocationRequest{
 		VehicleId: vehicleIDParam(ctx),

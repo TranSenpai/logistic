@@ -31,7 +31,7 @@ func NewMediaController(mediaClient pb.MediaServiceClient) *MediaController {
 // @Success      200 {object} map[string]interface{} "Tải lên thành công, trả về URL"
 // @Failure      400 {object} map[string]interface{} "Lỗi thiếu file hoặc file không hợp lệ"
 // @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
-// @Router       /api/media/v1/upload [post]
+// @Router       /api/v1/media/upload [post]
 func (c *MediaController) UploadFile(ctx *gin.Context) {
 	fileHeader, err := ctx.FormFile("file")
 	if err != nil {
@@ -83,7 +83,7 @@ func (c *MediaController) UploadFile(ctx *gin.Context) {
 // @Failure      400 {object} map[string]interface{} "Thiếu public_id"
 // @Failure      404 {object} map[string]interface{} "Không tìm thấy file"
 // @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
-// @Router       /api/media/v1/delete/{publicID} [delete]
+// @Router       /api/v1/media/files/{publicID} [delete]
 func (c *MediaController) DeleteFile(ctx *gin.Context) {
 	publicID := ctx.Param("publicID")
 	if publicID == "" {

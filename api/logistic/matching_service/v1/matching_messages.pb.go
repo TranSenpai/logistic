@@ -4,7 +4,7 @@
 // 	protoc        (unknown)
 // source: logistic/matching_service/v1/matching_messages.proto
 
-package v1
+package matchingv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -1327,7 +1327,7 @@ const file_logistic_matching_service_v1_matching_messages_proto_rawDesc = "" +
 	"\x06reason\x18\x03 \x01(\tR\x06reason\"G\n" +
 	"\x13RejectOfferResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessageB+Z)logistic_project/api/logistic/matching/v1b\x06proto3"
+	"\amessage\x18\x02 \x01(\tR\amessageBAZ?github.com/logistic/api/logistic/matching_service/v1;matchingv1b\x06proto3"
 
 var (
 	file_logistic_matching_service_v1_matching_messages_proto_rawDescOnce sync.Once

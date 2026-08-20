@@ -33,7 +33,7 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) error {
 	authMapper := &generated.AuthMapperImpl{}
 	authRepo := repo.NewAuthRepo(clientDb, authMapper)
 	authService := biz.NewAuthService(authRepo, cfg.JWT.Secret, oauthConfig)
-	controller := controller.NewGrpcHandler(authService, authMapper)
+	controller := controller.NewAuthController(authService, authMapper)
 	pb.RegisterAuthServiceServer(grpcServer, controller)
 
 	return nil

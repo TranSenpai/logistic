@@ -13,20 +13,20 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type grpcHandler struct {
+type authController struct {
 	pb.UnimplementedAuthServiceServer
 	authBiz biz.AuthService
 	mapper  mapper.AuthMapper
 }
 
-func NewGrpcHandler(authBiz biz.AuthService, mapper mapper.AuthMapper) pb.AuthServiceServer {
-	return &grpcHandler{
+func NewAuthController(authBiz biz.AuthService, mapper mapper.AuthMapper) pb.AuthServiceServer {
+	return &authController{
 		authBiz: authBiz,
 		mapper:  mapper,
 	}
 }
 
-func (h *grpcHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+func (h *authController) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request is nil")
 	}
@@ -49,7 +49,7 @@ func (h *grpcHandler) Register(ctx context.Context, req *pb.RegisterRequest) (*p
 	}, nil
 }
 
-func (h *grpcHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+func (h *authController) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request is nil")
 	}
@@ -70,7 +70,7 @@ func (h *grpcHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 	}, nil
 }
 
-func (h *grpcHandler) GetGoogleLoginURL(ctx context.Context, req *pb.GetGoogleLoginURLRequest) (*pb.GetGoogleLoginURLResponse, error) {
+func (h *authController) GetGoogleLoginURL(ctx context.Context, req *pb.GetGoogleLoginURLRequest) (*pb.GetGoogleLoginURLResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request is nil")
 	}
@@ -81,7 +81,7 @@ func (h *grpcHandler) GetGoogleLoginURL(ctx context.Context, req *pb.GetGoogleLo
 	}, nil
 }
 
-func (h *grpcHandler) GoogleCallback(ctx context.Context, req *pb.GoogleCallbackRequest) (*pb.GoogleCallbackResponse, error) {
+func (h *authController) GoogleCallback(ctx context.Context, req *pb.GoogleCallbackRequest) (*pb.GoogleCallbackResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request is nil")
 	}
@@ -96,7 +96,7 @@ func (h *grpcHandler) GoogleCallback(ctx context.Context, req *pb.GoogleCallback
 	}, nil
 }
 
-func (h *grpcHandler) VerifyToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error) {
+func (h *authController) VerifyToken(ctx context.Context, req *pb.VerifyTokenRequest) (*pb.VerifyTokenResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "request is nil")
 	}

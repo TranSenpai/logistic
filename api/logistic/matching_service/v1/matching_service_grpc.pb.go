@@ -4,7 +4,7 @@
 // - protoc             (unknown)
 // source: logistic/matching_service/v1/matching_service.proto
 
-package v1
+package matchingv1
 
 import (
 	context "context"

@@ -46,7 +46,7 @@ type LoginRequest struct {
 // @Failure      400 {object} map[string]interface{} "Lỗi dữ liệu đầu vào"
 // @Failure      409 {object} map[string]interface{} "Email đã tồn tại"
 // @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
-// @Router       /api/auth/v1/register [post]
+// @Router       /api/v1/auth/register [post]
 func (c *AuthController) Register(ctx *gin.Context) {
 	var req RegisterRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -86,7 +86,7 @@ func (c *AuthController) Register(ctx *gin.Context) {
 // @Failure      400 {object} map[string]interface{} "Lỗi dữ liệu đầu vào"
 // @Failure      401 {object} map[string]interface{} "Sai email hoặc mật khẩu"
 // @Failure      500 {object} map[string]interface{} "Lỗi server nội bộ"
-// @Router       /api/auth/v1/login [post]
+// @Router       /api/v1/auth/login [post]
 func (c *AuthController) Login(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -118,7 +118,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 // @Produce      json
 // @Success      307 {string} string "Redirect đến Google OAuth consent screen"
 // @Failure      500 {object} map[string]interface{} "Lỗi khi lấy Google Login URL"
-// @Router       /api/auth/v1/google/login [get]
+// @Router       /api/v1/auth/google/login [get]
 func (c *AuthController) GoogleLogin(ctx *gin.Context) {
 	b := make([]byte, 16)
 	rand.Read(b)
@@ -146,7 +146,7 @@ func (c *AuthController) GoogleLogin(ctx *gin.Context) {
 // @Success      307 {string} string "Redirect về frontend với cookie đã set"
 // @Failure      400 {object} map[string]interface{} "State không hợp lệ"
 // @Failure      500 {object} map[string]interface{} "Lỗi xử lý callback"
-// @Router       /api/auth/v1/google/callback [get]
+// @Router       /api/v1/auth/google/callback [get]
 func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 	urlState := ctx.Query("state")
 	cookieState, err := ctx.Cookie("oauth_state")
@@ -182,7 +182,7 @@ func (c *AuthController) GoogleCallback(ctx *gin.Context) {
 // @Param        Authorization header string false "Bearer token (nếu không dùng cookie)"
 // @Success      200 {object} map[string]interface{} "Lấy thông tin thành công"
 // @Failure      401 {object} map[string]interface{} "Token không hợp lệ hoặc không tìm thấy"
-// @Router       /api/auth/v1/get-info [get]
+// @Router       /api/v1/auth/me [get]
 func (c *AuthController) GetInfo(ctx *gin.Context) {
 	token, err := ctx.Cookie("access_token")
 	if err != nil {

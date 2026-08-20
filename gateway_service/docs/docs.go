@@ -15,43 +15,486 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/auth/v1/get-info": {
-            "get": {
-                "description": "Lấy thông tin profile của người dùng hiện tại. Token có thể truyền qua cookie access_token hoặc header Authorization Bearer.",
+        "/api/v1/addresses/{id}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "Address"
                 ],
-                "summary": "Lấy thông tin người dùng",
+                "summary": "Cập nhật địa chỉ",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Bearer token (nếu không dùng cookie)",
-                        "name": "Authorization",
-                        "in": "header"
+                        "description": "Address ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lấy thông tin thành công",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
-                    },
-                    "401": {
-                        "description": "Token không hợp lệ hoặc không tìm thấy",
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Address"
+                ],
+                "summary": "Xoá địa chỉ",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Address ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     }
                 }
             }
         },
-        "/api/auth/v1/google/callback": {
+        "/api/v1/admin/kyc/pending": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-User"
+                ],
+                "summary": "[Admin] Hàng đợi duyệt KYC",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/kyc/{user_id}/review": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-User"
+                ],
+                "summary": "[Admin] Duyệt/từ chối KYC",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/notification-templates": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Notification"
+                ],
+                "summary": "[Admin] Danh sách template",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Notification"
+                ],
+                "summary": "[Admin] Tạo template thông báo",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/notification-templates/{id}": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Notification"
+                ],
+                "summary": "[Admin] Sửa template thông báo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Notification"
+                ],
+                "summary": "[Admin] Xoá template thông báo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/notifications": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Notification"
+                ],
+                "summary": "[Admin] Danh sách toàn bộ thông báo",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/notifications/send": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Notification"
+                ],
+                "summary": "[Admin] Gửi thông báo thủ công",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/notifications/stats": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Notification"
+                ],
+                "summary": "[Admin] Thống kê thông báo",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/users": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-User"
+                ],
+                "summary": "[Admin] Danh sách người dùng",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/users/stats": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-User"
+                ],
+                "summary": "[Admin] Thống kê người dùng",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/users/{id}": {
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-User"
+                ],
+                "summary": "[Admin] Xoá người dùng",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/users/{id}/status": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-User"
+                ],
+                "summary": "[Admin] Khoá/mở tài khoản",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/vehicle-documents/pending": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Vehicle"
+                ],
+                "summary": "[Admin] Hàng đợi duyệt giấy tờ",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/vehicle-documents/{id}/review": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Vehicle"
+                ],
+                "summary": "[Admin] Duyệt giấy tờ xe",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Document ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/vehicles": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Vehicle"
+                ],
+                "summary": "[Admin] Danh sách toàn bộ phương tiện",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/vehicles/stats": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Vehicle"
+                ],
+                "summary": "[Admin] Thống kê phương tiện",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/vehicles/{id}/verify": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-Vehicle"
+                ],
+                "summary": "[Admin] Duyệt phương tiện",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/google/callback": {
             "get": {
                 "description": "Xử lý callback từ Google sau khi user đăng nhập. Xác thực state, đổi code lấy token, set cookie access_token và refresh_token, rồi redirect về frontend.",
                 "produces": [
@@ -101,7 +544,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/auth/v1/google/login": {
+        "/api/v1/auth/google/login": {
             "get": {
                 "description": "Khởi tạo luồng OAuth2 với Google. Redirect người dùng đến trang đăng nhập Google. Tạo state cookie để chống CSRF.",
                 "produces": [
@@ -128,7 +571,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/auth/v1/login": {
+        "/api/v1/auth/login": {
             "post": {
                 "description": "Đăng nhập bằng email và mật khẩu. Trả về access_token, refresh_token và expires_in.",
                 "consumes": [
@@ -184,7 +627,43 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/auth/v1/register": {
+        "/api/v1/auth/me": {
+            "get": {
+                "description": "Lấy thông tin profile của người dùng hiện tại. Token có thể truyền qua cookie access_token hoặc header Authorization Bearer.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Lấy thông tin người dùng",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token (nếu không dùng cookie)",
+                        "name": "Authorization",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lấy thông tin thành công",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Token không hợp lệ hoặc không tìm thấy",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/register": {
             "post": {
                 "description": "Tạo tài khoản mới bằng email và mật khẩu. Gateway chuyển tiếp request tới auth_service qua gRPC.",
                 "consumes": [
@@ -240,9 +719,94 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/matching/v1/accept": {
+        "/api/v1/devices/{id}": {
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Device"
+                ],
+                "summary": "Xoá thiết bị",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/drivers/{driver_id}/availability": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Trạng thái nhận đơn của tài xế",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Driver ID",
+                        "name": "driver_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
             "post": {
-                "description": "Khách hàng hoặc tài xế chấp nhận lệnh ghép chuyến.",
+                "description": "Bật thì xe được đưa vào chỉ mục tìm kiếm của matching; tắt thì gỡ ra.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Bật/tắt nhận đơn",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Driver ID",
+                        "name": "driver_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/matching/asks": {
+            "post": {
                 "consumes": [
                     "application/json"
                 ],
@@ -252,46 +816,20 @@ const docTemplate = `{
                 "tags": [
                     "Matching"
                 ],
-                "summary": "Chấp nhận ghép chuyến",
-                "parameters": [
-                    {
-                        "description": "Thông tin Match",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.AcceptMatchReq"
-                        }
-                    }
-                ],
+                "summary": "Tài xế đăng chuyến còn chỗ trống",
                 "responses": {
                     "200": {
-                        "description": "Chấp nhận thành công",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Lỗi dữ liệu đầu vào",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     }
                 }
             }
         },
-        "/api/matching/v1/ask": {
+        "/api/v1/matching/bids": {
             "post": {
-                "description": "Tài xế gửi báo giá có xe trống (Ask) để ghép chuyến.",
+                "description": "Sau khi lưu đơn, matching_service tìm tài xế phù hợp và phát sự kiện qua RabbitMQ để notification_service báo cho từng tài xế.",
                 "consumes": [
                     "application/json"
                 ],
@@ -301,46 +839,20 @@ const docTemplate = `{
                 "tags": [
                     "Matching"
                 ],
-                "summary": "Gửi báo giá vận chuyển (Ask)",
-                "parameters": [
-                    {
-                        "description": "Thông tin Ask",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.SubmitAskReq"
-                        }
-                    }
-                ],
+                "summary": "Chủ hàng đăng đơn cần xe",
                 "responses": {
                     "200": {
-                        "description": "Gửi Ask thành công",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Lỗi dữ liệu đầu vào",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     }
                 }
             }
         },
-        "/api/matching/v1/bid": {
+        "/api/v1/matching/matches/accept": {
             "post": {
-                "description": "Khách hàng gửi yêu cầu vận chuyển hàng hóa kèm theo giá cước đề xuất (Bid).",
+                "description": "Chốt xong, matching_service phát matching.match.found; notification_service báo cho cả chủ hàng lẫn tài xế.",
                 "consumes": [
                     "application/json"
                 ],
@@ -350,44 +862,62 @@ const docTemplate = `{
                 "tags": [
                     "Matching"
                 ],
-                "summary": "Gửi yêu cầu vận chuyển (Bid)",
-                "parameters": [
-                    {
-                        "description": "Thông vị Bid",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.SubmitBidReq"
-                        }
-                    }
-                ],
+                "summary": "Chủ hàng chốt xe",
                 "responses": {
                     "200": {
-                        "description": "Gửi Bid thành công",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Lỗi dữ liệu đầu vào",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     }
                 }
             }
         },
-        "/api/media/v1/delete/{publicID}": {
+        "/api/v1/matching/offers": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Matching"
+                ],
+                "summary": "Tài xế báo giá cho một đơn hàng",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/matching/offers/reject": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Matching"
+                ],
+                "summary": "Chủ hàng từ chối báo giá",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/media/files/{publicID}": {
             "delete": {
                 "description": "Xóa file trên hệ thống lưu trữ thông qua public_id.",
                 "produces": [
@@ -438,7 +968,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/media/v1/upload": {
+        "/api/v1/media/upload": {
             "post": {
                 "description": "Nhận file qua multipart/form-data và gọi gRPC sang media_service để lưu trữ (ví dụ Cloudinary).",
                 "consumes": [
@@ -497,9 +1027,90 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/user/v1/register": {
+        "/api/v1/notifications/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Chi tiết một thông báo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Notification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Xoá thông báo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Notification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/notifications/{id}/read": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Đánh dấu đã đọc",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Notification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/register": {
             "post": {
-                "description": "Đăng ký người dùng hoặc tài xế mới vào hệ thống.",
                 "consumes": [
                     "application/json"
                 ],
@@ -509,7 +1120,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
-                "summary": "Đăng ký user mới",
+                "summary": "Đăng ký người dùng",
                 "parameters": [
                     {
                         "description": "Thông tin đăng ký",
@@ -523,76 +1134,42 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Tạo người dùng thành công",
+                        "description": "Created",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Lỗi dữ liệu đầu vào",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     }
                 }
             }
         },
-        "/api/user/v1/{id}": {
+        "/api/v1/users/{user_id}": {
             "get": {
-                "description": "Lấy thông tin chi tiết của người dùng bằng ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User"
                 ],
-                "summary": "Lấy thông tin User",
+                "summary": "Lấy thông tin người dùng",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "User ID",
-                        "name": "id",
+                        "name": "user_id",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Thông tin chi tiết người dùng",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Thiếu ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     }
                 }
-            }
-        },
-        "/api/user/v1/{user_id}/kyc": {
+            },
             "put": {
-                "description": "Cập nhật trạng thái KYC.",
                 "consumes": [
                     "application/json"
                 ],
@@ -602,89 +1179,474 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
-                "summary": "Cập nhật thông tin KYC của tài xế",
+                "summary": "Cập nhật thông tin người dùng",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User ID của tài xế",
+                        "description": "User ID",
                         "name": "user_id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Thông tin KYC",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.UpdateDriverKYCReq"
-                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Cập nhật thành công",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Lỗi dữ liệu đầu vào",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     }
                 }
             }
         },
-        "/api/vehicle/v1/list": {
+        "/api/v1/users/{user_id}/addresses": {
             "get": {
-                "description": "Lấy danh sách các phương tiện trong hệ thống của tài xế.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Address"
+                ],
+                "summary": "Danh sách địa chỉ",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Address"
+                ],
+                "summary": "Thêm địa chỉ vào sổ địa chỉ",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{user_id}/devices": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Device"
+                ],
+                "summary": "Danh sách thiết bị",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Device"
+                ],
+                "summary": "Đăng ký thiết bị nhận push",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{user_id}/driver-profile": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Lấy hồ sơ tài xế",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Cập nhật hồ sơ tài xế",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{user_id}/kyc": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Cập nhật trạng thái KYC",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{user_id}/notification-preferences": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Cài đặt nhận thông báo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Cập nhật cài đặt nhận thông báo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{user_id}/notifications": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Hộp thư thông báo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{user_id}/notifications/read-all": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Đánh dấu tất cả đã đọc",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{user_id}/notifications/unread-count": {
+            "get": {
+                "description": "App gọi ở mọi màn hình để vẽ chấm đỏ; con số này được cache trên Redis.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Số thông báo chưa đọc",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{user_id}/shipper-profile": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Lấy hồ sơ chủ hàng",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Cập nhật hồ sơ chủ hàng",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/vehicle-documents/{id}": {
+            "delete": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Vehicle"
                 ],
-                "summary": "Danh sách phương tiện",
+                "summary": "Xoá giấy tờ xe",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Driver ID để lọc",
-                        "name": "driver_id",
-                        "in": "query"
+                        "description": "Document ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Danh sách phương tiện",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     }
                 }
             }
         },
-        "/api/vehicle/v1/register": {
+        "/api/v1/vehicles": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Danh sách phương tiện của tài xế",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
             "post": {
-                "description": "Đăng ký thông tin phương tiện (xe tải, xe khách...) cho tài xế.",
                 "consumes": [
                     "application/json"
                 ],
@@ -695,89 +1657,19 @@ const docTemplate = `{
                     "Vehicle"
                 ],
                 "summary": "Đăng ký phương tiện",
-                "parameters": [
-                    {
-                        "description": "Thông tin phương tiện",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.RegisterVehicleReq"
-                        }
-                    }
-                ],
                 "responses": {
                     "201": {
-                        "description": "Tạo phương tiện thành công",
+                        "description": "Created",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Lỗi dữ liệu đầu vào",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     }
                 }
             }
         },
-        "/api/vehicle/v1/{id}": {
-            "get": {
-                "description": "Lấy thông tin chi tiết của một phương tiện theo ID.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vehicle"
-                ],
-                "summary": "Lấy thông tin phương tiện",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Vehicle ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Thông tin chi tiết phương tiện",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Thiếu ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/api/vehicle/v1/{id}/status": {
-            "put": {
-                "description": "Cập nhật trạng thái của phương tiện (Active, Inactive, InTransit...).",
+        "/api/v1/vehicles/nearby": {
+            "post": {
+                "description": "Chạy trên chỉ mục Redis GEO nên trả về trong vài mili-giây. Đây cũng là API matching_service dùng nội bộ.",
                 "consumes": [
                     "application/json"
                 ],
@@ -787,7 +1679,26 @@ const docTemplate = `{
                 "tags": [
                     "Vehicle"
                 ],
-                "summary": "Cập nhật trạng thái",
+                "summary": "Tìm xe đang chạy quanh một điểm",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/vehicles/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Chi tiết phương tiện",
                 "parameters": [
                     {
                         "type": "string",
@@ -795,37 +1706,214 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Trạng thái mới",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.UpdateVehicleStatusReq"
-                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Cập nhật thành công",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
-                    },
-                    "400": {
-                        "description": "Lỗi dữ liệu đầu vào",
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Cập nhật phương tiện",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Xoá phương tiện",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/vehicles/{id}/documents": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Danh sách giấy tờ xe",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Tải lên giấy tờ xe",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/vehicles/{id}/location": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Vị trí hiện tại của xe",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "App tài xế gọi định kỳ. Vị trí được ghi xuống DB và cập nhật vào chỉ mục Redis GEO.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Tài xế báo vị trí GPS",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/vehicles/{id}/status": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Đổi trạng thái phương tiện",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vehicle ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     }
                 }
@@ -833,22 +1921,15 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "internal_controller.AcceptMatchReq": {
+        "gateway_service_internal_response.Envelope": {
             "type": "object",
-            "required": [
-                "ask_id",
-                "bid_id",
-                "consensus_price"
-            ],
             "properties": {
-                "ask_id": {
+                "data": {},
+                "message": {
                     "type": "string"
                 },
-                "bid_id": {
+                "request_id": {
                     "type": "string"
-                },
-                "consensus_price": {
-                    "type": "number"
                 }
             }
         },
@@ -889,13 +1970,15 @@ const docTemplate = `{
         "internal_controller.RegisterUserReq": {
             "type": "object",
             "required": [
-                "email",
                 "password",
                 "phone",
                 "role"
             ],
             "properties": {
                 "email": {
+                    "type": "string"
+                },
+                "full_name": {
                     "type": "string"
                 },
                 "password": {
@@ -906,94 +1989,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_controller.RegisterVehicleReq": {
-            "type": "object",
-            "required": [
-                "brand",
-                "capacity_volume_cbm",
-                "capacity_weight_kg",
-                "driver_id",
-                "license_plate",
-                "model",
-                "vehicle_type"
-            ],
-            "properties": {
-                "brand": {
-                    "type": "string"
-                },
-                "capacity_volume_cbm": {
-                    "type": "number"
-                },
-                "capacity_weight_kg": {
-                    "type": "number"
-                },
-                "driver_id": {
-                    "type": "string"
-                },
-                "license_plate": {
-                    "type": "string"
-                },
-                "model": {
-                    "type": "string"
-                },
-                "vehicle_type": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_controller.SubmitAskReq": {
-            "type": "object",
-            "required": [
-                "driver_id",
-                "min_price"
-            ],
-            "properties": {
-                "driver_id": {
-                    "type": "string"
-                },
-                "min_price": {
-                    "type": "number"
-                }
-            }
-        },
-        "internal_controller.SubmitBidReq": {
-            "type": "object",
-            "required": [
-                "max_price",
-                "shipper_id"
-            ],
-            "properties": {
-                "max_price": {
-                    "type": "number"
-                },
-                "shipper_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_controller.UpdateDriverKYCReq": {
-            "type": "object",
-            "required": [
-                "kyc_status"
-            ],
-            "properties": {
-                "kyc_status": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_controller.UpdateVehicleStatusReq": {
-            "type": "object",
-            "required": [
-                "status"
-            ],
-            "properties": {
-                "status": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "driver",
+                        "shipper"
+                    ]
                 }
             }
         }
