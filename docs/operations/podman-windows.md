@@ -110,6 +110,10 @@ podman compose up -d auth-db-master auth-service gateway-service
 
 ## Kiểm chứng
 
+Cả 26 container đã được chạy thử cùng lúc trên cấu hình này: 4 cặp
+master-slave (1 MySQL + 3 Postgres), 6 Kafka node, Elasticsearch, RabbitMQ,
+Redis, NATS và 6 service ứng dụng.
+
 ```bash
 curl http://localhost:8080/healthz
 ```
@@ -123,6 +127,27 @@ curl -X POST http://localhost:8080/api/v1/auth/register \
 Đăng ký trả về `201` kèm `id` dạng UUID v7 (bắt đầu bằng `01a…` vì 48 bit đầu là
 timestamp) nghĩa là chuỗi gateway → gRPC → auth_service → MySQL đã thông.
 
+Kiểm luồng bất đồng bộ — tài xế đăng chuyến, chủ hàng đăng đơn, rồi đọc hộp thư:
+
+```bash
+podman logs logistic-notification-service-1 | grep consumer
+```
+
+```
+[consumer] matching.cargo.suggested         -> đã tạo 1 thông báo
+[consumer] matching.driver.candidates_found -> đã tạo 3 thông báo
+```
+
+Hai dòng này chứng minh cả chuỗi: matching_service ghi đơn, tìm ứng viên bằng
+truy vấn haversine, phát sự kiện qua RabbitMQ, notification_service nhận và dựng
+thông báo từ template.
+
+Kiểm replication:
+
+```bash
+podman exec user-db-master psql -U user_db_user -d user_db \n  -c "SELECT client_addr, state, sync_state FROM pg_stat_replication;"
+```
+
 ## Lỗi thường gặp
 
 | Lỗi | Nguyên nhân | Cách xử lý |
@@ -132,3 +157,7 @@ timestamp) nghĩa là chuỗi gateway → gRPC → auth_service → MySQL đã t
 | `unknown driver "mysql"` | Thiếu driver trong service | Đã sửa — auth_service import cả `go-sql-driver/mysql` và `lib/pq` |
 | `connection refused` tới database | Service khởi động trước khi DB sẵn sàng | Đã sửa — `auth-db-master` có healthcheck, `auth-service` có `depends_on: service_healthy` |
 | Gateway trả `504 DEADLINE_EXCEEDED` | Service đích chưa chạy | Đúng hành vi: hạn chờ 5s thay vì treo vô hạn |
+| RabbitMQ `.erlang.cookie: eacces` | Volume thuộc UID khác trong podman rootless | Đã sửa — volume khai `:U` để runtime tự chown |
+| Postgres slave `connection refused` dù master healthy | `pg_isready` qua unix socket báo OK khi TCP chưa mở | Đã sửa — healthcheck thêm `-h 127.0.0.1` |
+| `matching-service` chết lúc khởi động | Thiếu NATS/Kafka/RabbitMQ | Đã sửa — `depends_on` đủ cả năm dependency |
+| Elasticsearch trả `unable to authenticate user [elastic]` | ES chưa khởi tạo xong security | Chờ tới khi healthcheck xanh rồi thử lại |
