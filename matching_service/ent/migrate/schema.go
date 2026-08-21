@@ -33,9 +33,9 @@ var (
 		{Name: "origin_lng", Type: field.TypeFloat64},
 		{Name: "destination_lat", Type: field.TypeFloat64},
 		{Name: "destination_lng", Type: field.TypeFloat64},
-		{Name: "route_id", Type: field.TypeBytes},
+		{Name: "route_id", Type: field.TypeBytes, Nullable: true},
 		{Name: "status", Type: field.TypeInt8},
-		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
 	}
 	// AsksTable holds the schema information for the "asks" table.
 	AsksTable = &schema.Table{
@@ -70,7 +70,7 @@ var (
 		{Name: "destination_lat", Type: field.TypeFloat64},
 		{Name: "destination_lng", Type: field.TypeFloat64},
 		{Name: "status", Type: field.TypeInt8},
-		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
 	}
 	// BidsTable holds the schema information for the "bids" table.
 	BidsTable = &schema.Table{

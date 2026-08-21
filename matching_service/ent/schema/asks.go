@@ -33,9 +33,9 @@ func (Asks) Fields() []ent.Field {
 		field.Float("origin_lng"),
 		field.Float("destination_lat"),
 		field.Float("destination_lng"),
-		field.Bytes("route_id"),
+		field.Bytes("route_id").Optional(),
 		field.Int8("status"),
-		field.Time("expires_at"),
+		field.Time("expires_at").Optional(),
 	}
 }
 

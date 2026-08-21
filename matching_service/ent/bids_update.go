@@ -448,6 +448,12 @@ func (_u *BidsUpdate) SetNillableExpiresAt(v *time.Time) *BidsUpdate {
 	return _u
 }
 
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (_u *BidsUpdate) ClearExpiresAt() *BidsUpdate {
+	_u.mutation.ClearExpiresAt()
+	return _u
+}
+
 // AddMatchIDs adds the "matches" edge to the Match entity by IDs.
 func (_u *BidsUpdate) AddMatchIDs(ids ...uuid.UUID) *BidsUpdate {
 	_u.mutation.AddMatchIDs(ids...)
@@ -686,6 +692,9 @@ func (_u *BidsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(bids.FieldExpiresAt, field.TypeTime, value)
+	}
+	if _u.mutation.ExpiresAtCleared() {
+		_spec.ClearField(bids.FieldExpiresAt, field.TypeTime)
 	}
 	if _u.mutation.MatchesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1214,6 +1223,12 @@ func (_u *BidsUpdateOne) SetNillableExpiresAt(v *time.Time) *BidsUpdateOne {
 	return _u
 }
 
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (_u *BidsUpdateOne) ClearExpiresAt() *BidsUpdateOne {
+	_u.mutation.ClearExpiresAt()
+	return _u
+}
+
 // AddMatchIDs adds the "matches" edge to the Match entity by IDs.
 func (_u *BidsUpdateOne) AddMatchIDs(ids ...uuid.UUID) *BidsUpdateOne {
 	_u.mutation.AddMatchIDs(ids...)
@@ -1482,6 +1497,9 @@ func (_u *BidsUpdateOne) sqlSave(ctx context.Context) (_node *Bids, err error) {
 	}
 	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(bids.FieldExpiresAt, field.TypeTime, value)
+	}
+	if _u.mutation.ExpiresAtCleared() {
+		_spec.ClearField(bids.FieldExpiresAt, field.TypeTime)
 	}
 	if _u.mutation.MatchesCleared() {
 		edge := &sqlgraph.EdgeSpec{

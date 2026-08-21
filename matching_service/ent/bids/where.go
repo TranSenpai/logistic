@@ -1296,6 +1296,16 @@ func ExpiresAtLTE(v time.Time) predicate.Bids {
 	return predicate.Bids(sql.FieldLTE(FieldExpiresAt, v))
 }
 
+// ExpiresAtIsNil applies the IsNil predicate on the "expires_at" field.
+func ExpiresAtIsNil() predicate.Bids {
+	return predicate.Bids(sql.FieldIsNull(FieldExpiresAt))
+}
+
+// ExpiresAtNotNil applies the NotNil predicate on the "expires_at" field.
+func ExpiresAtNotNil() predicate.Bids {
+	return predicate.Bids(sql.FieldNotNull(FieldExpiresAt))
+}
+
 // HasMatches applies the HasEdge predicate on the "matches" edge.
 func HasMatches() predicate.Bids {
 	return predicate.Bids(func(s *sql.Selector) {

@@ -35,7 +35,7 @@ func (Bids) Fields() []ent.Field {
 		field.Float("destination_lat"),
 		field.Float("destination_lng"),
 		field.Int8("status"),
-		field.Time("expires_at"),
+		field.Time("expires_at").Optional(),
 	}
 }
 

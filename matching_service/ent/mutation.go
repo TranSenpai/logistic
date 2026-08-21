@@ -1262,9 +1262,22 @@ func (m *AsksMutation) OldRouteID(ctx context.Context) (v []byte, err error) {
 	return oldValue.RouteID, nil
 }
 
+// ClearRouteID clears the value of the "route_id" field.
+func (m *AsksMutation) ClearRouteID() {
+	m.route_id = nil
+	m.clearedFields[asks.FieldRouteID] = struct{}{}
+}
+
+// RouteIDCleared returns if the "route_id" field was cleared in this mutation.
+func (m *AsksMutation) RouteIDCleared() bool {
+	_, ok := m.clearedFields[asks.FieldRouteID]
+	return ok
+}
+
 // ResetRouteID resets all changes to the "route_id" field.
 func (m *AsksMutation) ResetRouteID() {
 	m.route_id = nil
+	delete(m.clearedFields, asks.FieldRouteID)
 }
 
 // SetStatus sets the "status" field.
@@ -1354,9 +1367,22 @@ func (m *AsksMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error
 	return oldValue.ExpiresAt, nil
 }
 
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (m *AsksMutation) ClearExpiresAt() {
+	m.expires_at = nil
+	m.clearedFields[asks.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
+func (m *AsksMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[asks.FieldExpiresAt]
+	return ok
+}
+
 // ResetExpiresAt resets all changes to the "expires_at" field.
 func (m *AsksMutation) ResetExpiresAt() {
 	m.expires_at = nil
+	delete(m.clearedFields, asks.FieldExpiresAt)
 }
 
 // AddMatchIDs adds the "matches" edge to the Match entity by ids.
@@ -2007,6 +2033,12 @@ func (m *AsksMutation) ClearedFields() []string {
 	if m.FieldCleared(asks.FieldMinPrice) {
 		fields = append(fields, asks.FieldMinPrice)
 	}
+	if m.FieldCleared(asks.FieldRouteID) {
+		fields = append(fields, asks.FieldRouteID)
+	}
+	if m.FieldCleared(asks.FieldExpiresAt) {
+		fields = append(fields, asks.FieldExpiresAt)
+	}
 	return fields
 }
 
@@ -2026,6 +2058,12 @@ func (m *AsksMutation) ClearField(name string) error {
 		return nil
 	case asks.FieldMinPrice:
 		m.ClearMinPrice()
+		return nil
+	case asks.FieldRouteID:
+		m.ClearRouteID()
+		return nil
+	case asks.FieldExpiresAt:
+		m.ClearExpiresAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Asks nullable field %s", name)
@@ -3498,9 +3536,22 @@ func (m *BidsMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error
 	return oldValue.ExpiresAt, nil
 }
 
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (m *BidsMutation) ClearExpiresAt() {
+	m.expires_at = nil
+	m.clearedFields[bids.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
+func (m *BidsMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[bids.FieldExpiresAt]
+	return ok
+}
+
 // ResetExpiresAt resets all changes to the "expires_at" field.
 func (m *BidsMutation) ResetExpiresAt() {
 	m.expires_at = nil
+	delete(m.clearedFields, bids.FieldExpiresAt)
 }
 
 // AddMatchIDs adds the "matches" edge to the Match entity by ids.
@@ -4193,6 +4244,9 @@ func (m *BidsMutation) ClearedFields() []string {
 	if m.FieldCleared(bids.FieldMaxPrice) {
 		fields = append(fields, bids.FieldMaxPrice)
 	}
+	if m.FieldCleared(bids.FieldExpiresAt) {
+		fields = append(fields, bids.FieldExpiresAt)
+	}
 	return fields
 }
 
@@ -4212,6 +4266,9 @@ func (m *BidsMutation) ClearField(name string) error {
 		return nil
 	case bids.FieldMaxPrice:
 		m.ClearMaxPrice()
+		return nil
+	case bids.FieldExpiresAt:
+		m.ClearExpiresAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Bids nullable field %s", name)

@@ -229,6 +229,14 @@ func (_c *BidsCreate) SetExpiresAt(v time.Time) *BidsCreate {
 	return _c
 }
 
+// SetNillableExpiresAt sets the "expires_at" field if the given value is not nil.
+func (_c *BidsCreate) SetNillableExpiresAt(v *time.Time) *BidsCreate {
+	if v != nil {
+		_c.SetExpiresAt(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *BidsCreate) SetID(v uuid.UUID) *BidsCreate {
 	_c.mutation.SetID(v)
@@ -419,9 +427,6 @@ func (_c *BidsCreate) check() error {
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Bids.status"`)}
-	}
-	if _, ok := _c.mutation.ExpiresAt(); !ok {
-		return &ValidationError{Name: "expires_at", err: errors.New(`ent: missing required field "Bids.expires_at"`)}
 	}
 	return nil
 }

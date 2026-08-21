@@ -12,7 +12,6 @@ import (
 	"matching_service/internal/mapper"
 	"matching_service/internal/mapper/generated"
 
-	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 )
 
@@ -108,14 +107,7 @@ func (r *matchingRepoImpl) FindAskForBid(ctx context.Context, bid *entity.Bid) (
 		Where(asks.AvailableVolumeM3GT(bid.VolumeM3)).
 		Where(asks.AvailableWeightKgGT(bid.WeightKg)).
 		Where(asks.MinPriceLTE(bid.MaxPrice)).
-		Where(func(s *sql.Selector) {
-			s.Where(sql.ExprP(
-				"ST_DWithin(current_coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326), $3)",
-				bid.Origin.Longitude,
-				bid.Origin.Latitude,
-				5000,
-			))
-		}).
+		Where(withinRadiusKm("origin_lat", "origin_lng", bid.Origin.Latitude, bid.Origin.Longitude, matchRadiusKm)).
 		Order(asks.ByMinPrice()).
 		All(ctx)
 
@@ -130,20 +122,8 @@ func (r *matchingRepoImpl) FindBidForAsk(ctx context.Context, ask *entity.Ask) (
 	daoList, err := r.slaveClient.Bids.Query().
 		Where(bids.ZoneID(ask.CurrentLocation.ZoneID)).
 		Where(bids.Status(entity.BidStatusPending)).
-		Where(func(s *sql.Selector) {
-			s.Where(sql.ExprP(
-				"ST_DWithin(pickup_coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326), $3)",
-				ask.CurrentLocation.Longitude,
-				ask.CurrentLocation.Latitude,
-				5000,
-			))
-			s.Where(sql.ExprP(
-				"ST_DWithin(delivery_coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326), $3)",
-				ask.Destination.Longitude,
-				ask.Destination.Latitude,
-				5000,
-			))
-		}).
+		Where(withinRadiusKm("origin_lat", "origin_lng", ask.CurrentLocation.Latitude, ask.CurrentLocation.Longitude, matchRadiusKm)).
+		Where(withinRadiusKm("destination_lat", "destination_lng", ask.Destination.Latitude, ask.Destination.Longitude, matchRadiusKm)).
 		Order(bids.ByMaxPrice()).All(ctx)
 
 	if err != nil {
