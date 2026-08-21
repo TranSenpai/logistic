@@ -102,12 +102,11 @@ func (r *matchingRepoImpl) CreateAsk(ctx context.Context, ask *entity.Ask) error
 
 func (r *matchingRepoImpl) FindAskForBid(ctx context.Context, bid *entity.Bid) ([]entity.Ask, error) {
 	daoList, err := r.slaveClient.Asks.Query().
-		Where(asks.ZoneID(bid.Origin.ZoneID)).
 		Where(asks.Status(entity.AskStatusPending)).
 		Where(asks.AvailableVolumeM3GT(bid.VolumeM3)).
 		Where(asks.AvailableWeightKgGT(bid.WeightKg)).
 		Where(asks.MinPriceLTE(bid.MaxPrice)).
-		Where(withinRadiusKm("origin_lat", "origin_lng", bid.Origin.Latitude, bid.Origin.Longitude, matchRadiusKm)).
+		Where(withinRadiusKm("origin_lat", "origin_lng", bid.Origin.Latitude, bid.Origin.Longitude, coarseFilterRadiusKm)).
 		Order(asks.ByMinPrice()).
 		All(ctx)
 
@@ -120,10 +119,9 @@ func (r *matchingRepoImpl) FindAskForBid(ctx context.Context, bid *entity.Bid) (
 
 func (r *matchingRepoImpl) FindBidForAsk(ctx context.Context, ask *entity.Ask) ([]entity.Bid, error) {
 	daoList, err := r.slaveClient.Bids.Query().
-		Where(bids.ZoneID(ask.CurrentLocation.ZoneID)).
 		Where(bids.Status(entity.BidStatusPending)).
-		Where(withinRadiusKm("origin_lat", "origin_lng", ask.CurrentLocation.Latitude, ask.CurrentLocation.Longitude, matchRadiusKm)).
-		Where(withinRadiusKm("destination_lat", "destination_lng", ask.Destination.Latitude, ask.Destination.Longitude, matchRadiusKm)).
+		Where(withinRadiusKm("origin_lat", "origin_lng", ask.CurrentLocation.Latitude, ask.CurrentLocation.Longitude, coarseFilterRadiusKm)).
+		Where(withinRadiusKm("destination_lat", "destination_lng", ask.Destination.Latitude, ask.Destination.Longitude, coarseFilterRadiusKm)).
 		Order(bids.ByMaxPrice()).All(ctx)
 
 	if err != nil {

@@ -29,6 +29,7 @@ type matchingEngineImpl struct {
 	natsPub      EventPublisher
 
 	notifier Notifier
+	weights  ScoreWeights
 	mu       sync.RWMutex
 }
 
@@ -45,6 +46,7 @@ func NewMatchingEngine(
 	}
 
 	return &matchingEngineImpl{
+		weights:      DefaultScoreWeights(),
 		repo:         repo,
 		spatial:      spatial,
 		walletClient: walletClient,
@@ -71,10 +73,24 @@ func (e *matchingEngineImpl) broadcastBidToDrivers(ctx context.Context, bid *ent
 		return
 	}
 
+	ranked := RankAsksForBid(bid, asks, e.weights)
+	if len(ranked) == 0 {
+		log.Printf("Bid %s: %d tài xế trong vùng nhưng không ai đạt ngưỡng điểm", bid.ID, len(asks))
+		return
+	}
+	if len(ranked) > maxCandidatesPerBid {
+		ranked = ranked[:maxCandidatesPerBid]
+	}
+
+	asks = asks[:0]
+	for _, r := range ranked {
+		asks = append(asks, r.Ask)
+	}
+
 	e.natsPub.Publish(ctx, &EventMessage{
 		Topic:   "matching.drivers.notified",
 		Key:     bid.ID.String(),
-		Payload: asks,
+		Payload: ranked,
 	})
 
 	e.kafkaPub.Publish(ctx, &EventMessage{
@@ -87,7 +103,8 @@ func (e *matchingEngineImpl) broadcastBidToDrivers(ctx context.Context, bid *ent
 		log.Printf("[NOTIFY] gửi thông báo ứng viên cho Bid %s thất bại: %v", bid.ID, err)
 	}
 
-	log.Printf("[BROADCAST] Found %d potential drivers for Bid %s", len(asks), bid.ID)
+	log.Printf("[BROADCAST] Bid %s: chọn %d/%d tài xế, điểm cao nhất %.4f",
+		bid.ID, len(ranked), cap(asks), ranked[0].Score)
 }
 
 func (e *matchingEngineImpl) suggestBidsToDriver(ctx context.Context, ask *entity.Ask) {
@@ -101,11 +118,29 @@ func (e *matchingEngineImpl) suggestBidsToDriver(ctx context.Context, ask *entit
 		return
 	}
 
-	if len(bids) > 0 {
+	if len(bids) == 0 {
+		return
+	}
+
+	ranked := RankBidsForAsk(ask, bids, e.weights)
+	if len(ranked) == 0 {
+		log.Printf("Ask %s: %d đơn trong vùng nhưng không đơn nào đạt ngưỡng điểm", ask.ID, len(bids))
+		return
+	}
+	if len(ranked) > maxSuggestionsPerAsk {
+		ranked = ranked[:maxSuggestionsPerAsk]
+	}
+
+	suggested := make([]entity.Bid, 0, len(ranked))
+	for _, r := range ranked {
+		suggested = append(suggested, r.Bid)
+	}
+
+	{
 		e.natsPub.Publish(ctx, &EventMessage{
 			Topic:   fmt.Sprintf("matching.suggested_cargos.%s", ask.DriverID.String()),
 			Key:     ask.ID.String(),
-			Payload: bids,
+			Payload: ranked,
 		})
 
 		e.kafkaPub.Publish(ctx, &EventMessage{
@@ -114,11 +149,12 @@ func (e *matchingEngineImpl) suggestBidsToDriver(ctx context.Context, ask *entit
 			Payload: *ask,
 		})
 
-		if err := e.notifier.NotifyCargoSuggested(ctx, ask, bids); err != nil {
+		if err := e.notifier.NotifyCargoSuggested(ctx, ask, suggested); err != nil {
 			log.Printf("[NOTIFY] gửi gợi ý đơn hàng cho Ask %s thất bại: %v", ask.ID, err)
 		}
 
-		log.Printf("[SUGGESTION] Found %d pending bids for Driver %s", len(bids), ask.DriverID)
+		log.Printf("[SUGGESTION] Ask %s: chọn %d/%d đơn, điểm cao nhất %.4f",
+			ask.ID, len(ranked), len(bids), ranked[0].Score)
 	}
 }
 

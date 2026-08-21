@@ -56,6 +56,7 @@ Mỗi tài liệu có cùng bố cục: tóm tắt → sơ đồ → từng bư�
 | [shipper-order-flow.md](flows/shipper-order-flow.md) | matching · wallet · notification |
 | [driver-location-flow.md](flows/driver-location-flow.md) | nginx · vehicle · Redis GEO |
 | [matching-notification-flow.md](flows/matching-notification-flow.md) | matching · RabbitMQ · notification |
+| [matching-scoring.md](flows/matching-scoring.md) | matching · chấm điểm ứng viên |
 | [authentication-flow.md](flows/authentication-flow.md) | auth · gateway |
 | [error-handling-flow.md](flows/error-handling-flow.md) | mọi service · gateway |
 

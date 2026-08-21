@@ -191,8 +191,8 @@ func newTestEngine(repo MatchingRepo, notifier Notifier) MatchingEngine {
 func TestSubmitBidNotifiesCandidateDrivers(t *testing.T) {
 	repo := newFakeRepo()
 	repo.asksForBid = []entity.Ask{
-		{ID: uuid.New(), DriverID: uuid.New(), VehicleID: uuid.New(), MinPrice: 100},
-		{ID: uuid.New(), DriverID: uuid.New(), VehicleID: uuid.New(), MinPrice: 120},
+		availableTruck(100),
+		availableTruck(120),
 	}
 
 	notifier := &fakeNotifier{}
@@ -244,7 +244,7 @@ func TestSubmitBidWithNoCandidatesDoesNotNotify(t *testing.T) {
 
 func TestSubmitBidSucceedsWhenNotifierFails(t *testing.T) {
 	repo := newFakeRepo()
-	repo.asksForBid = []entity.Ask{{ID: uuid.New(), DriverID: uuid.New()}}
+	repo.asksForBid = []entity.Ask{availableTruck(100)}
 
 	notifier := &fakeNotifier{err: errors.New("rabbitmq: connection refused")}
 	engine := newTestEngine(repo, notifier)
@@ -315,19 +315,16 @@ func TestAcceptOfferRejectsNonNegotiatingBid(t *testing.T) {
 func TestSubmitAskNotifiesCargoSuggested(t *testing.T) {
 	repo := newFakeRepo()
 	repo.bidsForAsk = []entity.Bid{
-		{ID: uuid.New(), ShipperID: uuid.New()},
-		{ID: uuid.New(), ShipperID: uuid.New()},
-		{ID: uuid.New(), ShipperID: uuid.New()},
+		matchableCargo(),
+		matchableCargo(),
+		matchableCargo(),
 	}
 
 	notifier := &fakeNotifier{}
 	engine := newTestEngine(repo, notifier)
 
-	_, err := engine.SubmitAsk(context.Background(), &entity.Ask{
-		DriverID:        uuid.New(),
-		VehicleID:       uuid.New(),
-		CurrentLocation: entity.Location{Latitude: 10.7769, Longitude: 106.7009},
-	})
+	truck := availableTruck(1_000_000)
+	_, err := engine.SubmitAsk(context.Background(), &truck)
 	if err != nil {
 		t.Fatalf("SubmitAsk lỗi: %v", err)
 	}
@@ -387,11 +384,36 @@ func TestNewMatchingEngineAcceptsNilNotifier(t *testing.T) {
 
 	engine := NewMatchingEngine(repo, fakeSpatial{}, NewMockWalletClient(), &fakePublisher{}, &fakePublisher{}, nil)
 
-	repo.asksForBid = []entity.Ask{{ID: uuid.New(), DriverID: uuid.New()}}
+	repo.asksForBid = []entity.Ask{availableTruck(100)}
 	if _, err := engine.SubmitBid(context.Background(), &entity.Bid{
 		ShipperID: uuid.New(),
 		Origin:    entity.Location{Latitude: 10.7769, Longitude: 106.7009},
 	}); err != nil {
 		t.Fatalf("engine với notifier nil phải chạy được, nhận: %v", err)
+	}
+}
+
+func availableTruck(minPrice float64) entity.Ask {
+	return entity.Ask{
+		ID:                uuid.New(),
+		DriverID:          uuid.New(),
+		VehicleID:         uuid.New(),
+		CurrentLocation:   entity.Location{Latitude: 10.7769, Longitude: 106.7009},
+		Destination:       entity.Location{Latitude: 10.9804, Longitude: 106.6519},
+		AvailableWeightKg: 8000,
+		AvailableVolumeM3: 30,
+		MinPrice:          minPrice,
+	}
+}
+
+func matchableCargo() entity.Bid {
+	return entity.Bid{
+		ID:          uuid.New(),
+		ShipperID:   uuid.New(),
+		Origin:      entity.Location{Latitude: 10.7769, Longitude: 106.7009},
+		Destination: entity.Location{Latitude: 10.9804, Longitude: 106.6519},
+		WeightKg:    2000,
+		VolumeM3:    8,
+		MaxPrice:    5_000_000,
 	}
 }
