@@ -1,4 +1,4 @@
-# Kiến Trúc PostgreSQL Master-Slave Replication (Streaming)
+# PostgreSQL master-slave replication (streaming)
 
 Tài liệu này cung cấp bức tranh toàn cảnh về kiến trúc Master-Slave (Replication) trong PostgreSQL, cùng với hướng dẫn "cầm tay chỉ việc" để tự tay thiết lập một cụm Database hoạt động trơn tru từ con số 0 bằng `postgres:alpine`.
 
@@ -164,7 +164,7 @@ Chạy `podman-compose up -d --build` là bạn đã có một cụm Enterprise 
 
 ## IV. Cấu Hình Nâng Cao (Advanced Features)
 
-Những tính năng dưới đây dành cho Production có tải trọng cực lớn. Sếp có thể tìm hiểu thêm tại trang chủ PostgreSQL:
+Những tính năng dưới đây dành cho Production có tải trọng cực lớn. Có thể tìm hiểu thêm tại trang chủ PostgreSQL:
 
 1. **Synchronous Replication (Đồng bộ đồng thời):**
    - *Vấn đề:* Mặc định Replication là Asynchronous (Bất đồng bộ). Ghi ở Master xong là Master trả về `Success` luôn, bất chấp Slave đã nhận được WAL chưa. Nếu Master chết ngay lúc đó, ta mất Data.

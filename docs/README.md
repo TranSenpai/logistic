@@ -84,6 +84,7 @@ Không riêng cho repo này. Là tài liệu học, giữ lại để tra cứu.
 | [elasticsearch.md](reference/elasticsearch.md) | Elasticsearch |
 | [nats-jetstream.md](reference/nats-jetstream.md) | NATS JetStream |
 | [networking.md](reference/networking.md) | Mạng, TCP/IP, HTTP |
+| [network-to-vpc.md](reference/network-to-vpc.md) | Lộ trình sâu: mạng trần → chia subnet → VPC → xếp EC2 |
 | [aws-architecture.md](reference/aws-architecture.md) | Khái niệm kiến trúc AWS |
 | [notes/go-tooling.md](reference/notes/go-tooling.md) | Ghi chú lặt vặt về Go tooling |
 

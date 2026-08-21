@@ -1,6 +1,8 @@
-# CẨM NANG TOÀN TẬP VỀ INTERNET & KIẾN TRÚC MẠNG (MASTER NETWORK GUIDE)
+# Internet và kiến trúc mạng — ghi chú
 
-Tài liệu này là sự kết hợp toàn vẹn mọi kiến thức nền tảng thiết yếu nhất về mạng máy tính (Networking) và bảo mật hạ tầng mà một DevOps, Backend Engineer, và Data Engineer cần phải nắm vững. Cẩm nang được biên soạn theo chuẩn học thuật (Network Engineering) nhưng đi kèm các ví dụ kỹ thuật thực tiễn.
+Ghi chú về mạng máy tính và bảo mật hạ tầng, gom lại để tra cứu khi làm việc với
+DevOps, backend hoặc data. Nội dung bám theo cách trình bày của tài liệu Network
+Engineering, kèm ví dụ lấy từ chính dự án này.
 
 ---
 
@@ -143,7 +145,9 @@ Từ mảnh đất khổng lồ `/16`, hệ thống bắt buộc phải cắt nh
 - `10.0.1.0/24`: **Public Subnet** (Khu mặt tiền). Cắm Internet Gateway, cấp Public IP. Dành cho Web Server, Load Balancer.
 - `10.0.2.0/24`: **Private Subnet** (Khu hầm ngầm). Không có đường ra Internet. Dành cho Database.
 
-Logic phân lô này bằng Toán học Nhị phân chính là công cụ mạnh nhất để cô lập rủi ro bảo mật (Blast Radius). Khi áp dụng thực tế vào file code `network.tf` của Terraform, chỉ cần nhìn dòng chữ `cidr_block = "10.0.1.0/24"`, một kỹ sư mạng sẽ tự động hiểu rõ quy mô của toàn bộ hệ thống!
+Cách phân lô bằng số nhị phân này giúp giới hạn phạm vi ảnh hưởng khi có sự cố
+(Blast Radius). Trong `network.tf` của Terraform, dòng `cidr_block = "10.0.1.0/24"`
+đã đủ để suy ra quy mô dải mạng được cấp.
 
 ### 3.4. Ánh xạ Kiến trúc Mạng Cơ bản sang Điện toán Đám mây (AWS)
 Khi đưa các kiến thức mạng truyền thống lên môi trường Đám mây (Cloud), AWS đã đóng gói chúng thành các khái niệm trực quan. Việc nắm rõ mối liên kết này giúp bạn thiết kế hạ tầng chuẩn mực (Best Practice):
@@ -352,7 +356,7 @@ Trước khi bàn chuyện bảo mật, Client phải thiết lập một Socket
 Sử dụng ống TCP vừa mở, hai bên bắt đầu một cuộc đàm phán cực kỳ phức tạp để thiết lập mã hóa. (Lưu ý: Trước khi quá trình này diễn ra, Server đã phải tự sinh ra một cặp khóa Bất đối xứng **RSA Keypair (Public Key & Private Key)** và nộp Public Key cho một tổ chức ủy quyền để xin cấp Chứng thư số).
 
 4. **ClientHello** `[Client -> Server]:` Client khởi tạo luồng kết nối bảo mật, gửi bản tin bao gồm: Phiên bản giao thức (TLS 1.2/1.3), danh sách các bộ thuật toán mã hóa (Cipher Suites) được hỗ trợ, và một chuỗi ngẫu nhiên gọi là `Client Random`.
-5. **ServerHello** `[Server -> Client]:` Server phản hồi, chốt chọn một bộ Cipher Suite chung mạnh nhất, kèm theo chuỗi ngẫu nhiên `Server Random` của riêng mình.
+5. **ServerHello** `[Server -> Client]:` Server phản hồi, chọn một bộ Cipher Suite chung, kèm theo chuỗi ngẫu nhiên `Server Random` của riêng mình.
 6. **Certificate Exchange (Truyền tải Chứng thư số)** `[Server -> Client]:` Server gửi cho Client một **Chứng thư số (Digital Certificate chuẩn X.509)**. 
    - *Chứng thư số là cái gì?* Nó đóng vai trò như một "Căn cước công dân Điện tử". Bên trong nó chứa: Tên miền của Server (vd: `facebook.com`), thông tin tổ chức sở hữu, và quan trọng nhất là **Public Key** của Server. Toàn bộ thông tin này được niêm phong bằng Chữ ký số (Digital Signature) của một Tổ chức xác thực uy tín toàn cầu (gọi là **CA - Certificate Authority**, ví dụ: DigiCert, Let's Encrypt).
 7. **CA Validation (Xác thực Căn cước):** 

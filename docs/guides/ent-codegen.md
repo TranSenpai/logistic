@@ -1,4 +1,4 @@
-# Hướng Dẫn Init Ent ORM Cho Service Mới
+# Khởi tạo Ent ORM cho service mới
 
 > Tài liệu này hướng dẫn từng bước khởi tạo **[entgo.io/ent](https://entgo.io)** ORM cho một service mới trong project Logistics OS.
 > Pattern được rút từ `matching_service` — service đầu tiên đã tích hợp ent thành công.

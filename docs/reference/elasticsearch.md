@@ -1,4 +1,4 @@
-# Cẩm nang Elasticsearch — Từ nguyên lý tới thực chiến
+# Elasticsearch — ghi chú từ nguyên lý tới vận hành
 
 > Tài liệu dành cho người **mới học Elasticsearch (ES)**, đi từ bản chất → nguyên lý & thuật toán bên trong → khi nào nên dùng → cách triển khai thực tế trong dự án Logistics.
 > Đọc hết là hiểu **ES làm gì, chạy ra sao, mạnh yếu chỗ nào**, chứ không chỉ biết copy câu query.
@@ -58,7 +58,7 @@ Bóc tách từng vế:
 
 **Ví dụ dễ hiểu:** Lucene là **động cơ xe**, cực mạnh nhưng trần trụi, một mình nó chẳng chở được ai. Elasticsearch là **cả chiếc xe hoàn chỉnh** — lắp động cơ Lucene vào, thêm vô lăng (REST API), thêm hệ thống nhiều bánh phối hợp (phân tán), thêm bảng điều khiển. Kibana là **cái màn hình giải trí** gắn thêm.
 
-Hiểu điều này rất quan trọng: mỗi khi sếp đọc về "inverted index", "segment", "BM25" — **đó là Lucene**. Còn "shard", "replica", "cluster", "index API" — **đó là Elasticsearch**.
+Hiểu điều này rất quan trọng: mỗi khi đọc về "inverted index", "segment", "BM25" — **đó là Lucene**. Còn "shard", "replica", "cluster", "index API" — **đó là Elasticsearch**.
 
 ## 1.3. Lịch sử ngắn (và một drama về giấy phép cần biết)
 
@@ -100,7 +100,7 @@ CLUSTER  (cả cụm máy)
 Đây là mục quan trọng nhất cho người mới. Ba ngộ nhận kinh điển:
 
 **❌ "ES là database, dùng thay MySQL được."**
-Không. ES **không có transaction đa document**, không có `ROLLBACK`, không đảm bảo ACID xuyên nhiều bản ghi. Sếp không bao giờ được để số dư ví chỉ tồn tại trong ES. Với dữ liệu tài chính, ES **luôn luôn** chỉ là bản sao để đọc.
+Không. ES **không có transaction đa document**, không có `ROLLBACK`, không đảm bảo ACID xuyên nhiều bản ghi. Không nên để số dư ví chỉ tồn tại trong ES. Với dữ liệu tài chính, nên xem ES là bản sao phục vụ đọc.
 
 **❌ "ES trả kết quả tức thì sau khi ghi."**
 Không. ES là **Near Real-Time** — mặc định ~1 giây sau khi ghi mới tìm thấy. Chi tiết ở [mục 3.5](#35-vòng-đời-ghi--refresh-flush-merge).
@@ -115,7 +115,7 @@ Gần như không. ES có `nested` và `join` field nhưng đắt đỏ và hạ
 
 ## 2.1. Bài toán mà B-Tree bó tay
 
-Giả sử sếp có bảng `transactions` 50 triệu dòng và cần tìm giao dịch có mô tả chứa `"tiền cọc"`:
+Giả sử có bảng `transactions` 50 triệu dòng và cần tìm giao dịch có mô tả chứa `"tiền cọc"`:
 
 ```sql
 SELECT * FROM transactions WHERE description LIKE '%tiền cọc%' ORDER BY created_at DESC;
@@ -237,7 +237,7 @@ Nhớ một câu duy nhất:
 
 Muốn chuẩn tiếng Việt cần plugin tách từ (`vi_analyzer`, `coccoc-tokenizer`). Với dự án ví tiền — mô tả giao dịch ngắn và theo mẫu cố định — `standard` là đủ dùng.
 
-**Công cụ học tốt nhất:** API `_analyze` cho sếp thấy tận mắt một câu bị cắt ra sao:
+API `_analyze` giúp quan sát trực tiếp: cho người dùng thấy tận mắt một câu bị cắt ra sao:
 
 ```bash
 curl "localhost:9200/_analyze?pretty" -H 'Content-Type: application/json' -d '{"analyzer":"standard","text":"Đóng băng tiền cọc nhận cuốc"}'
@@ -509,7 +509,7 @@ Mặc định `index.translog.durability: request` — **fsync sau mỗi request
 
 Segment nhỏ nhiều = tìm kiếm chậm (phải hỏi từng segment rồi gộp kết quả). ES chạy **TieredMergePolicy** ngầm: gộp các segment cùng cỡ thành segment lớn hơn, **đồng thời vứt bỏ tombstone**.
 
-Merge ngốn I/O rất nặng. Với index **đã ngừng ghi** (ví dụ log tháng trước), chạy `_forcemerge?max_num_segments=1` sẽ nén về 1 segment duy nhất → tìm kiếm nhanh nhất, đĩa gọn nhất. **Tuyệt đối không force merge index đang được ghi.**
+Merge ngốn I/O rất nặng. Với index **đã ngừng ghi** (ví dụ log tháng trước), chạy `_forcemerge?max_num_segments=1` sẽ nén về 1 segment → truy vấn nhanh hơn và tốn ít đĩa hơn. **Không nên force merge index đang được ghi.**
 
 ## 3.6. Kiến trúc phân tán
 
@@ -535,7 +535,7 @@ Merge ngốn I/O rất nặng. Với index **đã ngừng ghi** (ví dụ log th
 | **Coordinating node** | Node nhận request, phân phát tới các shard, gộp kết quả trả về |
 | **Master node** | Quản lý cluster state (index nào, shard ở đâu). **Không** đụng vào dữ liệu |
 
-> **Replica không chỉ để dự phòng — nó nhân đôi khả năng đọc.** Tăng replica là cách mở rộng throughput đọc nhanh nhất.
+> **Replica không chỉ để dự phòng — nó nhân đôi khả năng đọc.** Tăng replica là một cách mở rộng throughput đọc.
 
 ### Routing — document đi về shard nào?
 
@@ -1055,7 +1055,7 @@ ES trả 400 hay đứt mạng — **không ai biết**. ES lệch dần khỏi 
 | **7. Vận hành** | Không sợ cluster đỏ | Shard, replica, `_cat` API, ILM, snapshot |
 | **8. Nâng cao** | | `search_after`, percolator, vector/kNN, hybrid search |
 
-**Ba API học nhanh nhất:**
+**Ba API nên xem trước:**
 
 | API | Trả lời câu hỏi |
 |---|---|
@@ -1123,4 +1123,4 @@ curl "localhost:9200/transactions/_search?pretty" -H 'Content-Type: application/
 17. Điều kiện lọc bỏ vào **`filter`**, không phải `must` — được cache.
 18. **`from + size` trần 10.000** — sâu hơn thì dùng `search_after`.
 19. **Luôn dùng `_bulk`** khi ghi nhiều document.
-20. **Tuyệt đối không gọi ES bên trong transaction database.**
+20. **Tránh gọi ES bên trong transaction database.**

@@ -1,4 +1,4 @@
-# QUY TRÌNH TRIỂN KHAI VẬN HÀNH (DEVOPS WORKFLOW)
+# Quy trình triển khai và vận hành
 
 Tài liệu này chuẩn hóa quy trình (Workflow) triển khai hạ tầng từ số không (Zero) đến khi vận hành toàn diện một hệ thống phần mềm phân tán (Distributed System) trên nền tảng Cloud. Quy trình được thiết kế theo tư duy Cơ sở hạ tầng dưới dạng Mã (Infrastructure as Code - IaC).
 

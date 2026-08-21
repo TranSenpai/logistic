@@ -1,4 +1,4 @@
-# AWS Architecture Concepts & Mental Model
+# Khái niệm kiến trúc AWS
 
 > [!NOTE]
 > Tài liệu này mô tả cấu trúc vật lý và logic của các dịch vụ AWS cốt lõi, cung cấp góc nhìn tổng quan về kiến trúc hệ thống trước khi tiến hành triển khai bằng Terraform. 
@@ -6,7 +6,7 @@
 
 ## 1. Nền tảng Ảo hóa (Virtualization Fundamentals)
 
-Để làm chủ kiến trúc mạng, kỹ sư cần hiểu rõ bản chất vật lý của hệ thống Cloud Compute.
+Để hiểu kiến trúc mạng trên cloud, cần nắm bản chất vật lý bên dưới của Cloud Compute.
 
 ### 1.1. Bản chất của Máy chủ Ảo (Compute Virtualization)
 - **Hạ tầng Vật lý (Bare Metal):** Tại các trung tâm dữ liệu, Cloud Provider vận hành các máy chủ vật lý (Hosts) với tài nguyên phần cứng khổng lồ.
@@ -36,7 +36,7 @@ Tiếp nối từ nguyên lý ảo hóa, luồng dữ liệu (Traffic) bên tron
 - **Bản chất Công nghệ (Underlying Technology):**
   - Trái với suy nghĩ thông thường, VPC không phải là mạng vật lý. Nó là mạng định nghĩa bằng phần mềm (SDN) vận hành trên hạ tầng AWS Nitro System.
   - VPC sử dụng giao thức đóng gói (Encapsulation) để tạo ra mạng ảo (Overlay Network), cho phép hàng triệu khách hàng dùng chung một dải IP (như `10.0.0.0/16`) mà không gây xung đột (IP Collision).
-- **Tính Cách ly Tuyệt đối (Logical Isolation):**
+- **Cách ly logic (Logical Isolation):**
   - Mặc định, VPC là môi trường "Air-gapped". Không có bất kỳ luồng dữ liệu nào được phép Ingress/Egress trừ khi có thiết bị định tuyến (Routing Device) được chủ động gắn vào.
   - Mọi nỗ lực giám sát gói tin (Packet Sniffing / Promiscuous Mode) chéo giữa các VPC trên cùng Hypervisor đều bị ngăn chặn ở cấp độ phần cứng.
 - **Ranh giới Không gian Mạng (CIDR & Region Boundary):**
@@ -95,4 +95,4 @@ Trong cấu trúc Terraform hiện hành (`main.tf`):
 - Các tài nguyên cơ sở hạ tầng mạng lõi (VPC, Subnet, IGW) hiện đang ngầm sử dụng **Default VPC** do nền tảng AWS tự động khởi tạo.
 
 > [!WARNING]
-> Việc sử dụng Default VPC được khuyến nghị chỉ giới hạn trong phạm vi thử nghiệm (Testing/Development). Đối với môi trường vận hành thực tế (Production), Best Practice tiêu chuẩn yêu cầu Kỹ sư DevOps phải chủ động khai báo và cấp phát Custom VPC thông qua IaC (Terraform) nhằm kiểm soát tuyệt đối các chính sách bảo mật hạ tầng mạng.
+> Default VPC phù hợp cho thử nghiệm (Testing/Development). Với môi trường vận hành thật (Production), tài liệu của AWS khuyến nghị khai báo Custom VPC qua IaC (Terraform) để kiểm soát rõ ràng chính sách bảo mật hạ tầng mạng.

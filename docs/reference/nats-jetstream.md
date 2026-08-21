@@ -1,4 +1,4 @@
-# Cẩm nang Kiến trúc NATS JetStream (Dự án Logistics)
+# NATS JetStream — ghi chú kiến trúc
 
 Tài liệu này tổng hợp các khái niệm cốt lõi của hệ sinh thái NATS, được giải thích theo ngôn ngữ bình dân và áp dụng trực tiếp vào dự án Logistics của chúng ta.
 
@@ -18,7 +18,7 @@ Trong file chạy này, NATS tích hợp sẵn mọi thứ thông qua cấu hìn
 ## 2. Multi-tenancy (Đa hệ thuê) & Accounts
 NATS hỗ trợ kiến trúc Multi-tenancy thông qua khái niệm **Accounts**.
 - **Ví dụ Dễ hiểu:** NATS giống như một toà chung cư. Điện, nước, thang máy (CPU, RAM) được dùng chung để tiết kiệm chi phí, nhưng mỗi khách hàng (Tenant) được cấp một căn hộ (Account) với chìa khoá riêng.
-- **Tính Cách ly (Isolation):** Các Account cách ly tuyệt đối với nhau ở tầng mạng. Công ty đối tác A (Dùng Account A) không bao giờ có thể "nghe lén" được tin nhắn nội bộ của Công ty đối tác B (Dùng Account B), dù cả 2 kết nối vào chung một cụm NATS Server của sếp. Phù hợp để làm nền tảng B2B SaaS.
+- **Tính Cách ly (Isolation):** Các Account cách ly với nhau ở tầng mạng. Công ty đối tác A (Dùng Account A) không bao giờ có thể "nghe lén" được tin nhắn nội bộ của Công ty đối tác B (Dùng Account B), dù cả 2 kết nối vào chung một cụm NATS Server của mình. Phù hợp để làm nền tảng B2B SaaS.
 
 ---
 
@@ -50,11 +50,11 @@ NATS **KHÔNG DÙNG** username/password truyền thống lưu trong Database đ�
 
 ### A. NKey là gì?
 - **NKey** là một hệ thống khoá công khai/bí mật (Public/Private Key) dựa trên thuật toán mã hoá cực mạnh `Ed25519`, do chính NATS tự chế tạo lại để an toàn và dễ đọc hơn.
-- Nhìn nó khá giống với SSH Key, nhưng thông minh hơn ở chỗ NKey có chứa các **Ký tự tiền tố (Prefix)**. Nhìn vào một chuỗi NKey public, sếp biết ngay nó dành cho ai:
+- Nhìn nó khá giống với SSH Key, nhưng thông minh hơn ở chỗ NKey có chứa các **Ký tự tiền tố (Prefix)**. Nhìn vào một chuỗi NKey public, nhận ra ngay nó dành cho ai:
   - Bắt đầu bằng chữ `O` (ví dụ: `O...`): Khoá của **Operator** (Trùm cuối - Người quản trị cả cụm NATS).
   - Bắt đầu bằng chữ `A` (ví dụ: `A...`): Khoá của **Account** (Công ty/Phòng ban thuê nhà).
   - Bắt đầu bằng chữ `U` (ví dụ: `U...`): Khoá của **User** (Tài xế/Nhân viên - Client thực tế kết nối vào NATS).
-- **Tuyệt mật:** Khoá bí mật (Private Key / Seed) bắt đầu bằng chữ `S`, sếp tuyệt đối phải giấu kỹ không bao giờ được gửi qua mạng.
+- **Tuyệt mật:** Khoá bí mật (Private Key / Seed) bắt đầu bằng chữ `S`, phải giữ kín không bao giờ được gửi qua mạng.
 
 ### B. JWT (JSON Web Token)
 - Thay vì bắt Client gửi thẳng khoá bí mật qua mạng (rất nguy hiểm), NATS bắt Client tạo ra một cái Thẻ JWT.
@@ -62,28 +62,28 @@ NATS **KHÔNG DÙNG** username/password truyền thống lưu trong Database đ�
 - Khi Client mang thẻ JWT này cắm vào NATS Server, Server chỉ việc đối chiếu chữ ký mã hoá. Nếu khớp -> Cho qua. Tốc độ xác thực cực kỳ nhanh vì Server **không cần truy vấn Database**.
 
 ### C. Công cụ và Thư viện hỗ trợ
-Để quản lý mớ NKey và JWT này, hệ sinh thái NATS cung cấp sẵn đồ chơi cho sếp:
-- **`nsc` (NATS Security CLI):** Phần mềm độc lập cài trên laptop của sếp, đóng vai trò như cái "Máy ghi thẻ từ". Sếp dùng nó để gõ lệnh tạo ra NKeys mới, đóng dấu JWT cho các User, sau đó ném thẻ đó cho Frontend hoặc App tải về xài.
-- **Thư viện JWT/NKey Libraries:** Nếu sếp không muốn gõ lệnh bằng tay mà muốn viết một hệ thống tự động sinh ra thẻ từ cho người dùng (để User bấm nút đăng ký là có ngay thẻ), sếp có thể dùng code (ví dụ `nats-io/jwt` và `nats-io/nkeys` trong Golang).
-- **Auth Callout (`synadia-io/callout.go`):** Tính năng nâng cao. Nếu sếp không muốn dùng JWT của NATS mà muốn bắt NATS Server phải gọi sang cái hệ thống Auth (Google, Facebook, OAuth2) có sẵn của sếp để kiểm tra. Thư viện này giúp sếp viết ra cái API trả lời truy vấn đó cực nhanh bằng Golang.
+Để quản lý mớ NKey và JWT này, hệ sinh thái NATS cung cấp sẵn đồ chơi cho người dùng:
+- **`nsc` (NATS Security CLI):** Phần mềm độc lập cài trên máy trạm, đóng vai trò như cái "Máy ghi thẻ từ". Dùng nó để gõ lệnh tạo ra NKeys mới, đóng dấu JWT cho các User, sau đó ném thẻ đó cho Frontend hoặc App tải về xài.
+- **Thư viện JWT/NKey Libraries:** nếu không muốn gõ lệnh bằng tay mà muốn viết một hệ thống tự động sinh ra thẻ từ cho người dùng (để User bấm nút đăng ký là có ngay thẻ), có thể dùng code (ví dụ `nats-io/jwt` và `nats-io/nkeys` trong Golang).
+- **Auth Callout (`synadia-io/callout.go`):** Tính năng nâng cao, dùng khi không muốn dùng JWT của NATS mà muốn bắt NATS Server phải gọi sang cái hệ thống Auth (Google, Facebook, OAuth2) có sẵn của mình để kiểm tra. Thư viện này hỗ trợ viết API trả lời truy vấn đó bằng Golang.
 
 ---
 
 ## 7. Kubernetes (Triển khai Hạ tầng)
 NATS hỗ trợ cực tốt cho môi trường Cloud-native và Kubernetes (K8s):
-- **`k8s` (Helm Charts):** Bộ cấu hình chuẩn DevOps do NATS viết sẵn. Sếp chỉ cần chạy 1 dòng lệnh Helm là nó tự động dựng nguyên một cụm NATS Cluster (với hàng chục node) lên K8s cực mượt.
-- **`nack` (NATS Controller for K8s):** Thay vì phải tự gõ lệnh `nats` để tạo Stream hay Consumer, sếp chỉ cần viết file cấu hình YAML. `nack` sẽ tự động đọc file YAML đó và gỡ/tạo tài nguyên trên NATS (Chuẩn GitOps/Declarative).
+- **`k8s` (Helm Charts):** Bộ cấu hình chuẩn DevOps do NATS viết sẵn. Chỉ cần chạy 1 dòng lệnh Helm là nó tự động dựng nguyên một cụm NATS Cluster (với hàng chục node) lên K8s cực mượt.
+- **`nack` (NATS Controller for K8s):** Thay vì phải tự gõ lệnh `nats` để tạo Stream hay Consumer, chỉ cần viết file cấu hình YAML. `nack` sẽ tự động đọc file YAML đó và gỡ/tạo tài nguyên trên NATS (Chuẩn GitOps/Declarative).
 
 ---
 
 ## 8. Observability (Giám sát & Đo lường)
-Hệ thống chạy trên production thì không thể mù tịt được. Sếp phải biết nó đang ngốn bao nhiêu RAM, chạy bao nhiêu Msg/sec.
-- **`prometheus-nats-exporter` & `nats-surveyor`:** Hai công cụ này giống như bác sĩ khám sức khỏe. Chúng liên tục cào các "chỉ số sinh tồn" (Metrics) của NATS Server rồi xuất ra định dạng chuẩn của **Prometheus**. Từ đó, sếp có thể cắm **Grafana** vào để vẽ biểu đồ theo dõi tuyệt đẹp.
+Hệ thống chạy trên production thì không thể mù tịt được. Cần biết nó đang ngốn bao nhiêu RAM, chạy bao nhiêu Msg/sec.
+- **`prometheus-nats-exporter` & `nats-surveyor`:** Hai công cụ này giống như bác sĩ khám sức khỏe. Chúng liên tục cào các "chỉ số sinh tồn" (Metrics) của NATS Server rồi xuất ra định dạng chuẩn của **Prometheus**. Từ đó, có thể cắm **Grafana** vào để vẽ biểu đồ theo dõi tuyệt đẹp.
 
 ---
 
 ## 9. Bridges & Integrations (Cầu nối Hệ sinh thái)
 NATS không hề chơi một mình mà có sẵn các "Cây cầu" để nối sang các công nghệ dữ liệu lớn (Big Data) khác:
-- **`nats-kafka` (Cực kỳ quan trọng với dự án ta):** Đây là chiếc cầu nối 2 chiều giữa NATS và Kafka. Nếu sếp muốn bắn tin nhắn vào NATS cho lẹ, nhưng lại muốn lưu trữ lâu dài bên Kafka (để đẩy sang Elasticsearch) thì dùng cái Bridge này. Nó sẽ tự động copy tin nhắn qua lại mà sếp **không cần tự code**.
+- **`nats-kafka` (Cực kỳ quan trọng với dự án ta):** Đây là chiếc cầu nối 2 chiều giữa NATS và Kafka. nếu muốn bắn tin nhắn vào NATS cho lẹ, nhưng lại muốn lưu trữ lâu dài bên Kafka (để đẩy sang Elasticsearch) thì dùng cái Bridge này. Nó sẽ tự động copy tin nhắn qua lại mà **không cần tự code**.
 - **Spark / Flink Connectors:** Dành cho đội ngũ Data Engineer hút dữ liệu Real-time từ NATS ra để làm AI/Machine Learning hoặc xử lý luồng (Stream Processing) cực nặng.
 - **`terraform-provider-jetstream`:** Cho phép dân DevOps dùng mã nguồn (Infrastructure as Code) để tự động hóa việc tạo Stream, tạo Account trên NATS thay vì bấm tay.
