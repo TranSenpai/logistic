@@ -87,6 +87,11 @@ services:
     image: ghcr.io/transenpai/logistic/matching-service:${IMAGE_TAG:-latest}
     env_file:
       - .env
+    depends_on:
+      matching-db-master:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - matching-data:/app/data
     networks:
@@ -103,6 +108,11 @@ services:
     image: ghcr.io/transenpai/logistic/user-service:${IMAGE_TAG:-latest}
     env_file:
       - .env
+    depends_on:
+      user-db-master:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - user-data:/app/data
     networks:
@@ -119,6 +129,11 @@ services:
     image: ghcr.io/transenpai/logistic/vehicle-service:${IMAGE_TAG:-latest}
     env_file:
       - .env
+    depends_on:
+      vehicle-db-master:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - vehicle-data:/app/data
     networks:
@@ -288,6 +303,12 @@ services:
       # duy nhất trong giai đoạn bootstrap (khi thư mục data còn trống).
       # Script register-replica.sh được dùng để cấp phát User Replication và cập nhật pg_hba.conf trước khi DB mở port kết nối.
       - ./scripts/matching_service/db/register-replica.sh:/docker-entrypoint-initdb.d/register-replica.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MATCHING_DB_USER} -d ${MATCHING_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     networks:
       - logistic_net
 
@@ -308,6 +329,12 @@ services:
     command:
       - "bash"
       - "/scripts/matching_service/db/start-replica.sh"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${MATCHING_DB_USER} -d ${MATCHING_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     networks:
       - logistic_net
 
@@ -539,6 +566,11 @@ services:
   auth-db-master:
     image: docker.io/library/mysql:8.0
     container_name: auth-db-master
+    command:
+      - --server-id=1
+      - --log-bin=mysql-bin
+      - --binlog-do-db=${AUTH_SERVICE_DB_NAME}
+      - --bind-address=0.0.0.0
     ports:
       - "3306:3306"
     environment:
@@ -550,8 +582,7 @@ services:
       REPLICATION_PASSWORD: ${AUTH_DB_REPLICATION_PASSWORD}
     volumes:
       - auth-db-master-data:/var/lib/mysql
-      - ./config/auth_conf/master.cnf:/etc/mysql/conf.d/master.cnf
-      - ./scripts/auth_service/db/init-master.sql:/docker-entrypoint-initdb.d/init-master.sql
+      - ./scripts/auth_service/db/init-master.sh:/docker-entrypoint-initdb.d/init-master.sh
     networks:
       - logistic_net
     healthcheck:
@@ -564,6 +595,13 @@ services:
   auth-db-slave:
     image: docker.io/library/mysql:8.0
     container_name: auth-db-slave
+    command:
+      - --server-id=2
+      - --log-bin=mysql-bin
+      - --binlog-do-db=${AUTH_SERVICE_DB_NAME}
+      - --bind-address=0.0.0.0
+      - --read-only=1
+      - --relay-log=auth-db-slave-relay-bin
     ports:
       - "3307:3306"
     environment:
@@ -578,7 +616,6 @@ services:
       - auth-db-master
     volumes:
       - auth-db-slave-data:/var/lib/mysql
-      - ./config/auth_conf/slave.cnf:/etc/mysql/conf.d/slave.cnf
       - ./scripts/auth_service/db/start-replica.sh:/docker-entrypoint-initdb.d/start-replica.sh
     networks:
       - logistic_net
@@ -602,6 +639,12 @@ services:
       - user-db-master-data:/var/lib/postgresql/data
       - ./config/user_conf/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./scripts/user_service/db/register-replica.sh:/docker-entrypoint-initdb.d/register-replica.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USER} -d ${USER_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     networks:
       - logistic_net
 
@@ -622,6 +665,12 @@ services:
     command:
       - "bash"
       - "/scripts/user_service/db/start-replica.sh"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USER} -d ${USER_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     networks:
       - logistic_net
 
@@ -644,6 +693,12 @@ services:
       - vehicle-db-master-data:/var/lib/postgresql/data
       - ./config/vehicle_conf/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./scripts/vehicle_service/db/register-replica.sh:/docker-entrypoint-initdb.d/register-replica.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${VEHICLE_DB_USER} -d ${VEHICLE_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     networks:
       - logistic_net
 
@@ -664,6 +719,12 @@ services:
     command:
       - "bash"
       - "/scripts/vehicle_service/db/start-replica.sh"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${VEHICLE_DB_USER} -d ${VEHICLE_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     networks:
       - logistic_net
 

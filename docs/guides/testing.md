@@ -103,7 +103,7 @@ hiện ra.
 
 ## Tầng 2 — Test bất biến
 
-Bốn test không kiểm một hàm nào cả. Chúng kiểm **luật của cả hệ thống**, và bắt
+Sáu test không kiểm một hàm nào cả. Chúng kiểm **luật của cả hệ thống**, và bắt
 đúng loại lỗi mà đọc code khó thấy vì mọi thứ trông vẫn hợp lý.
 
 ### `TestNoUnintentionallyPublicRoute`
@@ -146,6 +146,23 @@ Test so khớp theo dạng chuẩn hoá — `{id}` của swagger và `:id` của
 
 Kèm `TestEveryRouteIsDocumented` bắt chiều ngược lại: có route nhưng quên viết
 annotation, nên không ai biết nó tồn tại.
+
+### `TestSwaggerJSONMatchesRoutes`
+
+`gateway_service/internal/delivery/http/swagger_freshness_test.go`
+
+Đọc `swagger.json` đã commit và đối chiếu với cây route thật.
+
+Khác với `TestSwaggerAnnotationsMatchRoutes` ở trên — cái đó đối chiếu *annotation
+trong controller* với *route*, cả hai đều là mã nguồn nên luôn đồng bộ. Test này
+nhìn vào **file đã sinh ra**, thứ chỉ cập nhật khi ai đó chạy `make swagger`.
+
+Khoảng trống này có thật: thêm hai endpoint `/auth/refresh` và `/auth/logout` với
+annotation đầy đủ, `TestSwaggerAnnotationsMatchRoutes` vẫn xanh, nhưng Swagger UI
+thiếu chúng vì file chưa được sinh lại.
+
+Kèm `TestSwaggerJSONHasNoStaleOperation` bắt chiều ngược lại: swagger mô tả một
+endpoint đã bị xoá khỏi code.
 
 ### `TestCollectionCoversEveryRoute`
 

@@ -329,7 +329,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "User ID",
-                        "name": "user_id",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
@@ -360,7 +360,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "User ID",
-                        "name": "user_id",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
@@ -496,7 +496,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/google/callback": {
             "get": {
-                "description": "Xử lý callback từ Google sau khi user đăng nhập. Xác thực state, đổi code lấy token, set cookie access_token và refresh_token, rồi redirect về frontend.",
+                "description": "Xử lý callback từ Google, xác thực state, đổi code lấy token rồi set cookie.",
                 "produces": [
                     "application/json"
                 ],
@@ -526,27 +526,13 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
-                    },
-                    "400": {
-                        "description": "State không hợp lệ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi xử lý callback",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
                     }
                 }
             }
         },
         "/api/v1/auth/google/login": {
             "get": {
-                "description": "Khởi tạo luồng OAuth2 với Google. Redirect người dùng đến trang đăng nhập Google. Tạo state cookie để chống CSRF.",
+                "description": "Khởi tạo luồng OAuth2 với Google. Tạo state cookie để chống CSRF.",
                 "produces": [
                     "application/json"
                 ],
@@ -560,20 +546,13 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
-                    },
-                    "500": {
-                        "description": "Lỗi khi lấy Google Login URL",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
                     }
                 }
             }
         },
         "/api/v1/auth/login": {
             "post": {
-                "description": "Đăng nhập bằng email và mật khẩu. Trả về access_token, refresh_token và expires_in.",
+                "description": "Đăng nhập bằng email và mật khẩu. Trả về access_token, refresh_token và expires_at.",
                 "consumes": [
                     "application/json"
                 ],
@@ -597,31 +576,35 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Đăng nhập thành công, trả về token pair",
+                        "description": "Đăng nhập thành công",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Lỗi dữ liệu đầu vào",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     },
                     "401": {
                         "description": "Sai email hoặc mật khẩu",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.ErrorBody"
                         }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "description": "Thu hồi refresh token của phiên hiện tại. Access token đang cầm vẫn còn hiệu lực tới khi hết hạn (tối đa 15 phút).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Đăng xuất",
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     }
                 }
@@ -629,14 +612,14 @@ const docTemplate = `{
         },
         "/api/v1/auth/me": {
             "get": {
-                "description": "Lấy thông tin profile của người dùng hiện tại. Token có thể truyền qua cookie access_token hoặc header Authorization Bearer.",
+                "description": "Trả về profile của chủ nhân access token.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Lấy thông tin người dùng",
+                "summary": "Lấy thông tin người dùng hiện tại",
                 "parameters": [
                     {
                         "type": "string",
@@ -647,17 +630,60 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Lấy thông tin thành công",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     },
                     "401": {
-                        "description": "Token không hợp lệ hoặc không tìm thấy",
+                        "description": "Unauthorized",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/refresh": {
+            "post": {
+                "description": "Đổi refresh token lấy cặp token mới. Refresh token dùng MỘT LẦN — mỗi lần gọi trả về refresh token mới, token cũ hết hiệu lực ngay.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Làm mới phiên đăng nhập",
+                "parameters": [
+                    {
+                        "description": "Refresh token (nếu không dùng cookie)",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.RefreshRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Refresh token không hợp lệ",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.ErrorBody"
+                        }
+                    },
+                    "403": {
+                        "description": "Phiên đã bị thu hồi, cần đăng nhập lại",
+                        "schema": {
+                            "$ref": "#/definitions/gateway_service_internal_response.ErrorBody"
                         }
                     }
                 }
@@ -691,29 +717,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Tạo tài khoản thành công",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.Envelope"
                         }
                     },
                     "400": {
                         "description": "Lỗi dữ liệu đầu vào",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.ErrorBody"
                         }
                     },
                     "409": {
                         "description": "Email đã tồn tại",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Lỗi server nội bộ",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/gateway_service_internal_response.ErrorBody"
                         }
                     }
                 }
@@ -1372,6 +1388,7 @@ const docTemplate = `{
         },
         "/api/v1/users/{user_id}/kyc": {
             "put": {
+                "description": "Tài xế nộp/cập nhật hồ sơ KYC của chính mình. Việc DUYỆT nằm ở /admin/kyc và cần vai trò admin.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1381,7 +1398,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
-                "summary": "Cập nhật trạng thái KYC",
+                "summary": "Nộp hồ sơ KYC",
                 "parameters": [
                     {
                         "type": "string",
@@ -1647,6 +1664,7 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "description": "Xe luôn được đăng ký cho CHÍNH tài xế đang đăng nhập.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1933,6 +1951,34 @@ const docTemplate = `{
                 }
             }
         },
+        "gateway_service_internal_response.ErrorBody": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/gateway_service_internal_response.ErrorDetail"
+                },
+                "request_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "gateway_service_internal_response.ErrorDetail": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_controller.LoginRequest": {
             "type": "object",
             "required": [
@@ -1944,6 +1990,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_controller.RefreshRequest": {
+            "type": "object",
+            "properties": {
+                "refresh_token": {
                     "type": "string"
                 }
             }
@@ -1963,7 +2017,14 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 6
+                    "minLength": 8
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "driver",
+                        "shipper"
+                    ]
                 }
             }
         },
@@ -1983,7 +2044,7 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string",
-                    "minLength": 6
+                    "minLength": 8
                 },
                 "phone": {
                     "type": "string"

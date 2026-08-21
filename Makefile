@@ -75,6 +75,17 @@ auth-keys:
 	@bash scripts/generate-jwt-keys.sh
 
 # ==============================================================================
+# Swagger
+# ==============================================================================
+
+.PHONY: swagger
+
+## swagger: Sinh lại tài liệu API từ annotation trong controller
+swagger:
+	@swag init -g cmd/main.go -d gateway_service -o gateway_service/docs --parseDependency --parseInternal
+	@echo "    swagger.json / swagger.yaml / docs.go đã cập nhật"
+
+# ==============================================================================
 # Postman
 # ==============================================================================
 
