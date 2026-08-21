@@ -2068,7 +2068,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Logistics OS — Gateway API",
-	Description:      "API Gateway trung tâm cho hệ thống Logistics OS. Nhận toàn bộ HTTP request từ client và phân luồng tới các microservice nội bộ qua gRPC.\n\n**Các service được proxy:**\n- **Auth** (`/api/v1/auth/*`) — Đăng ký, đăng nhập, OAuth2 Google, xác thực token\n- **User** (`/v1/users/*`) — Quản lý người dùng, profile driver/shipper, KYC (gRPC-Gateway)\n- **Vehicle** (`/v1/vehicles/*`) — Đăng ký & quản lý phương tiện (gRPC-Gateway)\n- **Matching** (gRPC only) — Matching engine cho Bid/Ask, chưa expose HTTP",
+	Description:      "API Gateway trung tâm cho hệ thống Logistics OS. Nhận toàn bộ HTTP request từ client và phân luồng tới các microservice nội bộ qua gRPC.\n\n**Các service được proxy:**\n- **Auth** (`/api/v1/auth/*`) — Đăng ký, đăng nhập, OAuth2 Google, xác thực token\n- **User** (`/api/v1/users/*`) — Quản lý người dùng, hồ sơ tài xế/chủ hàng, KYC\n- **Vehicle** (`/api/v1/vehicles/*`) — Đăng ký & quản lý phương tiện, báo GPS, tìm xe gần\n- **Matching** (`/api/v1/matching/*`) — Ghép đơn theo mô hình Bid/Ask\n- **Notification** (`/api/v1/notifications/*`) — Hộp thư thông báo\n- **Media** (`/api/v1/media/*`) — Tải file lên Cloudinary",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

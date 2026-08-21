@@ -92,6 +92,16 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      broker-1:
+        condition: service_started
+      broker-2:
+        condition: service_started
+      broker-3:
+        condition: service_started
     volumes:
       - matching-data:/app/data
     networks:
@@ -246,7 +256,7 @@ services:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI
     volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
+      - rabbitmq-data:/var/lib/rabbitmq:U
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
       interval: 10s
@@ -273,7 +283,7 @@ services:
     volumes:
       - notification-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${NOTIFICATION_DB_USER} -d ${NOTIFICATION_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${NOTIFICATION_DB_USER} -d ${NOTIFICATION_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -304,7 +314,7 @@ services:
       # Script register-replica.sh được dùng để cấp phát User Replication và cập nhật pg_hba.conf trước khi DB mở port kết nối.
       - ./scripts/matching_service/db/register-replica.sh:/docker-entrypoint-initdb.d/register-replica.sh
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${MATCHING_DB_USER} -d ${MATCHING_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${MATCHING_DB_USER} -d ${MATCHING_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -321,6 +331,7 @@ services:
       POSTGRES_USER: ${MATCHING_DB_USER}
       POSTGRES_PASSWORD: ${MATCHING_DB_PASSWORD}
       PGPASSWORD: ${MATCHING_DB_REPLICATION_PASSWORD}
+      REPLICATION_USER: ${MATCHING_DB_REPLICATION_USER}
     depends_on:
       - matching-db-master
     volumes:
@@ -330,7 +341,7 @@ services:
       - "bash"
       - "/scripts/matching_service/db/start-replica.sh"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${MATCHING_DB_USER} -d ${MATCHING_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${MATCHING_DB_USER} -d ${MATCHING_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -640,7 +651,7 @@ services:
       - ./config/user_conf/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./scripts/user_service/db/register-replica.sh:/docker-entrypoint-initdb.d/register-replica.sh
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USER} -d ${USER_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${USER_DB_USER} -d ${USER_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -657,6 +668,7 @@ services:
       POSTGRES_USER: ${USER_DB_USER}
       POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
       PGPASSWORD: ${USER_DB_REPLICATION_PASSWORD}
+      REPLICATION_USER: ${USER_DB_REPLICATION_USER}
     depends_on:
       - user-db-master
     volumes:
@@ -666,7 +678,7 @@ services:
       - "bash"
       - "/scripts/user_service/db/start-replica.sh"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USER} -d ${USER_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${USER_DB_USER} -d ${USER_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -694,7 +706,7 @@ services:
       - ./config/vehicle_conf/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./scripts/vehicle_service/db/register-replica.sh:/docker-entrypoint-initdb.d/register-replica.sh
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${VEHICLE_DB_USER} -d ${VEHICLE_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${VEHICLE_DB_USER} -d ${VEHICLE_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -711,6 +723,7 @@ services:
       POSTGRES_USER: ${VEHICLE_DB_USER}
       POSTGRES_PASSWORD: ${VEHICLE_DB_PASSWORD}
       PGPASSWORD: ${VEHICLE_DB_REPLICATION_PASSWORD}
+      REPLICATION_USER: ${VEHICLE_DB_REPLICATION_USER}
     depends_on:
       - vehicle-db-master
     volumes:
@@ -720,7 +733,7 @@ services:
       - "bash"
       - "/scripts/vehicle_service/db/start-replica.sh"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${VEHICLE_DB_USER} -d ${VEHICLE_DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${VEHICLE_DB_USER} -d ${VEHICLE_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 12
