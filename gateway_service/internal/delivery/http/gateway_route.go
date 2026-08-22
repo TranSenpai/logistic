@@ -49,9 +49,9 @@ func RegisterGatewayRoutes(
 
 	authController := controller.NewAuthController(clients.Auth, clients.User, cfg.Server.IsProduction)
 	mediaController := controller.NewMediaController(clients.Media)
-	matchingController := controller.NewMatchingController(clients.Matching)
+	matchingController := controller.NewMatchingController(clients.Matching, clients.Vehicle)
 	userController := controller.NewUserController(clients.User)
-	vehicleController := controller.NewVehicleController(clients.Vehicle)
+	vehicleController := controller.NewVehicleController(clients.Vehicle, clients.User)
 	notifController := controller.NewNotificationController(clients.Notification)
 
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

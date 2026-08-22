@@ -22,6 +22,21 @@ Lõi ghép đơn hàng với xe còn chỗ trống, và vòng thương lượng 
 | `RejectOffer` | Chủ hàng | Từ chối báo giá, đơn quay lại `PENDING` |
 | `AcceptMatch` | Chủ hàng | Chốt xe, sinh hợp đồng |
 
+### Gateway kiểm gì trước khi gọi xuống
+
+matching_service giữ bảng `asks`/`bids` riêng và **không hỏi vehicle_service hay
+user_service**. Ba điều kiện dưới đây vì thế phải chặn ở gateway — chỗ duy nhất
+nhìn được cả ba service:
+
+| Kiểm | Không chặn thì |
+|---|---|
+| `shipper_id`/`driver_id` lấy từ token, không nhận từ body | Đăng đơn dưới danh nghĩa chủ hàng khác, đăng chuyến hộ tài xế khác |
+| Xe thuộc về người gọi | Đăng chuyến bằng xe của tài xế khác |
+| Xe `verification_status = verified` | Xe chưa duyệt vẫn được ghép đơn và nhận thông báo, dù không nằm trong chỉ mục Redis GEO |
+
+Ranh giới này chỉ đứng vững vì mạng nội bộ đóng: không ai gọi thẳng được vào
+matching_service, xem đầu `docker-compose.yml`.
+
 ## Vòng thương lượng
 
 ```

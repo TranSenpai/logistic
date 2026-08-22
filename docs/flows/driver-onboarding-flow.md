@@ -107,13 +107,15 @@ POST /api/v1/drivers/{driver_id}/availability
   "current_lat": 10.7721, "current_lng": 106.6980 }
 ```
 
-Đây là **chốt chặn quan trọng nhất** của toàn bộ luồng matching. `biz` kiểm ba
-điều kiện trước khi cho lên online:
+Đây là **chốt chặn quan trọng nhất** của toàn bộ luồng matching. Kiểm đủ năm
+điều kiện trước khi cho lên online — KYC do gateway kiểm vì hồ sơ nằm ở
+user_service, bốn cái còn lại do vehicle_service tự kiểm:
 
 | Điều kiện | Lỗi trả về nếu sai |
 |---|---|
 | Xe thuộc về đúng tài xế này | `VEHICLE_NOT_OWNED` |
 | `verification_status = verified` | `VEHICLE_NOT_VERIFIED` |
+| `kyc_status = approved` | `KYC_NOT_APPROVED` |
 | `status ≠ maintenance` | `VEHICLE_IN_MAINTENANCE` |
 | Toạ độ hợp lệ (không phải 0,0 hay NaN) | `INVALID_COORDINATE` |
 
