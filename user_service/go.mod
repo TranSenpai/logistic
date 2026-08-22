@@ -11,6 +11,7 @@ require (
 	github.com/logistic/api v0.0.0-00010101000000-000000000000
 	github.com/logistic/pkg v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.70.0
+	golang.org/x/crypto v0.54.0
 	google.golang.org/grpc v1.83.0
 	google.golang.org/protobuf v1.36.12
 )

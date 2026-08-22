@@ -66,11 +66,17 @@ func (r *userRepoImpl) invalidateUser(ctx context.Context, id uuid.UUID, phone s
 
 func (r *userRepoImpl) CreateUser(ctx context.Context, u *entity.User) (*entity.User, error) {
 	builder := r.client.User.Create().
-		SetPhone(u.Phone).
 		SetPasswordHash(u.PasswordHash).
 		SetRole(user.Role(u.Role)).
 		SetFullName(u.FullName)
 
+	if u.ID != uuid.Nil {
+		builder = builder.SetID(u.ID)
+	}
+	// Bỏ trống -> NULL, không phải "": cột Unique nên nhiều "" sẽ đụng nhau.
+	if u.Phone != "" {
+		builder = builder.SetPhone(u.Phone)
+	}
 	if u.Email != "" {
 		builder = builder.SetEmail(u.Email)
 	}

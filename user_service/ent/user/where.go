@@ -151,6 +151,16 @@ func PhoneHasSuffix(v string) predicate.User {
 	return predicate.User(sql.FieldHasSuffix(FieldPhone, v))
 }
 
+// PhoneIsNil applies the IsNil predicate on the "phone" field.
+func PhoneIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldPhone))
+}
+
+// PhoneNotNil applies the NotNil predicate on the "phone" field.
+func PhoneNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldPhone))
+}
+
 // PhoneEqualFold applies the EqualFold predicate on the "phone" field.
 func PhoneEqualFold(v string) predicate.User {
 	return predicate.User(sql.FieldEqualFold(FieldPhone, v))

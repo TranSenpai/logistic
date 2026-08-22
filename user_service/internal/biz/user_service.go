@@ -7,6 +7,7 @@ import (
 	"user_service/internal/entity"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserEngine interface {
@@ -46,22 +47,27 @@ func NewUserEngine(repo UserRepo) UserEngine {
 }
 
 func (e *userEngineImpl) RegisterUser(ctx context.Context, param *entity.RegisterUserParam) (*entity.RegisterUserResult, error) {
-	if param.Phone == "" {
-		return nil, cerr.ErrPhoneRequired
-	}
-	if len(param.Password) < 6 {
-		return nil, cerr.ErrPasswordTooShort
-	}
 	if !entity.IsValidRole(param.Role) {
 		return nil, cerr.ErrInvalidRole.WithDetail("role", param.Role)
 	}
 
-	exists, err := e.repo.ExistsByPhone(ctx, param.Phone)
-	if err != nil {
-		return nil, err
+	if !param.ProvisionedFromAuth() {
+		if param.Phone == "" {
+			return nil, cerr.ErrPhoneRequired
+		}
+		if len(param.Password) < 6 {
+			return nil, cerr.ErrPasswordTooShort
+		}
 	}
-	if exists {
-		return nil, cerr.ErrPhoneAlreadyUsed.WithDetail("phone", param.Phone)
+
+	if param.Phone != "" {
+		exists, err := e.repo.ExistsByPhone(ctx, param.Phone)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			return nil, cerr.ErrPhoneAlreadyUsed.WithDetail("phone", param.Phone)
+		}
 	}
 
 	if param.Email != "" {
@@ -74,11 +80,22 @@ func (e *userEngineImpl) RegisterUser(ctx context.Context, param *entity.Registe
 		}
 	}
 
+	// Không giữ bản sao credential thứ hai.
+	passwordHash := ""
+	if !param.ProvisionedFromAuth() {
+		hashed, hErr := bcrypt.GenerateFromPassword([]byte(param.Password), bcrypt.DefaultCost)
+		if hErr != nil {
+			return nil, cerr.ErrDatabase.WithCause(hErr)
+		}
+		passwordHash = string(hashed)
+	}
+
 	created, err := e.repo.CreateUser(ctx, &entity.User{
+		ID:           param.ID,
 		Phone:        param.Phone,
 		Email:        param.Email,
 		FullName:     param.FullName,
-		PasswordHash: param.Password,
+		PasswordHash: passwordHash,
 		Role:         param.Role,
 	})
 	if err != nil {

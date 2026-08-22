@@ -113,6 +113,10 @@ message RegisterUserRequest {
   string password = 3;
   string role = 4; // driver | shipper
   string full_name = 5;
+
+  // Danh tính auth_service đã cấp, gateway gắn vào. Có id: chỉ dựng hồ sơ, không
+  // lưu mật khẩu. Bỏ trống: luồng đăng ký độc lập, user_service tự sinh id.
+  bytes id = 6;
 }
 
 message RegisterUserResponse {

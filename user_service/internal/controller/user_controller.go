@@ -33,6 +33,15 @@ func parseID(raw []byte, invalid error) (uuid.UUID, error) {
 func (c *userController) RegisterUser(ctx context.Context, req *pb.RegisterUserRequest) (*pb.RegisterUserResponse, error) {
 	param := c.mapper.PbRegisterUserToParam(req)
 
+	// Mapper bỏ qua ID vì đây là trường tuỳ chọn.
+	if len(req.Id) > 0 {
+		id, err := parseID(req.Id, cerr.ErrInvalidUserID)
+		if err != nil {
+			return nil, err
+		}
+		param.ID = id
+	}
+
 	res, err := c.engine.RegisterUser(ctx, &param)
 	if err != nil {
 		return nil, err
