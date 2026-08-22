@@ -62,6 +62,8 @@ func local_request_VehicleService_RegisterVehicle_0(ctx context.Context, marshal
 	return msg, metadata, err
 }
 
+var filter_VehicleService_GetVehicle_0 = &utilities.DoubleArray{Encoding: map[string]int{"id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+
 func request_VehicleService_GetVehicle_0(ctx context.Context, marshaler runtime.Marshaler, client VehicleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq GetVehicleRequest
@@ -75,6 +77,12 @@ func request_VehicleService_GetVehicle_0(ctx context.Context, marshaler runtime.
 	protoReq.Id, err = runtime.Bytes(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_VehicleService_GetVehicle_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
@@ -96,6 +104,12 @@ func local_request_VehicleService_GetVehicle_0(ctx context.Context, marshaler ru
 	protoReq.Id, err = runtime.Bytes(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_VehicleService_GetVehicle_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.GetVehicle(ctx, &protoReq)
 	return msg, metadata, err
@@ -377,6 +391,8 @@ func local_request_VehicleService_ListVehicleDocuments_0(ctx context.Context, ma
 	return msg, metadata, err
 }
 
+var filter_VehicleService_DeleteVehicleDocument_0 = &utilities.DoubleArray{Encoding: map[string]int{"id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+
 func request_VehicleService_DeleteVehicleDocument_0(ctx context.Context, marshaler runtime.Marshaler, client VehicleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq DeleteVehicleDocumentRequest
@@ -390,6 +406,12 @@ func request_VehicleService_DeleteVehicleDocument_0(ctx context.Context, marshal
 	protoReq.Id, err = runtime.Bytes(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_VehicleService_DeleteVehicleDocument_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
@@ -411,6 +433,12 @@ func local_request_VehicleService_DeleteVehicleDocument_0(ctx context.Context, m
 	protoReq.Id, err = runtime.Bytes(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_VehicleService_DeleteVehicleDocument_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.DeleteVehicleDocument(ctx, &protoReq)
 	return msg, metadata, err
@@ -461,6 +489,8 @@ func local_request_VehicleService_ReportLocation_0(ctx context.Context, marshale
 	return msg, metadata, err
 }
 
+var filter_VehicleService_GetVehicleLocation_0 = &utilities.DoubleArray{Encoding: map[string]int{"vehicle_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+
 func request_VehicleService_GetVehicleLocation_0(ctx context.Context, marshaler runtime.Marshaler, client VehicleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq GetVehicleLocationRequest
@@ -474,6 +504,12 @@ func request_VehicleService_GetVehicleLocation_0(ctx context.Context, marshaler 
 	protoReq.VehicleId, err = runtime.Bytes(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "vehicle_id", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_VehicleService_GetVehicleLocation_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
@@ -495,6 +531,12 @@ func local_request_VehicleService_GetVehicleLocation_0(ctx context.Context, mars
 	protoReq.VehicleId, err = runtime.Bytes(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "vehicle_id", err)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_VehicleService_GetVehicleLocation_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 	msg, err := server.GetVehicleLocation(ctx, &protoReq)
 	return msg, metadata, err

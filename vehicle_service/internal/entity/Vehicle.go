@@ -215,6 +215,7 @@ type RegisterVehicleParam struct {
 
 type UpdateVehicleParam struct {
 	ID                uuid.UUID
+	DriverID          uuid.UUID
 	Brand             string
 	Model             string
 	ManufactureYear   int
@@ -247,6 +248,7 @@ type AdminListVehiclesParam struct {
 
 type UploadDocumentParam struct {
 	VehicleID      uuid.UUID
+	DriverID       uuid.UUID
 	DocumentType   string
 	DocumentNumber string
 	FileURL        string
@@ -256,6 +258,7 @@ type UploadDocumentParam struct {
 
 type ListDocumentsParam struct {
 	VehicleID    uuid.UUID
+	DriverID     uuid.UUID
 	ReviewStatus string
 }
 

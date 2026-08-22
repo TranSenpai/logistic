@@ -76,7 +76,10 @@ func (c *VehicleController) GetVehicle(ctx *gin.Context) {
 		return
 	}
 
-	resp, err := c.vehicleClient.GetVehicle(ctx.Request.Context(), &pb.GetVehicleRequest{Id: id})
+	resp, err := c.vehicleClient.GetVehicle(ctx.Request.Context(), &pb.GetVehicleRequest{
+		Id:       id,
+		DriverId: selfID(ctx),
+	})
 	if err != nil {
 		response.Error(ctx, err)
 		return
@@ -150,6 +153,7 @@ func (c *VehicleController) UpdateVehicle(ctx *gin.Context) {
 
 	resp, err := c.vehicleClient.UpdateVehicle(ctx.Request.Context(), &pb.UpdateVehicleRequest{
 		Id:                id,
+		DriverId:          selfID(ctx),
 		Brand:             req.Brand,
 		Model:             req.Model,
 		ManufactureYear:   req.ManufactureYear,
@@ -213,8 +217,9 @@ func (c *VehicleController) UpdateVehicleStatus(ctx *gin.Context) {
 	}
 
 	resp, err := c.vehicleClient.UpdateVehicleStatus(ctx.Request.Context(), &pb.UpdateVehicleStatusRequest{
-		Id:     id,
-		Status: req.Status,
+		Id:       id,
+		DriverId: selfID(ctx),
+		Status:   req.Status,
 	})
 	if err != nil {
 		response.Error(ctx, err)
@@ -251,6 +256,7 @@ func (c *VehicleController) UploadVehicleDocument(ctx *gin.Context) {
 
 	resp, err := c.vehicleClient.UploadVehicleDocument(ctx.Request.Context(), &pb.UploadVehicleDocumentRequest{
 		VehicleId:      vehicleID,
+		DriverId:       selfID(ctx),
 		DocumentType:   req.DocumentType,
 		DocumentNumber: req.DocumentNumber,
 		FileUrl:        req.FileURL,
@@ -277,6 +283,7 @@ func (c *VehicleController) ListVehicleDocuments(ctx *gin.Context) {
 
 	resp, err := c.vehicleClient.ListVehicleDocuments(ctx.Request.Context(), &pb.ListVehicleDocumentsRequest{
 		VehicleId:    vehicleID,
+		DriverId:     selfID(ctx),
 		ReviewStatus: ctx.Query("review_status"),
 	})
 	if err != nil {
@@ -300,7 +307,8 @@ func (c *VehicleController) DeleteVehicleDocument(ctx *gin.Context) {
 	}
 
 	resp, err := c.vehicleClient.DeleteVehicleDocument(ctx.Request.Context(), &pb.DeleteVehicleDocumentRequest{
-		Id: id,
+		Id:       id,
+		DriverId: selfID(ctx),
 	})
 	if err != nil {
 		response.Error(ctx, err)
@@ -375,6 +383,7 @@ func (c *VehicleController) GetVehicleLocation(ctx *gin.Context) {
 
 	resp, err := c.vehicleClient.GetVehicleLocation(callCtx, &pb.GetVehicleLocationRequest{
 		VehicleId: vehicleID,
+		DriverId:  selfID(ctx),
 	})
 	if err != nil {
 		response.Error(ctx, err)
