@@ -76,6 +76,8 @@ func (c *MatchingMapperImpl) EntBidToEntityBid(source *ent.Bids) entity.Bid {
 		entityBid.VolumeM3 = (*source).VolumeM3
 		entityBid.WeightKg = (*source).WeightKg
 		entityBid.MaxPrice = mapper.Float64PtrToFloat64((*source).MaxPrice)
+		entityBid.OfferedPrice = (*source).OfferedPrice
+		entityBid.OfferedAskID = c.uuidUUIDToUuidUUID((*source).OfferedAskID)
 		entityBid.Status = (*source).Status
 		entityBid.CargoValue = (*source).CargoValue
 		entityBid.RequiredDeposit = (*source).RequiredDeposit

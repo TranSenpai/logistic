@@ -54,6 +54,8 @@ func (r *matchingRepoImpl) CreateBid(ctx context.Context, bid *entity.Bid) error
 		SetCargoValue(bid.CargoValue).
 		SetRequiredDeposit(bid.RequiredDeposit).
 		SetDesiredDeposit(bid.DesiredDeposit).
+		SetOfferedPrice(bid.OfferedPrice).
+		SetOfferedAskID(bid.OfferedAskID).
 		SetStatus(bid.Status).
 		SetExpiresAt(bid.ExpiresAt).
 		Save(ctx)
@@ -184,6 +186,8 @@ func (r *matchingRepoImpl) UpdateBid(ctx context.Context, bid *entity.Bid) error
 		SetCargoValue(bid.CargoValue).
 		SetRequiredDeposit(bid.RequiredDeposit).
 		SetDesiredDeposit(bid.DesiredDeposit).
+		SetOfferedPrice(bid.OfferedPrice).
+		SetOfferedAskID(bid.OfferedAskID).
 		SetStatus(bid.Status).
 		SetExpiresAt(bid.ExpiresAt).
 		Save(ctx)

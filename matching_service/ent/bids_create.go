@@ -217,6 +217,34 @@ func (_c *BidsCreate) SetDestinationLng(v float64) *BidsCreate {
 	return _c
 }
 
+// SetOfferedPrice sets the "offered_price" field.
+func (_c *BidsCreate) SetOfferedPrice(v float64) *BidsCreate {
+	_c.mutation.SetOfferedPrice(v)
+	return _c
+}
+
+// SetNillableOfferedPrice sets the "offered_price" field if the given value is not nil.
+func (_c *BidsCreate) SetNillableOfferedPrice(v *float64) *BidsCreate {
+	if v != nil {
+		_c.SetOfferedPrice(*v)
+	}
+	return _c
+}
+
+// SetOfferedAskID sets the "offered_ask_id" field.
+func (_c *BidsCreate) SetOfferedAskID(v uuid.UUID) *BidsCreate {
+	_c.mutation.SetOfferedAskID(v)
+	return _c
+}
+
+// SetNillableOfferedAskID sets the "offered_ask_id" field if the given value is not nil.
+func (_c *BidsCreate) SetNillableOfferedAskID(v *uuid.UUID) *BidsCreate {
+	if v != nil {
+		_c.SetOfferedAskID(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *BidsCreate) SetStatus(v int8) *BidsCreate {
 	_c.mutation.SetStatus(v)
@@ -554,6 +582,14 @@ func (_c *BidsCreate) createSpec() (*Bids, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DestinationLng(); ok {
 		_spec.SetField(bids.FieldDestinationLng, field.TypeFloat64, value)
 		_node.DestinationLng = value
+	}
+	if value, ok := _c.mutation.OfferedPrice(); ok {
+		_spec.SetField(bids.FieldOfferedPrice, field.TypeFloat64, value)
+		_node.OfferedPrice = value
+	}
+	if value, ok := _c.mutation.OfferedAskID(); ok {
+		_spec.SetField(bids.FieldOfferedAskID, field.TypeUUID, value)
+		_node.OfferedAskID = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(bids.FieldStatus, field.TypeInt8, value)

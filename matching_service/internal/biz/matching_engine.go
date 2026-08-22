@@ -6,6 +6,7 @@ import (
 	"log"
 	cerr "matching_service/internal/common/errors"
 	"matching_service/internal/entity"
+	"strconv"
 	"sync"
 	"time"
 
@@ -18,7 +19,7 @@ type MatchingEngine interface {
 	SubmitOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID, desiredPrice float64) error
 	// Do consumer NATS gọi khi lấy báo giá khỏi hàng đợi, không phải controller.
 	ProcessOfferQueue(ctx context.Context, bidID uuid.UUID, offerAsk *entity.Ask) error
-	AcceptOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID, shipperSignature string) (*entity.MatchContract, error)
+	AcceptOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID, consensusPrice float64, shipperSignature string) (*entity.MatchContract, error)
 	RejectOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID) error
 	MatchStream() <-chan *entity.MatchContract
 }
@@ -258,7 +259,11 @@ func (e *matchingEngineImpl) ProcessOfferQueue(ctx context.Context, bidID uuid.U
 		return nil
 	}
 
+	// Giá báo chỉ tồn tại trong bản tin này; không ghi lại thì lúc chốt không còn
+	// nguồn nào biết đã thoả thuận bao nhiêu.
 	bid.Status = entity.BidStatusNegotiating
+	bid.OfferedPrice = offerAsk.MinPrice
+	bid.OfferedAskID = offerAsk.ID
 	if err := e.repo.UpdateBid(ctx, bid); err != nil {
 		return err
 	}
@@ -292,6 +297,8 @@ func (e *matchingEngineImpl) RejectOffer(ctx context.Context, bidID uuid.UUID, a
 	}
 
 	bid.Status = entity.BidStatusPending
+	bid.OfferedPrice = 0
+	bid.OfferedAskID = uuid.Nil
 	if err := e.repo.UpdateBid(ctx, bid); err != nil {
 		return err
 	}
@@ -316,7 +323,7 @@ func (e *matchingEngineImpl) RejectOffer(ctx context.Context, bidID uuid.UUID, a
 	return nil
 }
 
-func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID, shipperSignature string) (*entity.MatchContract, error) {
+func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID, consensusPrice float64, shipperSignature string) (*entity.MatchContract, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -329,6 +336,19 @@ func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, a
 		return nil, cerr.ErrBidNotNegotiating.WithDetail("status", bid.StatusString())
 	}
 
+	// Không có bước này thì chủ hàng chốt được với một tài xế chưa từng báo giá,
+	// và chốt ở mức giá sàn của người đó.
+	if bid.OfferedAskID != askID {
+		return nil, cerr.ErrOfferAskMismatch.WithDetail("negotiating_ask_id", bid.OfferedAskID.String())
+	}
+
+	// Giá do server lưu là giá chuẩn; số client gửi lên chỉ để xác nhận.
+	if consensusPrice > 0 && consensusPrice != bid.OfferedPrice {
+		return nil, cerr.ErrPriceMismatch.
+			WithDetail("offered_price", strconv.FormatFloat(bid.OfferedPrice, 'f', -1, 64)).
+			WithDetail("consensus_price", strconv.FormatFloat(consensusPrice, 'f', -1, 64))
+	}
+
 	ask, err := e.repo.GetAsk(ctx, askID)
 	if err != nil {
 		return nil, err
@@ -338,8 +358,8 @@ func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, a
 		ID:               uuid.Must(uuid.NewV7()),
 		BidID:            bid.ID,
 		AskID:            ask.ID,
-		ConsensusPrice:   ask.MinPrice,
-		ConsensusDeposit: ask.MinPrice * 0.1,
+		ConsensusPrice:   bid.OfferedPrice,
+		ConsensusDeposit: bid.OfferedPrice * 0.1,
 		Status:           entity.MatchStatusAccepted,
 		AgreedAt:         time.Now(),
 		ShipperSignature: shipperSignature,

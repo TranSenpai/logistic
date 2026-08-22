@@ -79,7 +79,7 @@ func (c *matchingController) AcceptMatch(ctx context.Context, req *pb.AcceptMatc
 		return nil, cerr.ErrInvalidID.WithMessage("ask_id không hợp lệ").WithCause(err)
 	}
 
-	contract, err := c.matchingEngine.AcceptOffer(ctx, bidID, askID, req.ShipperSignature)
+	contract, err := c.matchingEngine.AcceptOffer(ctx, bidID, askID, req.ConsensusPrice, req.ShipperSignature)
 	if err != nil {
 		return nil, err
 	}
