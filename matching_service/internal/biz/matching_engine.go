@@ -7,6 +7,7 @@ import (
 	cerr "matching_service/internal/common/errors"
 	"matching_service/internal/entity"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -15,7 +16,9 @@ type MatchingEngine interface {
 	SubmitBid(ctx context.Context, bid *entity.Bid) (*entity.Bid, error)
 	SubmitAsk(ctx context.Context, ask *entity.Ask) (*entity.Ask, error)
 	SubmitOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID, desiredPrice float64) error
-	AcceptOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID) (*entity.MatchContract, error)
+	// Do consumer NATS gọi khi lấy báo giá khỏi hàng đợi, không phải controller.
+	ProcessOfferQueue(ctx context.Context, bidID uuid.UUID, offerAsk *entity.Ask) error
+	AcceptOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID, shipperSignature string) (*entity.MatchContract, error)
 	RejectOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID) error
 	MatchStream() <-chan *entity.MatchContract
 }
@@ -229,7 +232,7 @@ func (e *matchingEngineImpl) SubmitOffer(ctx context.Context, bidID uuid.UUID, a
 		Payload: *ask,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to publish offer: %w", err)
+		return cerr.ErrOfferQueueUnavailable.WithCause(err)
 	}
 
 	log.Printf("[OFFER SUBMITTED] Driver %s -> Bid %s. Price: %.2f", ask.DriverID, bidID, desiredPrice)
@@ -285,7 +288,7 @@ func (e *matchingEngineImpl) RejectOffer(ctx context.Context, bidID uuid.UUID, a
 	}
 
 	if bid.Status != entity.BidStatusNegotiating {
-		return fmt.Errorf("cannot reject: bid is not in negotiating status")
+		return cerr.ErrBidNotNegotiating.WithDetail("status", bid.StatusString())
 	}
 
 	bid.Status = entity.BidStatusPending
@@ -313,7 +316,7 @@ func (e *matchingEngineImpl) RejectOffer(ctx context.Context, bidID uuid.UUID, a
 	return nil
 }
 
-func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID) (*entity.MatchContract, error) {
+func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, askID uuid.UUID, shipperSignature string) (*entity.MatchContract, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -323,7 +326,7 @@ func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, a
 	}
 
 	if bid.Status != entity.BidStatusNegotiating {
-		return nil, fmt.Errorf("cannot accept: bid is not in negotiating status")
+		return nil, cerr.ErrBidNotNegotiating.WithDetail("status", bid.StatusString())
 	}
 
 	ask, err := e.repo.GetAsk(ctx, askID)
@@ -338,11 +341,16 @@ func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, a
 		ConsensusPrice:   ask.MinPrice,
 		ConsensusDeposit: ask.MinPrice * 0.1,
 		Status:           entity.MatchStatusAccepted,
+		AgreedAt:         time.Now(),
+		ShipperSignature: shipperSignature,
+		// Chưa có bước tài xế ký và ký số hệ thống; để rỗng thay vì bịa.
+		DriverSignature: "",
+		SystemSignature: "",
 	}
 
 	balance, err := e.walletClient.CheckBalance(ctx, bid.ShipperID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check shipper balance: %w", err)
+		return nil, cerr.ErrWalletUnavailable.WithCause(err)
 	}
 	if balance < contract.ConsensusDeposit {
 		return nil, fmt.Errorf("%w: shipper %s needs %.2f, has %.2f", cerr.ErrInsufficientBalance, bid.ShipperID, contract.ConsensusDeposit, balance)
@@ -358,6 +366,12 @@ func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, a
 		},
 	})
 
+	// Ghi hợp đồng trước rồi mới lật trạng thái: ngược lại thì lỗi ở bước này để
+	// đơn và chuyến MATCHED mà không có hợp đồng nào.
+	if err := e.repo.CreateMatchContract(ctx, contract); err != nil {
+		return nil, err
+	}
+
 	bid.Status = entity.BidStatusMatched
 	ask.Status = entity.AskStatusMatched
 
@@ -365,9 +379,6 @@ func (e *matchingEngineImpl) AcceptOffer(ctx context.Context, bidID uuid.UUID, a
 		return nil, err
 	}
 	if err := e.repo.UpdateAsk(ctx, ask); err != nil {
-		return nil, err
-	}
-	if err := e.repo.CreateMatchContract(ctx, contract); err != nil {
 		return nil, err
 	}
 

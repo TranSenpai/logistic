@@ -224,12 +224,19 @@ func (r *matchingRepoImpl) GetAsk(ctx context.Context, id uuid.UUID) (*entity.As
 }
 
 func (r *matchingRepoImpl) CreateMatchContract(ctx context.Context, contract *entity.MatchContract) error {
+	// Schema Match bắt buộc agreed_price, agreed_at và ba trường chữ ký, không cái
+	// nào có mặc định — thiếu một cái là ent trả ValidationError.
 	_, err := r.masterClient.Match.Create().
 		SetID(contract.ID).
 		SetBidID(contract.BidID).
 		SetAskID(contract.AskID).
+		SetAgreedPrice(contract.ConsensusPrice).
 		SetConsensusPrice(contract.ConsensusPrice).
 		SetConsensusDeposit(contract.ConsensusDeposit).
+		SetShipperSignature(contract.ShipperSignature).
+		SetDriverSignature(contract.DriverSignature).
+		SetSystemSignature(contract.SystemSignature).
+		SetAgreedAt(contract.AgreedAt).
 		SetStatus(int(contract.Status)).
 		Save(ctx)
 
