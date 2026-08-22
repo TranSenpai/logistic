@@ -18,9 +18,14 @@ việc, và **bỏ qua bất kỳ cửa nào cũng đẩy rủi ro sang chủ h�
 ## Bước 1 — Đăng ký tài khoản
 
 ```
-POST /api/v1/users/register
-{ "phone": "0901234567", "password": "...", "role": "driver", "full_name": "..." }
+POST /api/v1/auth/register
+{ "email": "...", "password": "...", "role": "driver", "full_name": "...", "phone": "0901234567" }
 ```
+
+`auth_service` cấp danh tính, rồi gateway gọi `user_service.RegisterUser` với
+**đúng id đó**. Cùng một id thì `sub` trong token và hồ sơ nghiệp vụ trỏ về một
+người; nếu hai bên tự sinh id riêng thì mọi `/api/v1/users/*` sau đó trả 404 hoặc
+403. `phone` khai muộn cũng được, bổ sung sau bằng `PUT /api/v1/users/{id}`.
 
 `user_service` tạo dòng trong `users` **và** một `driver_profiles` rỗng.
 

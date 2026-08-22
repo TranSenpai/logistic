@@ -50,6 +50,8 @@ definitions:
       password:
         minLength: 8
         type: string
+      phone:
+        type: string
       role:
         enum:
         - driver

@@ -321,6 +321,27 @@ và notification_service, nên cả bốn phải cùng một không gian định
 
 `pkg/authn` từ chối token có `sub` không phải UUID (`TestSubjectMustBeUUID`).
 
+Cùng không gian định danh **không tự nhiên mà có**: `POST /api/v1/auth/register`
+sau khi auth_service cấp id sẽ gọi tiếp `user_service.RegisterUser` với chính id
+đó (`ensureProfile` trong `gateway_service/internal/controller/auth_controller.go`).
+Hai service tự sinh id riêng thì token mang một id còn hồ sơ nằm dưới id khác, và
+mọi `/api/v1/users/*` trả 404 khi tra bằng id trong token, 403 khi tra bằng id kia.
+
+`ensureProfile` chạy cả ở bước đăng nhập để vá dần những tài khoản tạo trước khi
+có bước này; hồ sơ đã tồn tại thì user_service trả `ALREADY_EXISTS` và gateway bỏ
+qua. Không có RPC xoá tài khoản bên auth_service nên không thể bù trừ kiểu giao
+dịch phân tán — tự vá dần là cách khả thi mà không mất dữ liệu.
+
+### Tài khoản admin đầu tiên
+
+API đăng ký chỉ nhận `driver` và `shipper`, nên admin phải sinh từ biến môi
+trường: khai `AUTH_SERVICE_BOOTSTRAP_ADMIN_EMAIL` và
+`AUTH_SERVICE_BOOTSTRAP_ADMIN_PASSWORD`, auth_service tạo tài khoản lúc khởi động
+(idempotent, bỏ qua nếu email đã có, từ chối mật khẩu dưới 12 ký tự).
+
+Không có admin thì không ai duyệt được giấy tờ xe, và tài xế đăng ký xong sẽ mãi
+nhận `VEHICLE_NOT_VERIFIED` khi bật nhận đơn.
+
 ---
 
 ## Những gì được test tự động
