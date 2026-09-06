@@ -18,9 +18,14 @@ việc, và **bỏ qua bất kỳ cửa nào cũng đẩy rủi ro sang chủ h�
 ## Bước 1 — Đăng ký tài khoản
 
 ```
-POST /api/v1/users/register
-{ "phone": "0901234567", "password": "...", "role": "driver", "full_name": "..." }
+POST /api/v1/auth/register
+{ "email": "...", "password": "...", "role": "driver", "full_name": "...", "phone": "0901234567" }
 ```
+
+`auth_service` cấp danh tính, rồi gateway gọi `user_service.RegisterUser` với
+**đúng id đó**. Cùng một id thì `sub` trong token và hồ sơ nghiệp vụ trỏ về một
+người; nếu hai bên tự sinh id riêng thì mọi `/api/v1/users/*` sau đó trả 404 hoặc
+403. `phone` khai muộn cũng được, bổ sung sau bằng `PUT /api/v1/users/{id}`.
 
 `user_service` tạo dòng trong `users` **và** một `driver_profiles` rỗng.
 
@@ -102,13 +107,15 @@ POST /api/v1/drivers/{driver_id}/availability
   "current_lat": 10.7721, "current_lng": 106.6980 }
 ```
 
-Đây là **chốt chặn quan trọng nhất** của toàn bộ luồng matching. `biz` kiểm ba
-điều kiện trước khi cho lên online:
+Đây là **chốt chặn quan trọng nhất** của toàn bộ luồng matching. Kiểm đủ năm
+điều kiện trước khi cho lên online — KYC do gateway kiểm vì hồ sơ nằm ở
+user_service, bốn cái còn lại do vehicle_service tự kiểm:
 
 | Điều kiện | Lỗi trả về nếu sai |
 |---|---|
 | Xe thuộc về đúng tài xế này | `VEHICLE_NOT_OWNED` |
 | `verification_status = verified` | `VEHICLE_NOT_VERIFIED` |
+| `kyc_status = approved` | `KYC_NOT_APPROVED` |
 | `status ≠ maintenance` | `VEHICLE_IN_MAINTENANCE` |
 | Toạ độ hợp lệ (không phải 0,0 hay NaN) | `INVALID_COORDINATE` |
 

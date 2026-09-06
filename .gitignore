@@ -110,3 +110,11 @@ chuong_accessKeys.csv
 
 # Draw.io tự tạo file backup dạng ".$Ten.drawio.bkp" mỗi lần lưu
 .$*.drawio.bkp
+
+known-gaps.md
+CLAUDE.md
+adr
+
+# Sổ tay nội bộ: nhật ký refactor, playbook migrate, ghi chú cho các đợt update
+# lớn. Không vào git — đây là ghi chú cá nhân, không phải tài liệu của repo.
+docs/notes/

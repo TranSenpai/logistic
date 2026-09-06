@@ -79,7 +79,7 @@ func (c *matchingController) AcceptMatch(ctx context.Context, req *pb.AcceptMatc
 		return nil, cerr.ErrInvalidID.WithMessage("ask_id không hợp lệ").WithCause(err)
 	}
 
-	contract, err := c.matchingEngine.AcceptOffer(ctx, bidID, askID)
+	contract, err := c.matchingEngine.AcceptOffer(ctx, bidID, askID, req.ConsensusPrice, req.ShipperSignature)
 	if err != nil {
 		return nil, err
 	}
@@ -90,9 +90,9 @@ func (c *matchingController) AcceptMatch(ctx context.Context, req *pb.AcceptMatc
 		AskId:            contract.AskID[:],
 		ConsensusPrice:   contract.ConsensusPrice,
 		ConsensusDeposit: contract.ConsensusDeposit,
-		ShipperSignature: req.ShipperSignature,
-		AgreedAt:         timestamppb.Now(),
-		CreatedAt:        timestamppb.Now(),
+		ShipperSignature: contract.ShipperSignature,
+		AgreedAt:         timestamppb.New(contract.AgreedAt),
+		CreatedAt:        timestamppb.New(contract.AgreedAt),
 	}, nil
 }
 

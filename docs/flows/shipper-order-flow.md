@@ -47,7 +47,12 @@ POST /api/v1/matching/offers
 { "bid_id": "...", "ask_id": "...", "desired_price": 3200000 }
 ```
 
-`ProcessOfferQueue` chuyển `bid.status` từ `PENDING` sang `NEGOTIATING`.
+`SubmitOffer` không đổi trạng thái ngay: nó đẩy báo giá lên NATS JetStream ở
+subject `matching.offers.{bid_id}`. Consumer đọc ra rồi gọi `ProcessOfferQueue`,
+và chính bước đó chuyển `bid.status` từ `PENDING` sang `NEGOTIATING`.
+
+Đi vòng qua hàng đợi để nhiều báo giá cho cùng một đơn được xử lý tuần tự — ai
+vào trước thắng.
 
 Đây là **khoá mềm**: tài xế thứ hai ra giá cho cùng đơn sẽ nhận
 `matching.drivers.rejected` ngay lập tức ("đơn đang được thương lượng") thay vì
@@ -79,12 +84,19 @@ POST /api/v1/matching/matches/accept
 `AcceptOffer` chạy dưới khoá `mu`, theo trình tự:
 
 1. Kiểm `bid.status = NEGOTIATING` — không thì từ chối (`BID_NOT_NEGOTIATING`).
-2. Dựng `MatchContract`, tiền cọc = 10% giá chốt.
-3. **`CheckBalance`** sang wallet_service.
-4. Không đủ tiền → dừng, trả `INSUFFICIENT_BALANCE`.
-5. Đủ tiền → phát Kafka `wallet.hold_deposit` để đóng băng cọc (bất đồng bộ).
-6. Cập nhật `bid.status = MATCHED`, `ask.status = MATCHED`, ghi `matches`.
-7. Phát `matching.match.found` qua RabbitMQ.
+2. Kiểm `ask_id` đúng là chuyến đã báo giá (`OFFER_ASK_MISMATCH`). Thiếu bước này
+   thì chủ hàng chốt được với tài xế chưa từng ra giá.
+3. Đối chiếu `consensus_price` client gửi với giá đã lưu (`PRICE_MISMATCH`). Giá
+   chuẩn là giá server ghi lại lúc vào thương lượng, số client gửi chỉ để xác
+   nhận — không bao giờ lấy làm giá chốt.
+4. Dựng `MatchContract`, tiền cọc = 10% giá chốt.
+5. **`CheckBalance`** sang wallet_service.
+6. Không đủ tiền → dừng, trả `INSUFFICIENT_BALANCE`.
+7. Đủ tiền → phát Kafka `wallet.hold_deposit` để đóng băng cọc (bất đồng bộ).
+8. Ghi `matches` **trước**, rồi mới đặt `bid.status = MATCHED` và
+   `ask.status = MATCHED`. Ngược thứ tự thì một lỗi lúc ghi hợp đồng sẽ để cả đơn
+   lẫn chuyến ở trạng thái đã ghép mà không có hợp đồng nào.
+9. Phát `matching.match.found` qua RabbitMQ.
 
 **Vì sao kiểm tra số dư trước rồi mới phát Kafka?** Phát một khoản `HoldDeposit`
 chắc chắn sẽ bị từ chối vì thiếu tiền chỉ tạo rác trong topic và một giao dịch lỗi
@@ -109,8 +121,8 @@ vai trò là dấu hiệu code chỉ nhân bản một bản ghi.
 | Tình huống | Hệ thống xử lý |
 |---|---|
 | Hai tài xế ra giá cùng lúc | Khoá `mu` + kiểm `status`, người sau nhận "đã có người thương lượng" |
-| Chủ hàng không đủ tiền cọc | Dừng ở bước 4, `bid` vẫn ở `NEGOTIATING` |
-| wallet_service chưa dựng | `CheckBalance` lỗi, matching ghi log và không chốt được — **hiện tại đúng là tình trạng này** |
+| Chủ hàng không đủ tiền cọc | Dừng ở bước 6, `bid` vẫn ở `NEGOTIATING` |
+| wallet_service chưa dựng | matching thăm dò kết nối lúc khởi động, không nối được thì dùng ví giả lập (mọi lần kiểm số dư đều đạt) và ghi log cảnh báo — **hiện tại đúng là tình trạng này** |
 | RabbitMQ chết | `NoopNotifier`, đơn vẫn chốt được, chỉ mất thông báo |
 | Kafka chết | `HoldDeposit` không tới wallet; hợp đồng đã ghi nhưng cọc chưa đóng băng — **điểm yếu đã biết, cần outbox pattern** |
 

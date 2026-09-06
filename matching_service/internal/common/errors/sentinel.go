@@ -15,6 +15,12 @@ var (
 
 	ErrBidNotPending     = apperr.FailedPrecondition("BID_NOT_PENDING", "đơn hàng không còn ở trạng thái chờ")
 	ErrBidNotNegotiating = apperr.FailedPrecondition("BID_NOT_NEGOTIATING", "đơn hàng không ở trạng thái đang thương lượng")
+	ErrOfferAskMismatch  = apperr.FailedPrecondition("OFFER_ASK_MISMATCH", "chuyến này không phải chuyến đang thương lượng với đơn hàng")
+	ErrPriceMismatch     = apperr.Conflict("PRICE_MISMATCH", "giá xác nhận lệch với giá tài xế đã báo")
+
+	// Sự cố tạm thời, người gọi thử lại được — khác lỗi hệ thống.
+	ErrOfferQueueUnavailable = apperr.Unavailable("OFFER_QUEUE_UNAVAILABLE", "hàng đợi báo giá tạm thời không nhận, thử lại sau")
+	ErrWalletUnavailable     = apperr.Unavailable("WALLET_UNAVAILABLE", "chưa kiểm tra được số dư ví, thử lại sau")
 
 	ErrInternalServer = apperr.Internal("INTERNAL_SERVER_ERROR", "lỗi hệ thống")
 )

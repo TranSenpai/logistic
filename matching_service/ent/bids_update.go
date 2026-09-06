@@ -413,6 +413,53 @@ func (_u *BidsUpdate) AddDestinationLng(v float64) *BidsUpdate {
 	return _u
 }
 
+// SetOfferedPrice sets the "offered_price" field.
+func (_u *BidsUpdate) SetOfferedPrice(v float64) *BidsUpdate {
+	_u.mutation.ResetOfferedPrice()
+	_u.mutation.SetOfferedPrice(v)
+	return _u
+}
+
+// SetNillableOfferedPrice sets the "offered_price" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableOfferedPrice(v *float64) *BidsUpdate {
+	if v != nil {
+		_u.SetOfferedPrice(*v)
+	}
+	return _u
+}
+
+// AddOfferedPrice adds value to the "offered_price" field.
+func (_u *BidsUpdate) AddOfferedPrice(v float64) *BidsUpdate {
+	_u.mutation.AddOfferedPrice(v)
+	return _u
+}
+
+// ClearOfferedPrice clears the value of the "offered_price" field.
+func (_u *BidsUpdate) ClearOfferedPrice() *BidsUpdate {
+	_u.mutation.ClearOfferedPrice()
+	return _u
+}
+
+// SetOfferedAskID sets the "offered_ask_id" field.
+func (_u *BidsUpdate) SetOfferedAskID(v uuid.UUID) *BidsUpdate {
+	_u.mutation.SetOfferedAskID(v)
+	return _u
+}
+
+// SetNillableOfferedAskID sets the "offered_ask_id" field if the given value is not nil.
+func (_u *BidsUpdate) SetNillableOfferedAskID(v *uuid.UUID) *BidsUpdate {
+	if v != nil {
+		_u.SetOfferedAskID(*v)
+	}
+	return _u
+}
+
+// ClearOfferedAskID clears the value of the "offered_ask_id" field.
+func (_u *BidsUpdate) ClearOfferedAskID() *BidsUpdate {
+	_u.mutation.ClearOfferedAskID()
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *BidsUpdate) SetStatus(v int8) *BidsUpdate {
 	_u.mutation.ResetStatus()
@@ -683,6 +730,21 @@ func (_u *BidsUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedDestinationLng(); ok {
 		_spec.AddField(bids.FieldDestinationLng, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.OfferedPrice(); ok {
+		_spec.SetField(bids.FieldOfferedPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedOfferedPrice(); ok {
+		_spec.AddField(bids.FieldOfferedPrice, field.TypeFloat64, value)
+	}
+	if _u.mutation.OfferedPriceCleared() {
+		_spec.ClearField(bids.FieldOfferedPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.OfferedAskID(); ok {
+		_spec.SetField(bids.FieldOfferedAskID, field.TypeUUID, value)
+	}
+	if _u.mutation.OfferedAskIDCleared() {
+		_spec.ClearField(bids.FieldOfferedAskID, field.TypeUUID)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(bids.FieldStatus, field.TypeInt8, value)
@@ -1188,6 +1250,53 @@ func (_u *BidsUpdateOne) AddDestinationLng(v float64) *BidsUpdateOne {
 	return _u
 }
 
+// SetOfferedPrice sets the "offered_price" field.
+func (_u *BidsUpdateOne) SetOfferedPrice(v float64) *BidsUpdateOne {
+	_u.mutation.ResetOfferedPrice()
+	_u.mutation.SetOfferedPrice(v)
+	return _u
+}
+
+// SetNillableOfferedPrice sets the "offered_price" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableOfferedPrice(v *float64) *BidsUpdateOne {
+	if v != nil {
+		_u.SetOfferedPrice(*v)
+	}
+	return _u
+}
+
+// AddOfferedPrice adds value to the "offered_price" field.
+func (_u *BidsUpdateOne) AddOfferedPrice(v float64) *BidsUpdateOne {
+	_u.mutation.AddOfferedPrice(v)
+	return _u
+}
+
+// ClearOfferedPrice clears the value of the "offered_price" field.
+func (_u *BidsUpdateOne) ClearOfferedPrice() *BidsUpdateOne {
+	_u.mutation.ClearOfferedPrice()
+	return _u
+}
+
+// SetOfferedAskID sets the "offered_ask_id" field.
+func (_u *BidsUpdateOne) SetOfferedAskID(v uuid.UUID) *BidsUpdateOne {
+	_u.mutation.SetOfferedAskID(v)
+	return _u
+}
+
+// SetNillableOfferedAskID sets the "offered_ask_id" field if the given value is not nil.
+func (_u *BidsUpdateOne) SetNillableOfferedAskID(v *uuid.UUID) *BidsUpdateOne {
+	if v != nil {
+		_u.SetOfferedAskID(*v)
+	}
+	return _u
+}
+
+// ClearOfferedAskID clears the value of the "offered_ask_id" field.
+func (_u *BidsUpdateOne) ClearOfferedAskID() *BidsUpdateOne {
+	_u.mutation.ClearOfferedAskID()
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *BidsUpdateOne) SetStatus(v int8) *BidsUpdateOne {
 	_u.mutation.ResetStatus()
@@ -1488,6 +1597,21 @@ func (_u *BidsUpdateOne) sqlSave(ctx context.Context) (_node *Bids, err error) {
 	}
 	if value, ok := _u.mutation.AddedDestinationLng(); ok {
 		_spec.AddField(bids.FieldDestinationLng, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.OfferedPrice(); ok {
+		_spec.SetField(bids.FieldOfferedPrice, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedOfferedPrice(); ok {
+		_spec.AddField(bids.FieldOfferedPrice, field.TypeFloat64, value)
+	}
+	if _u.mutation.OfferedPriceCleared() {
+		_spec.ClearField(bids.FieldOfferedPrice, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.OfferedAskID(); ok {
+		_spec.SetField(bids.FieldOfferedAskID, field.TypeUUID, value)
+	}
+	if _u.mutation.OfferedAskIDCleared() {
+		_spec.ClearField(bids.FieldOfferedAskID, field.TypeUUID)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(bids.FieldStatus, field.TypeInt8, value)

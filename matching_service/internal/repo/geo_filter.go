@@ -6,7 +6,9 @@ import (
 
 const (
 	earthRadiusKm = 6371
-	matchRadiusKm = 5.0
+	// Lọc thô ở tầng SQL: đủ rộng để giữ lại ứng viên nằm dọc tuyến.
+	// Việc loại tinh do bộ chấm điểm ở tầng biz đảm nhiệm.
+	coarseFilterRadiusKm = 150.0
 )
 
 func withinRadiusKm(latColumn, lngColumn string, lat, lng, radiusKm float64) func(*sql.Selector) {

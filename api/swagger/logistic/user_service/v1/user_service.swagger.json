@@ -1322,6 +1322,11 @@
         },
         "fullName": {
           "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "format": "byte",
+          "description": "id là danh tính auth_service đã cấp, do gateway gắn vào sau khi đăng ký\nthành công. Có id nghĩa là \"danh tính đã có rồi, chỉ dựng hồ sơ nghiệp vụ\":\nuser_service dùng đúng id đó thay vì tự sinh, và KHÔNG lưu mật khẩu —\nauth_service mới là nơi giữ thông tin đăng nhập.\n\nBỏ trống là luồng đăng ký độc lập cũ: user_service tự sinh id. Luồng đó tạo\nra một danh tính thứ hai không khớp với subject trong token, nên mọi\n/api/v1/users/* sau đó đều trả 404 hoặc 403."
         }
       }
     },

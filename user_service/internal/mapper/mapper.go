@@ -67,6 +67,7 @@ type AppMapper interface {
 
 	EntityPaginationToPb(source entity.Pagination) *pb.Pagination
 
+	// goverter:ignore ID
 	PbRegisterUserToParam(req *pb.RegisterUserRequest) entity.RegisterUserParam
 
 	PbUpdateUserToParam(req *pb.UpdateUserRequest) (entity.UpdateUserParam, error)

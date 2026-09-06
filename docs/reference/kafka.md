@@ -106,7 +106,7 @@ Rất nhiều người mới học lầm tưởng "Partition 1 là bản copy c�
 ### 1.6 Kỷ nguyên KRaft (Kafka Raft) & Vai trò cốt lõi của Controller
 Nếu bạn học Kafka qua các tài liệu cũ (trước 2022), bạn sẽ quen với việc Kafka luôn phải đi kèm với một hệ thống quản lý phân tán tên là **Zookeeper**. Zookeeper đóng vai trò là "bộ não", chịu trách nhiệm quản lý toàn bộ Metadata, bầu chọn Leader và theo dõi vòng đời của các Broker. Tuy nhiên, việc phải duy trì hai hệ thống độc lập (Kafka và Zookeeper) tạo ra nút thắt cổ chai về hiệu suất và gia tăng độ phức tạp trong khâu vận hành.
 
-Từ phiên bản Kafka 3.3 trở đi, kiến trúc **KRaft (Kafka Raft)** chính thức ra đời để **khai tử Zookeeper**. Bộ脑 quản lý giờ đây được nhúng trực tiếp vào bên trong nội tại của các Node Kafka.
+Từ phiên bản Kafka 3.3 trở đi, kiến trúc **KRaft (Kafka Raft)** chính thức ra đời để **khai tử Zookeeper**. Bộ não quản lý giờ đây được nhúng trực tiếp vào bên trong nội tại của các Node Kafka.
 
 **A. Vai trò thực sự của Controller**
 - **Khái niệm:** Trong cụm Kafka, Controller là một Node đặc biệt được giao trọng trách quản lý trạng thái toàn cục (Global Metadata) của cả hệ thống.
@@ -118,7 +118,7 @@ Từ phiên bản Kafka 3.3 trở đi, kiến trúc **KRaft (Kafka Raft)** chín
 **B. Cơ chế hoạt động kép (Dual-Role: Broker & Controller)**
 Khi một Node được cấu hình `KAFKA_PROCESS_ROLES=broker,controller`, nó sẽ thực thi đồng thời hai vai trò hoàn toàn độc lập trên cùng một tiến trình bộ nhớ (JVM Process):
 - **Luồng Broker (Data Plane):** Chịu trách nhiệm xử lý trực tiếp lưu lượng đọc/ghi (Produce/Consume) các tin nhắn thực tế từ Client. Dữ liệu này được tuần tự hóa và ghi xuống đĩa thông qua các thư mục log tiêu chuẩn.
-- **Luồng Controller (Control Plane):** Vận hành một cỗ máy trạng thái (State Machine) độc lập để quản lý Metadata. Toàn bộ các sự kiện thay đổi cấu trúc (ví dụ: "Broker 2 vừa mất kết nối") đều được Controller tuần tự hóa và ghi vào một Topic nội bộ cực kỳ đặc biệt mang tên `@metadata`.
+- **Luồng Controller (Control Plane):** Vận hành một cỗ máy trạng thái (State Machine) độc lập để quản lý Metadata. Toàn bộ các sự kiện thay đổi cấu trúc (ví dụ: "Broker 2 vừa mất kết nối") đều được Controller tuần tự hóa và ghi vào một Topic nội bộ cực kỳ đặc biệt mang tên `__cluster_metadata` (log này chỉ có **đúng 1 partition** — xem 1.7).
 
 **C. Thuật toán Đồng thuận Raft & Bài toán Bầu cử (Leader Election)**
 - **Khái niệm:** Raft là một thuật toán đồng thuận (Consensus Algorithm) được thiết kế để giải quyết bài toán cốt lõi của hệ thống phân tán: Làm thế nào để một nhóm các máy chủ độc lập có thể đạt được sự nhất trí tuyệt đối về một trạng thái duy nhất, ngay cả khi hệ thống mạng có thể bị lỗi.
@@ -127,9 +127,9 @@ Khi một Node được cấu hình `KAFKA_PROCESS_ROLES=broker,controller`, nó
 **D. Phân tích thực tế: Vòng đời Bầu cử trong Cụm 3 Nodes**
 
 **Bước 1: Trạng thái Vận hành Ổn định (Normal State)**
-- Hệ thống gồm 3 Node: `kafka-1`, `kafka-2`, `kafka-3`. Kích thước Quorum là 3. Để thông qua bất kỳ quyết định nào, hệ thống cần đạt được đa số tối thiểu là 2 phiếu (Q = N/2 + 1).
+- Hệ thống gồm 3 Node: `kafka-1`, `kafka-2`, `kafka-3`. Kích thước Quorum là 3. Để thông qua bất kỳ quyết định nào, hệ thống cần đạt được đa số tối thiểu là 2 phiếu (**Q = ⌊N/2⌋ + 1**, tức chia lấy phần nguyên rồi cộng 1 — với N=3 ra 2, với N=5 ra 3).
 - Giả định qua quá trình khởi tạo, `kafka-1` đắc cử làm **Active Controller (Kỷ nguyên - Epoch 1)**.
-- **Phân vai:** `kafka-1` trực tiếp ghi nhận các thay đổi vào Topic `@metadata`. Trong khi đó, `kafka-2` và `kafka-3` đóng vai trò là Standby Controllers. Chức năng duy nhất của chúng lúc này là liên tục "kéo" (fetch) dữ liệu từ Topic `@metadata` của `kafka-1` để sao chép y hệt trạng thái hệ thống, đồng thời định kỳ gửi tín hiệu nhịp tim (Heartbeat) báo cáo sự tồn tại.
+- **Phân vai:** `kafka-1` trực tiếp ghi nhận các thay đổi vào Topic `__cluster_metadata`. Trong khi đó, `kafka-2` và `kafka-3` đóng vai trò là Standby Controllers. Chức năng duy nhất của chúng lúc này là liên tục "kéo" (fetch) dữ liệu từ Topic `__cluster_metadata` của `kafka-1` để sao chép y hệt trạng thái hệ thống, đồng thời định kỳ gửi tín hiệu nhịp tim (Heartbeat) báo cáo sự tồn tại.
 
 **Bước 2: Sự cố Controller (Active Controller Crash)**
 - Biến cố xảy ra: `kafka-1` đột ngột mất điện hoặc bị lỗi tiến trình (Kernel Panic), dẫn đến mất kết nối hoàn toàn.
@@ -157,7 +157,7 @@ Khi một Node được cấu hình `KAFKA_PROCESS_ROLES=broker,controller`, nó
    - *Ý nghĩa:* Cho phép Node này "chơi 2 vai". Vừa làm Broker (chứa data thực tế của Topic), vừa làm Controller (Nằm trong hội đồng bầu cử quản lý Cluster). Nếu cụm rất lớn, người ta có thể tách riêng Node chỉ làm `broker`, Node chỉ làm `controller`.
 2. **`KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093`**
    - *Ý nghĩa:* Khai báo danh sách "Thành viên Hội đồng Bầu cử". Các Node dùng Port 9093 để giao tiếp, bỏ phiếu Raft và sao chép Metadata.
-   - *Tại sao chỉ có 1 Active mà phải cấu hình cả 3?* Trong cơ chế Raft, một cuộc bầu cử chỉ hợp lệ khi đạt đủ số phiếu quá bán (Quorum = N/2 + 1). Bắt buộc mọi Node phải biết **ngay từ lúc khởi động** danh sách chính xác của toàn bộ thành viên hội đồng. Nếu không khai báo trước cả 3, khi một Node mất tín hiệu Leader, nó sẽ không biết phải gửi yêu cầu xin phiếu (RequestVote) cho ai, và cũng không biết làm thế nào để đo lường mức độ quá bán. Đây chính là "Bản hiến pháp" quy định cấu trúc quyền lực của cụm.
+   - *Tại sao chỉ có 1 Active mà phải cấu hình cả 3?* Trong cơ chế Raft, một cuộc bầu cử chỉ hợp lệ khi đạt đủ số phiếu quá bán (Quorum = ⌊N/2⌋ + 1). Bắt buộc mọi Node phải biết **ngay từ lúc khởi động** danh sách chính xác của toàn bộ thành viên hội đồng. Nếu không khai báo trước cả 3, khi một Node mất tín hiệu Leader, nó sẽ không biết phải gửi yêu cầu xin phiếu (RequestVote) cho ai, và cũng không biết làm thế nào để đo lường mức độ quá bán. Đây chính là "Bản hiến pháp" quy định cấu trúc quyền lực của cụm.
 3. **Mạng lưới Listeners & Bảo mật (Cực kỳ quan trọng):**
    - `KAFKA_LISTENERS`: Xác định các Port mà Kafka sẽ MỞ ra để lắng nghe. (Ví dụ: Mở port 9093 cho Hội đồng Controller nói chuyện, mở port 29092 cho các Broker chép data nội bộ, mở port 9092 cho App bên ngoài gọi vào).
    - `KAFKA_ADVERTISED_LISTENERS`: Là địa chỉ (Hostname/IP) mà Kafka sẽ "hét lên" cho Client biết để kết nối. (Ví dụ: "Ê App ơi, muốn kết nối tao thì gọi địa chỉ `localhost:9092` nhé").
@@ -171,6 +171,165 @@ Khi một Node được cấu hình `KAFKA_PROCESS_ROLES=broker,controller`, nó
    - *Vấn đề:* Khi bạn khởi động một Group mới (ví dụ App của bạn scale ra 3 Pods Consumer), các Pod sẽ không khởi động xong cùng một mili-giây mà sẽ kết nối vào Kafka rải rác từng thằng một. Nếu Kafka không đợi, ngay khi Pod 1 kết nối, nó chia toàn bộ Partition cho Pod 1. Vài mili-giây sau Pod 2 kết nối, nó lại ngắt Pod 1 kích hoạt Rebalance thu hồi lại để chia đôi. Pod 3 kết nối, lại Rebalance lần 3. Quá trình khởi động sẽ tạo ra một cơn bão Rebalance (Rebalance Storm) vô nghĩa, cực kỳ tốn CPU và gián đoạn hệ thống.
    - *Giải pháp:* Tham số này (trong Production thường cấu hình 3000ms = 3 giây) chỉ thị cho Coordinator: "Khoan đã, hãy đợi 3 giây kể từ khi thằng Consumer đầu tiên xuất hiện để xem còn thằng nào vào Group nữa không, gom đủ mặt rồi chia Partition một lần duy nhất cho tối ưu".
    - *Lưu ý:* Việc cấu hình giá trị này về `0` (như trong snippet mẫu của Apache) mang ý nghĩa "Đừng đợi, có thằng nào chia luôn thằng đó". Cấu hình này **CHỈ NÊN DÙNG** trong môi trường Local Dev để giảm độ trễ khi test App trên máy tính cá nhân. Lên Production mà để bằng `0` là tự hủy!
+   - *Nói thêm:* `3000ms` chính là **giá trị mặc định của Kafka**, nên khai lại nó trong compose là vô hại nhưng cũng không thay đổi gì. Và nó **chỉ áp dụng cho lần rebalance đầu tiên khi Group đang trống**, không phải mọi lần rebalance. Cách xử lý rebalance storm ở tầng cao hơn là dùng **incremental cooperative rebalancing** (`CooperativeStickyAssignor`) — xem 3.3.
+
+---
+
+### 1.7 Mô hình tách riêng Controller và Broker (Dedicated Mode)
+
+Mục 1.6 mô tả cơ chế Raft khi Node "chơi 2 vai". Mục này nói về mô hình **tách hẳn**: một nhóm Node chỉ làm Controller, một nhóm khác chỉ làm Broker — đúng cấu hình mà repo này đang chạy trong `docker-compose.yml`.
+
+#### A. Ba chế độ triển khai
+
+| `process.roles` | Tên gọi | Dùng khi nào |
+|---|---|---|
+| `broker,controller` | **Combined mode** | Local dev, CI, cụm nhỏ. Tài liệu Apache **không khuyến nghị cho production**. |
+| `controller` / `broker` (hai nhóm Node riêng) | **Dedicated mode** (isolated) | Production. Đây là cấu hình của repo này. |
+| *(không khai)* | Chế độ ZooKeeper cũ | Đã bị gỡ khỏi Kafka 4.x. |
+
+#### B. Ranh giới thật sự: Control Plane và Data Plane
+
+Đây là khái niệm cần nắm trước, vì nó không chỉ đúng với Kafka mà đúng với gần như mọi hệ phân tán (Kubernetes, Envoy, VPC của AWS đều chia y hệt).
+
+- **Data plane** — nơi *dữ liệu người dùng* chảy qua. Với Kafka là **Broker**: nhận `Produce`, phục vụ `Fetch`, ghi segment xuống đĩa, giữ page cache, chạy replication giữa leader và follower.
+- **Control plane** — nơi *quyết định về hệ thống* được đưa ra và lưu lại. Với Kafka là **Controller**: ai còn sống, partition nào của topic nào nằm ở broker nào, ai là leader, ISR gồm những ai.
+
+Hai mặt phẳng này có **đặc tính tải hoàn toàn khác nhau**. Data plane là throughput cao, I/O nặng, heap lớn, GC thường xuyên. Control plane là lưu lượng nhỏ nhưng đòi hỏi **độ trễ thấp và tính nhất quán tuyệt đối**. Nhét chung một tiến trình nghĩa là để hai loại tải đối nghịch tranh nhau cùng một CPU, cùng một heap, cùng một đĩa.
+
+#### C. Broker là **observer**, không phải **voter**
+
+Đây là điểm hay bị hiểu sai nhất, và cũng là câu hỏi phỏng vấn phân loại người dùng Kafka với người hiểu Kafka.
+
+Trong dedicated mode:
+
+- **Chỉ Controller mới bỏ phiếu.** Quorum Raft chỉ gồm các Node có `process.roles=controller`. Broker **không** nằm trong cuộc bầu cử, **không** được tính vào công thức quá bán.
+- **Broker vẫn phải khai `controller.quorum.voters`** — không phải để bỏ phiếu, mà để **biết đi đâu mà kéo metadata về**. Broker mở kết nối tới active controller và **fetch** log `__cluster_metadata` y hệt cách một consumer fetch một topic thường: có offset, có vị trí đang đọc, đọc tới đâu replay vào bộ nhớ tới đó.
+- Vai trò đó trong thuật ngữ Raft gọi là **observer** (hay learner): sao chép log, không có quyền biểu quyết.
+
+**Vì sao mô hình kéo (pull) này quan trọng:** thời ZooKeeper, controller **đẩy** metadata xuống broker bằng RPC. Broker không biết mình đang thiếu bản cập nhật nào, và controller mới lên phải nạp lại toàn bộ trạng thái rồi phát lại cho mọi broker — thời gian tỉ lệ thuận với số partition. Với KRaft, mỗi broker **biết chính xác mình đang ở metadata offset bao nhiêu**, nên chuyển giao controller chỉ là "đổi địa chỉ fetch", không có bước nạp lại. Đây là lý do gốc rễ KRaft nâng được trần scale lên hàng triệu partition.
+
+#### D. Node ID là **một không gian tên duy nhất cho cả cụm**
+
+`node.id` phải **duy nhất trên toàn bộ cụm**, tính gộp cả Controller lẫn Broker. Không có chuyện "controller đánh số riêng, broker đánh số riêng".
+
+Quy ước dễ nhớ khi tách vai: dành dải thấp cho controller, dải cao cho broker.
+
+```
+controller-1 = 1, controller-2 = 2, controller-3 = 3
+broker-1     = 4, broker-2     = 5, broker-3     = 6
+broker-4     = 7, broker-5     = 8      <-- không được lặp lại 6
+```
+
+Trùng `node.id` là lỗi copy-paste phổ biến nhất khi nhân bản block broker trong compose. Triệu chứng: Node lên sau bị controller từ chối đăng ký, hoặc tệ hơn là "cướp" phiên đăng ký của Node trùng id khiến metadata dao động. Kiểm tra bằng:
+
+```bash
+podman exec broker-1 /opt/kafka/bin/kafka-metadata-quorum.sh --bootstrap-server broker-1:19092 describe --status
+```
+
+#### E. Năm lý do để tách
+
+1. **Cách ly tài nguyên.** Một pha GC dài hoặc đĩa đầy trên broker không được phép làm rung quorum metadata. Khi cụm gặp sự cố cũng chính là lúc control plane cần khoẻ nhất — để chung là đảm bảo nó yếu nhất đúng lúc đó.
+2. **Vòng đời khác nhau.** Broker restart rất thường xuyên (rolling upgrade, đổi config, thay đĩa). Mỗi lần restart broker mà kéo theo bầu lại leader quorum là chi phí vô nghĩa.
+3. **Bề mặt bảo mật hẹp hơn.** Controller listener chỉ mở cho controller nói với nhau và broker fetch. Client ứng dụng không bao giờ chạm tới. Tách vai cho phép đặt chính sách mạng và chứng chỉ khác nhau cho hai mặt phẳng.
+4. **Scale độc lập.** Cần thêm dung lượng lưu trữ hay throughput thì thêm **broker**. Thêm **voter** không giúp gì về dung lượng mà còn làm mọi thao tác metadata chậm đi (mục F).
+5. **Vận hành rõ ràng.** Nhìn `process.roles` là biết Node đó hỏng sẽ mất gì. Combined mode làm mờ ranh giới trách nhiệm khi đi truy sự cố.
+
+#### F. Sizing quorum: vì sao là 3, và vì sao số chẵn là vô nghĩa
+
+Quorum chịu lỗi theo công thức `⌊(N−1)/2⌋`:
+
+| N voter | Cần bao nhiêu phiếu để commit | Chịu được mất | Nhận xét |
+|---|---|---|---|
+| 1 | 1 | 0 | Mất controller là cụm đóng băng metadata |
+| **3** | 2 | **1** | **Mặc định đúng cho gần như mọi cụm** |
+| 4 | 3 | 1 | Chịu lỗi *bằng* N=3 nhưng **commit chậm hơn** → luôn tệ hơn |
+| 5 | 3 | 2 | Chỉ đáng khi thật sự cần sống sót qua 2 lỗi đồng thời |
+| 7 | 4 | 3 | Hiếm; độ trễ metadata bắt đầu thành vấn đề |
+
+**Vì sao bắt buộc quá bán?** Để chặn **split-brain**. Nếu chỉ cần một nửa (2/4), một sự cố mạng chia cụm thành hai nhóm 2 Node sẽ cho phép **cả hai nhóm** cùng bầu ra controller của riêng mình, và hai controller cùng ghi metadata mâu thuẫn. Yêu cầu **quá bán** khiến hai nhóm không thể cùng đạt chuẩn — về mặt toán học, hai tập con quá bán của cùng một tập luôn có phần giao. Nhóm thiểu số tự động đứng im.
+
+**Vì sao số chẵn tệ hơn?** N=4 vẫn chỉ chịu được 1 lỗi (mất 2 là còn 2, không quá bán), y hệt N=3. Nhưng mỗi lần ghi metadata phải chờ **3** Node ghi xong đĩa thay vì 2 — chậm hơn mà không đổi lấy được gì. Quy tắc này đúng cho mọi hệ Raft/Paxos: ZooKeeper, etcd, Consul, MongoDB replica set đều thế.
+
+**Vì sao không lên 5 cho chắc?** Vì mỗi voter thêm vào làm **mọi thao tác metadata chậm hơn**: commit phải chờ nhiều bản ghi đĩa hơn, và bầu cử phải thu thập nhiều phiếu hơn. 5 controller chỉ đáng khi cụm trải trên nhiều Availability Zone hoặc nhiều Data Center và bạn thật sự cần chịu 2 lỗi đồng thời.
+
+#### G. Mất quorum thì cụm chết tới đâu?
+
+Câu hỏi phỏng vấn hay, và câu trả lời phản trực giác: **cụm không chết ngay**.
+
+Giả sử cụm 3 controller mà mất 2 (còn 1, không đạt quá bán):
+
+| Việc | Còn chạy? |
+|---|---|
+| Produce/Consume trên partition **đang có leader sống** | **Còn** — broker phục vụ bằng metadata đã fetch được trước đó |
+| Bầu leader mới khi một broker chết | **Không** |
+| Tạo / xoá topic, đổi config động | **Không** |
+| Cập nhật ISR (co hoặc giãn) | **Không** |
+| Broker mới đăng ký vào cụm | **Không** |
+
+Và đây là hệ quả dây chuyền tinh tế: leader muốn **co ISR** (loại một follower đã tụt lại) thì phải gửi `AlterPartition` lên controller. Controller không phản hồi được → ISR không co được → với `acks=all`, producer phải chờ một replica đã chết → **ghi bị treo rồi timeout, và không tự hồi phục** cho tới khi quorum trở lại.
+
+Nên phát biểu chuẩn là: mất quorum thì cụm **đóng băng khả năng thay đổi**, chứ không mất dữ liệu và không dừng phục vụ ngay. Nhưng nó sẽ **thoái hoá dần** theo từng sự cố nhỏ tiếp theo.
+
+#### H. Controller **có** state — đừng nói nó stateless
+
+Controller ghi Raft log metadata xuống đĩa (`log.dirs` của Node controller, trong repo này là volume `controller-N-data`). Mất sạch đĩa của **quá bán** controller là mất metadata của cả cụm: topic nào tồn tại, partition nằm ở đâu, ai là leader. Broker vẫn còn nguyên file dữ liệu nhưng **không ai biết chúng là gì**.
+
+Vì vậy volume của controller **cũng cần backup**, dù dung lượng chỉ vài chục MB. Nói "controller là stateless nên không cần lo" là sai, và người phỏng vấn sẽ bắt ngay.
+
+#### I. Config nào thuộc vai nào
+
+| Config | Vai đọc nó | Vì sao |
+|---|---|---|
+| `process.roles` | cả hai | Khai vai của chính Node đó |
+| `node.id` | cả hai | Duy nhất trên toàn cụm |
+| `controller.quorum.voters` | cả hai | Controller để bỏ phiếu; Broker để tìm chỗ fetch metadata |
+| `controller.listener.names` | cả hai | Tên listener dùng cho control plane |
+| `advertised.listeners` | **broker** | Controller không quảng bá cho client |
+| `auto.create.topics.enable` | **broker** | Broker quyết định có gửi CreateTopics lên controller không |
+| `offsets.topic.replication.factor` | **broker** | GroupCoordinator chạy trên broker và tạo `__consumer_offsets` |
+| `min.insync.replicas` | **broker** | Leader của partition đếm ISR lúc ghi |
+| `num.partitions` | **controller** (KRaft) | Controller materialize topic khi CreateTopics gửi lên với `-1` |
+| `default.replication.factor` | **controller** (KRaft) | Như trên |
+
+Hai dòng cuối **khác thời ZooKeeper**, nơi broker nhận request và tự điền default. Trong KRaft, broker **forward** `CreateTopics` lên active controller và chính controller thay `-1` bằng giá trị mặc định.
+
+> **Chưa kiểm chứng trên bản đang dùng.** Đây là loại chi tiết đổi theo phiên bản, nên kiểm bằng thực nghiệm thay vì tin tài liệu: đặt `KAFKA_NUM_PARTITIONS: 6` **chỉ trên controller**, tạo một topic không khai partition, rồi `--describe`. Ra 6 → controller quyết. Ra 1 → broker quyết. Ghi kết quả vào `docs/adr/`.
+>
+> Cách an toàn nếu không muốn thí nghiệm: đặt `num.partitions` và `default.replication.factor` trên **cả hai vai**. Config không áp dụng cho vai nào thì bị bỏ qua, không gây lỗi.
+
+#### J. Quorum tĩnh và quorum động (KIP-853)
+
+`controller.quorum.voters` là **quorum tĩnh**: danh sách thành viên nằm cứng trong config. Muốn thêm hoặc bớt một controller thì phải sửa config trên **mọi** Node rồi restart cả cụm — thao tác rủi ro và không làm được lúc đang tải cao.
+
+Kafka 4.x có thêm `controller.quorum.bootstrap.servers` cho **quorum động** (KIP-853): thành viên quorum được lưu trong chính metadata log, và thêm/bớt voter bằng `kafka-metadata-quorum add-controller` / `remove-controller` khi cụm đang chạy. Hai chế độ **loại trừ nhau** — chọn một, và quyết định đó nằm ngay ở bước `kafka-storage format` lúc khởi tạo cụm, không đổi lại dễ dàng.
+
+Repo này đang chạy chế độ **tĩnh**. Chưa kiểm chứng chi tiết API trên bản 4.3.1 — tra lại tài liệu Apache trước khi dùng.
+
+#### K. Khi tách ra nhiều máy: `advertised.listeners` là chỗ vỡ đầu tiên
+
+Trong compose một máy, broker quảng bá `broker-1:19092` và mọi thứ chạy vì Podman có DNS nội bộ. Khi tách sang **nhiều EC2**, tên container không còn phân giải được.
+
+Nhớ nguyên tắc gốc: **`advertised.listeners` không phải địa chỉ broker lắng nghe, mà là địa chỉ broker khai với client rằng "hãy quay lại tìm tôi ở đây"**. Client bootstrap tới một broker bất kỳ, nhận về metadata gồm địa chỉ leader từng partition, rồi **mở kết nối mới** tới đúng địa chỉ đó. Quảng bá sai thì triệu chứng đặc trưng là **bootstrap thành công rồi treo** — dấu hiệu kinh điển của cấu hình listener sai.
+
+Khi lên nhiều máy, `advertised.listeners` của mỗi broker phải là địa chỉ **mà client thật sự gọi tới được**: private IP trong VPC cho client nội bộ, và một listener riêng nếu có client ngoài VPC. Cùng với đó, controller listener (9093) chỉ nên mở giữa các Node trong Security Group, không bao giờ mở ra Internet.
+
+#### L. Checklist tự kiểm sau khi dựng cụm tách vai
+
+```bash
+# 1. Quorum có đủ voter, ai là leader, follower có tụt lại không
+podman exec broker-1 /opt/kafka/bin/kafka-metadata-quorum.sh \
+  --bootstrap-server broker-1:19092 describe --status
+
+# 2. Broker nào đang đăng ký sống trong cụm
+podman exec broker-1 /opt/kafka/bin/kafka-broker-api-versions.sh \
+  --bootstrap-server broker-1:19092 | grep -c "id:"
+
+# 3. RF và ISR thật của từng topic, gồm cả topic nội bộ
+podman exec broker-1 /opt/kafka/bin/kafka-topics.sh \
+  --bootstrap-server broker-1:19092 --describe
+```
+
+Và bài kiểm chứng thật, không thay thế được bằng đọc config: **dừng lần lượt từng Node và quan sát**. Dừng 1 controller → quorum vẫn commit được. Dừng 2 controller → mọi thao tác tạo topic đứng im nhưng produce/consume vẫn chạy (mục G). Dừng 1 broker với RF=3, `min.insync.replicas=2` → vẫn ghi được. Dừng thêm 1 broker nữa → producer nhận `NOT_ENOUGH_REPLICAS` chứ không được ack giả.
 
 ---
 

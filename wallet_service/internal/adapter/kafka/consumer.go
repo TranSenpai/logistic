@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
-	"wallet_service/internal/biz"
+	"wallet_service/internal/app"
 
 	"github.com/IBM/sarama"
 )
@@ -32,7 +32,7 @@ func (cgh *consumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSessio
 
 			err := cgh.bizHandler(session.Context(), msg.Value)
 			if err != nil {
-				if errors.Is(err, biz.ErrNonRetryable) {
+				if errors.Is(err, app.ErrNonRetryable) {
 					log.Printf("Business error: %v", err)
 					session.MarkMessage(msg, "process message failed")
 					continue
@@ -54,9 +54,9 @@ type kafkaConsumer struct {
 	consumerGroup sarama.ConsumerGroup
 }
 
-var _ biz.EventConsumer = (*kafkaConsumer)(nil)
+var _ app.EventConsumer = (*kafkaConsumer)(nil)
 
-func NewKafkaConsumer(brokers []string, groupId string) (biz.EventConsumer, error) {
+func NewKafkaConsumer(brokers []string, groupId string) (app.EventConsumer, error) {
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true
 

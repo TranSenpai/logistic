@@ -29,6 +29,11 @@ cp .env .env.local   # xem lại các giá trị bí mật trước khi chạy t
 docker compose up -d
 ```
 
+Trước khi chạy, đặt `AUTH_SERVICE_BOOTSTRAP_ADMIN_EMAIL` và
+`AUTH_SERVICE_BOOTSTRAP_ADMIN_PASSWORD` trong `.env`: API đăng ký chỉ nhận
+`driver` và `shipper`, nên đây là lối duy nhất để có admin. Không có admin thì
+không ai duyệt được giấy tờ xe và tài xế không bật được nhận đơn.
+
 `make auth-keys` tạo `secrets/jwt_private.pem` và `secrets/jwt_public.pem`.
 auth_service ký token bằng private key, gateway kiểm bằng public key; thiếu file
 thì cả hai service dừng ngay lúc khởi động. Thư mục `secrets/` nằm trong

@@ -34,6 +34,9 @@ type MatchingMapper interface {
 	// goverter:ignore ID
 	// goverter:ignore CreatedAt
 	// goverter:ignore Status
+	// Trạng thái thương lượng do server ghi, không nhận từ client.
+	// goverter:ignore OfferedPrice
+	// goverter:ignore OfferedAskID
 	// goverter:map ShipperId ShipperID | BytesToUUID
 	// goverter:map ConsigneeId ConsigneeID | BytesToUUID
 	// goverter:map ExpiresAt ExpiresAt | TimestampToTime

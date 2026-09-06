@@ -18,7 +18,9 @@ type User struct {
 func (User) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuidx.New).Unique(),
-		field.String("phone").Unique(),
+		// Optional: hồ sơ dựng từ auth_service chưa có phone. Unique vẫn đúng vì
+		// Postgres coi các NULL là khác nhau.
+		field.String("phone").Unique().Optional(),
 		field.String("email").Unique().Optional(),
 		field.String("full_name").Optional(),
 		field.String("avatar_url").Optional(),
