@@ -163,11 +163,18 @@ func BuildPagination(page, pageSize int, total int64) Pagination {
 }
 
 type RegisterUserParam struct {
+	// Danh tính auth_service cấp; bỏ trống thì user_service tự sinh.
+	ID       uuid.UUID
 	Phone    string
 	Email    string
 	Password string
 	Role     string
 	FullName string
+}
+
+// Khi đúng: auth_service giữ credential, nên không đòi mật khẩu lẫn phone.
+func (p *RegisterUserParam) ProvisionedFromAuth() bool {
+	return p.ID != uuid.Nil
 }
 
 type RegisterUserResult struct {

@@ -1,6 +1,7 @@
 package di
 
 import (
+	"context"
 	"fmt"
 
 	"auth_service/internal/biz"
@@ -55,6 +56,8 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) error {
 	authRepo := repo.NewAuthRepo(clientDb, authMapper)
 	sessionRepo := repo.NewSessionRepo(clientDb)
 	authService := biz.NewAuthService(authRepo, sessionRepo, signer, verifier, oauthConfig)
+
+	bootstrapAdmin(context.Background(), authService, cfg.Bootstrap)
 
 	pb.RegisterAuthServiceServer(grpcServer, controller.NewAuthController(authService, authMapper, signer))
 

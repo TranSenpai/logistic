@@ -47,7 +47,7 @@ func RegisterGatewayRoutes(
 		middleware.ErrorGuard(),
 	)
 
-	authController := controller.NewAuthController(clients.Auth, cfg.Server.IsProduction)
+	authController := controller.NewAuthController(clients.Auth, clients.User, cfg.Server.IsProduction)
 	mediaController := controller.NewMediaController(clients.Media)
 	matchingController := controller.NewMatchingController(clients.Matching)
 	userController := controller.NewUserController(clients.User)

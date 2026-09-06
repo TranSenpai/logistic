@@ -175,6 +175,32 @@ Mạng truyền thống thường chỉ có 1 Firewall tổng ở cổng công t
 - **Network ACL - NACL (Tường lửa Cấp Subnet):** Nó bọc ở cổng ra/vào của toàn bộ 1 Subnet. 
   - *Tính chất:* Luôn "Chặn" (Mặc định cho phép tất cả, bạn dùng NACL để viết luật CHẶN). Ví dụ: Phát hiện 1 dải IP từ nước ngoài liên tục rà quét mạng, bạn dùng NACL để DROP ngay lập tức từ vòng gửi xe của Subnet, không cho chúng chạm tới Security Group của EC2.
 
+### 3.4. Ánh xạ Kiến trúc Mạng Cơ bản sang Điện toán Đám mây (AWS)
+Khi đưa các kiến thức mạng truyền thống lên môi trường Đám mây (Cloud), AWS đã đóng gói chúng thành các khái niệm trực quan. Việc nắm rõ mối liên kết này giúp bạn thiết kế hạ tầng chuẩn mực (Best Practice):
+
+**1. Region và Availability Zone (A-Z) - Nền tảng của sự Bền bỉ (High Availability)**
+- **Region (Khu vực):** Là một cụm Data Center nằm ở một vị trí địa lý cụ thể (Ví dụ: Singapore - `ap-southeast-1`). Một mạng ảo **VPC luôn bị "khóa chặt" trong 1 Region**. Bạn không thể tạo 1 VPC vắt ngang qua Singapore và Mỹ.
+- **Availability Zone (AZ - Vùng khả thi):** Bên trong 1 Region sẽ có nhiều AZ (Ví dụ: `ap-southeast-1a`, `ap-southeast-1b`). Mỗi AZ là một Data Center biệt lập vật lý hoàn toàn, có hệ thống điện lưới và cáp quang độc lập để phòng chống thiên tai (động đất, cháy nổ).
+- **High Availability (H.A - Khả năng sẵn sàng cao):** Để đảm bảo hệ thống không bao giờ sập, các Kỹ sư (DevOps) luôn thiết kế mô hình H.A: Chạy 2 con EC2 Backend giống hệt nhau, nhưng đặt ở 2 AZ khác nhau. Nếu AZ A sập nguồn điện, hệ thống Load Balancer sẽ tự động dồn toàn bộ khách hàng sang AZ B.
+
+**2. Ranh giới mạng: Subnet**
+- Khác với VPC bao trùm cả Region, **Một Subnet bị khóa chặt trong đúng 1 AZ**.
+- Các Subnet trong cùng 1 VPC (Dù ở khác AZ) mặc định luôn "nhìn thấy nhau" và giao tiếp nội bộ miễn phí thông qua luật `local` mặc định của mạng.
+
+**3. Công tắc hòa mạng Internet: Route Table và Internet Gateway (IGW)**
+- Khi tạo VPC, nó hoàn toàn bị cô lập (Isolated). Để kết nối Internet, bạn phải gắn một cái cửa ngõ gọi là **Internet Gateway (IGW)** vào VPC.
+- Gói tin từ bên ngoài vào: IGW hoạt động như một cỗ máy NAT khổng lồ, nó biên dịch IP Public sang IP Private của EC2 và ném gói tin thẳng về Subnet chứa EC2.
+- Gói tin từ trong đi ra (Quyết định bởi **Route Table**): Bảng định tuyến (Route Table) là bộ não chỉ đường. Nó định nghĩa ranh giới giữa Public và Private:
+  - **Public Subnet (Vùng mặt tiền):** Là Subnet có Route Table chứa luật `0.0.0.0/0 -> IGW`. Luật này nói rằng: *"Nếu gói tin muốn đi tới một IP lạ không nằm trong mạng nội bộ, hãy ném nó ra cổng IGW ra Internet"*. Nơi đây chứa Load Balancer, Web Server.
+  - **Private Subnet (Vùng hầm ngầm):** Là Subnet mà Route Table của nó KHÔNG CÓ luật trỏ ra IGW. Các Server (như Database) đặt ở đây an toàn tuyệt đối, vì Hacker từ Internet không có cách nào chọc vào được (kể cả khi Server có lỗ hổng bảo mật).
+
+**4. Tường lửa 2 lớp: Security Group (SG) vs Network ACL (NACL)**
+Mạng truyền thống thường chỉ có 1 Firewall tổng ở cổng công ty. Cloud AWS thông minh hơn, phân chia Firewall thành 2 lớp:
+- **Security Group (Tường lửa Cấp EC2):** Nó bọc quanh từng cái Card mạng (ENI) của một con máy ảo (EC2) cụ thể. Gắn SG cho con Gateway nào thì nó chỉ bảo vệ đúng con Gateway đó. 
+  - *Tính chất:* Luôn "Mở" (Mặc định khóa chặt, bạn chỉ được phép viết luật CHO PHÉP). Ví dụ: Cho phép Port 80 và 443 từ IP của Cloudflare đi vào.
+- **Network ACL - NACL (Tường lửa Cấp Subnet):** Nó bọc ở cổng ra/vào của toàn bộ 1 Subnet. 
+  - *Tính chất:* Luôn "Chặn" (Mặc định cho phép tất cả, bạn dùng NACL để viết luật CHẶN). Ví dụ: Phát hiện 1 dải IP từ nước ngoài liên tục rà quét mạng, bạn dùng NACL để DROP ngay lập tức từ vòng gửi xe của Subnet, không cho chúng chạm tới Security Group của EC2.
+
 ---
 
 ## 4. NAT (Network Address Translation)

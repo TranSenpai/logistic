@@ -1,8 +1,10 @@
 package controller
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"log"
 	"net/http"
 	"time"
 
@@ -10,20 +12,25 @@ import (
 	"gateway_service/internal/response"
 
 	pb "github.com/logistic/api/logistic/auth_service/v1"
+	pbuser "github.com/logistic/api/logistic/user_service/v1"
 	"github.com/logistic/pkg/uuidx"
 
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type AuthController struct {
 	authClient pb.AuthServiceClient
+	userClient pbuser.UserServiceClient
 
 	secureCookies bool
 }
 
-func NewAuthController(authClient pb.AuthServiceClient, isProduction bool) *AuthController {
+func NewAuthController(authClient pb.AuthServiceClient, userClient pbuser.UserServiceClient, isProduction bool) *AuthController {
 	return &AuthController{
 		authClient:    authClient,
+		userClient:    userClient,
 		secureCookies: isProduction,
 	}
 }
@@ -33,6 +40,34 @@ type RegisterRequest struct {
 	FullName string `json:"full_name"`
 	Password string `json:"password" binding:"required,min=8"`
 	Role     string `json:"role" binding:"omitempty,oneof=driver shipper"`
+	Phone    string `json:"phone"`
+}
+
+// ensureProfile dựng hồ sơ user_service dưới đúng id auth_service cấp — không có
+// nó thì token và hồ sơ trỏ về hai id khác nhau, mọi /users/* trả 404 hoặc 403.
+// Gọi cả ở login để vá dần tài khoản cũ; đã có hồ sơ thì bỏ qua ALREADY_EXISTS.
+func (c *AuthController) ensureProfile(ctx context.Context, profile *pb.UserProfile, phone string) {
+	if c.userClient == nil || profile == nil || len(profile.Id) == 0 {
+		return
+	}
+
+	_, err := c.userClient.RegisterUser(ctx, &pbuser.RegisterUserRequest{
+		Id:       profile.Id,
+		Email:    profile.Email,
+		FullName: profile.GetFullName(),
+		Role:     profile.Role,
+		Phone:    phone,
+	})
+	if err == nil {
+		return
+	}
+	if status.Code(err) == codes.AlreadyExists {
+		return
+	}
+
+	log.Printf("[gateway] không dựng được hồ sơ user_service cho %s: %v — "+
+		"các endpoint /api/v1/users/* sẽ trả 404 tới khi lần đăng nhập sau vá lại",
+		uuidx.String(profile.Id), err)
 }
 
 type LoginRequest struct {
@@ -73,6 +108,8 @@ func (c *AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
+	c.ensureProfile(ctx.Request.Context(), resp.Profile, req.Phone)
+
 	response.Created(ctx, gin.H{"user": toAuthProfileDTO(resp.Profile)}, "Đăng ký tài khoản thành công")
 }
 
@@ -103,6 +140,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 	}
 
 	c.setAuthCookies(ctx, resp.TokenPair)
+	c.ensureProfile(ctx.Request.Context(), resp.Profile, "")
 
 	response.OK(ctx, gin.H{
 		"access_token":  resp.TokenPair.AccessToken,

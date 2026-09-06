@@ -8,10 +8,23 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Google   GoogleConfig
-	JWT      JWTConfig
+	Server    ServerConfig
+	Database  DatabaseConfig
+	Google    GoogleConfig
+	JWT       JWTConfig
+	Bootstrap BootstrapConfig
+}
+
+// Phải khai cả email lẫn mật khẩu mới chạy; không đặt mặc định vì admin có mật
+// khẩu đoán được còn tệ hơn không có admin.
+type BootstrapConfig struct {
+	AdminEmail    string `env:"AUTH_SERVICE_BOOTSTRAP_ADMIN_EMAIL"`
+	AdminPassword string `env:"AUTH_SERVICE_BOOTSTRAP_ADMIN_PASSWORD"`
+	AdminFullName string `env:"AUTH_SERVICE_BOOTSTRAP_ADMIN_NAME" env-default:"Quản trị hệ thống"`
+}
+
+func (b BootstrapConfig) Enabled() bool {
+	return b.AdminEmail != "" && b.AdminPassword != ""
 }
 
 type ServerConfig struct {

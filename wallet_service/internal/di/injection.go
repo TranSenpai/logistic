@@ -6,18 +6,18 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"wallet_service/internal/biz"
-	"wallet_service/internal/broker/kafka"
-	"wallet_service/internal/conf"
-	"wallet_service/internal/controller"
-	"wallet_service/internal/mapper"
-	"wallet_service/internal/mapper/generated"
-	"wallet_service/internal/repository"
-	"wallet_service/internal/search"
-
-	pb "github.com/logistic/api/logistic/wallet_service/v1"
 
 	"wallet_service/ent"
+	"wallet_service/internal/adapter/grpcserver"
+	"wallet_service/internal/adapter/kafka"
+	"wallet_service/internal/adapter/persistence"
+	"wallet_service/internal/adapter/search"
+	"wallet_service/internal/app"
+	"wallet_service/internal/conf"
+	"wallet_service/internal/mapper"
+	"wallet_service/internal/mapper/generated"
+
+	pb "github.com/logistic/api/logistic/wallet_service/v1"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
@@ -36,7 +36,7 @@ type HoldDepositPayload struct {
 
 func Injection(ctx context.Context, grpcServer *grpc.Server, cfg *conf.Config) (func(), error) {
 	if cfg.Database.DSN == "" {
-		return nil, fmt.Errorf("Database DSN is required")
+		return nil, fmt.Errorf("database DSN is required")
 	}
 
 	db, err := entsql.Open(dialect.MySQL, cfg.Database.DSN)
@@ -51,24 +51,33 @@ func Injection(ctx context.Context, grpcServer *grpc.Server, cfg *conf.Config) (
 		esAddresses = []string{"http://localhost:9200"}
 	}
 
-	esEngine, err := search.NewElasticSearchEngine(esAddresses, cfg.ElasticSearch.Username, cfg.ElasticSearch.Password)
+	// Khai kiểu interface ngay từ đầu: nếu khai biến kiểu con trỏ cụ thể rồi gán
+	// nil, khi truyền vào tham số interface nó sẽ thành interface KHÁC nil và
+	// mọi kiểm tra `== nil` phía sau đều sai.
+	var esEngine search.WalletSearchEngine
+	esEngine, err = search.NewElasticSearchEngine(esAddresses, cfg.ElasticSearch.Username, cfg.ElasticSearch.Password)
 	if err != nil {
 		log.Printf("Failed to init elasticsearch: %v. Search will be disabled.", err)
 		esEngine = nil
-	} else {
-		esEngine.EnsureIndices(ctx)
+	} else if err := esEngine.EnsureIndices(ctx); err != nil {
+		log.Printf("Failed to ensure elasticsearch indices: %v", err)
 	}
 
 	var walletMapper mapper.WalletMapper = &generated.WalletMapperImpl{}
 
-	uow := repository.NewUnitOfWorkRepository(entClient)
-	walletRepo := repository.NewWalletRepository(entClient, walletMapper)
-	txRepo := repository.NewTransactionRepository(entClient, walletMapper)
+	var indexer app.WalletIndexer
+	if esEngine != nil {
+		indexer = search.NewIndexer(esEngine)
+	}
 
-	walletUseCase := biz.NewWalletUseCase(uow, walletRepo, txRepo, esEngine, walletMapper)
+	uow := persistence.NewUnitOfWork(entClient)
+	walletRepo := persistence.NewWalletRepo(entClient, walletMapper)
+	txRepo := persistence.NewTransactionRepo(entClient, walletMapper)
 
-	walletController := controller.NewWalletController(walletUseCase, esEngine, walletMapper)
-	pb.RegisterWalletServiceServer(grpcServer, walletController)
+	walletUseCase := app.NewWalletUseCase(uow, walletRepo, txRepo, indexer)
+
+	walletServer := grpcserver.NewWalletServer(walletUseCase, esEngine, walletMapper)
+	pb.RegisterWalletServiceServer(grpcServer, walletServer)
 
 	brokers := strings.Split(cfg.Kafka.Brokers, ",")
 	if len(brokers) == 0 || brokers[0] == "" {
@@ -87,19 +96,19 @@ func Injection(ctx context.Context, grpcServer *grpc.Server, cfg *conf.Config) (
 		var event HoldDepositPayload
 		if err := json.Unmarshal(payload, &event); err != nil {
 			log.Printf("[Wallet] Failed to unmarshal hold_deposit event: %v", err)
-			return fmt.Errorf("%w: %v", biz.ErrNonRetryable, err)
+			return fmt.Errorf("%w: %v", app.ErrNonRetryable, err)
 		}
 
 		driverID, err := uuid.Parse(event.DriverID)
 		if err != nil {
-			return fmt.Errorf("%w: invalid driver_id %s", biz.ErrNonRetryable, event.DriverID)
+			return fmt.Errorf("%w: invalid driver_id %s", app.ErrNonRetryable, event.DriverID)
 		}
 
 		amount := int64(event.Amount * 100)
 
 		if err := walletUseCase.HoldDeposit(ctx, driverID, amount, event.ContractID); err != nil {
 			log.Printf("[Wallet] HoldDeposit failed: %v", err)
-			return fmt.Errorf("%w: %v", biz.ErrNonRetryable, err)
+			return fmt.Errorf("%w: %v", app.ErrNonRetryable, err)
 		}
 
 		log.Printf("[Wallet] HoldDeposit success: driver=%s amount=%d refID=%s", event.DriverID, amount, event.ContractID)

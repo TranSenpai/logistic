@@ -6,11 +6,11 @@ import (
 	"log"
 
 	"user_service/ent"
-	"user_service/internal/biz"
+	"user_service/internal/adapter/grpcserver"
+	"user_service/internal/adapter/persistence"
+	"user_service/internal/app"
 	"user_service/internal/conf"
-	"user_service/internal/controller"
 	"user_service/internal/mapper/generated"
-	"user_service/internal/repo"
 
 	pb "github.com/logistic/api/logistic/user_service/v1"
 	"github.com/logistic/pkg/cache"
@@ -74,9 +74,10 @@ func Injection(grpcServer *grpc.Server, cfg *conf.Config) (*Container, error) {
 	}
 
 	appMapper := &generated.AppMapperImpl{}
-	userRepo := repo.NewUserRepo(entClient, redisClient, appMapper)
-	userEngine := biz.NewUserEngine(userRepo)
-	userController := controller.NewUserController(userEngine, appMapper)
+	userRepo := persistence.NewUserRepo(entClient, redisClient, appMapper)
+	compliance := app.NewCompliance(userRepo)
+	userEngine := app.NewUserEngine(userRepo, compliance)
+	userController := grpcserver.NewUserServer(userEngine, appMapper)
 
 	pb.RegisterUserServiceServer(grpcServer, userController)
 

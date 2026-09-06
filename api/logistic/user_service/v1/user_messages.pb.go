@@ -675,12 +675,21 @@ func (x *Pagination) GetTotalPages() int32 {
 }
 
 type RegisterUserRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Phone         string                 `protobuf:"bytes,1,opt,name=phone,proto3" json:"phone,omitempty"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	Password      string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
-	Role          string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"` // driver | shipper
-	FullName      string                 `protobuf:"bytes,5,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Phone    string                 `protobuf:"bytes,1,opt,name=phone,proto3" json:"phone,omitempty"`
+	Email    string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	Password string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
+	Role     string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"` // driver | shipper
+	FullName string                 `protobuf:"bytes,5,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
+	// id là danh tính auth_service đã cấp, do gateway gắn vào sau khi đăng ký
+	// thành công. Có id nghĩa là "danh tính đã có rồi, chỉ dựng hồ sơ nghiệp vụ":
+	// user_service dùng đúng id đó thay vì tự sinh, và KHÔNG lưu mật khẩu —
+	// auth_service mới là nơi giữ thông tin đăng nhập.
+	//
+	// Bỏ trống là luồng đăng ký độc lập cũ: user_service tự sinh id. Luồng đó tạo
+	// ra một danh tính thứ hai không khớp với subject trong token, nên mọi
+	// /api/v1/users/* sau đó đều trả 404 hoặc 403.
+	Id            []byte `protobuf:"bytes,6,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -748,6 +757,13 @@ func (x *RegisterUserRequest) GetFullName() string {
 		return x.FullName
 	}
 	return ""
+}
+
+func (x *RegisterUserRequest) GetId() []byte {
+	if x != nil {
+		return x.Id
+	}
+	return nil
 }
 
 type RegisterUserResponse struct {
@@ -3207,13 +3223,14 @@ const file_logistic_user_service_v1_user_messages_proto_rawDesc = "" +
 	"\vtotal_items\x18\x03 \x01(\x03R\n" +
 	"totalItems\x12\x1f\n" +
 	"\vtotal_pages\x18\x04 \x01(\x05R\n" +
-	"totalPages\"\x8e\x01\n" +
+	"totalPages\"\x9e\x01\n" +
 	"\x13RegisterUserRequest\x12\x14\n" +
 	"\x05phone\x18\x01 \x01(\tR\x05phone\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x03 \x01(\tR\bpassword\x12\x12\n" +
 	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1b\n" +
-	"\tfull_name\x18\x05 \x01(\tR\bfullName\"t\n" +
+	"\tfull_name\x18\x05 \x01(\tR\bfullName\x12\x0e\n" +
+	"\x02id\x18\x06 \x01(\fR\x02id\"t\n" +
 	"\x14RegisterUserResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x122\n" +
