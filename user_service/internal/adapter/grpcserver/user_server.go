@@ -1,10 +1,10 @@
-package controller
+package grpcserver
 
 import (
 	"context"
+	"user_service/internal/entity"
 
-	"user_service/internal/biz"
-	cerr "user_service/internal/common/errors"
+	"user_service/internal/app"
 	"user_service/internal/mapper"
 
 	"github.com/google/uuid"
@@ -14,11 +14,11 @@ import (
 
 type userController struct {
 	pb.UnimplementedUserServiceServer
-	engine biz.UserEngine
+	engine app.UserEngine
 	mapper mapper.AppMapper
 }
 
-func NewUserController(engine biz.UserEngine, appMapper mapper.AppMapper) pb.UserServiceServer {
+func NewUserServer(engine app.UserEngine, appMapper mapper.AppMapper) pb.UserServiceServer {
 	return &userController{engine: engine, mapper: appMapper}
 }
 
@@ -35,7 +35,7 @@ func (c *userController) RegisterUser(ctx context.Context, req *pb.RegisterUserR
 
 	// Mapper bỏ qua ID vì đây là trường tuỳ chọn.
 	if len(req.Id) > 0 {
-		id, err := parseID(req.Id, cerr.ErrInvalidUserID)
+		id, err := parseID(req.Id, entity.ErrInvalidUserID)
 		if err != nil {
 			return nil, err
 		}
@@ -55,7 +55,7 @@ func (c *userController) RegisterUser(ctx context.Context, req *pb.RegisterUserR
 }
 
 func (c *userController) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
-	id, err := parseID(req.Id, cerr.ErrInvalidUserID)
+	id, err := parseID(req.Id, entity.ErrInvalidUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (c *userController) GetUser(ctx context.Context, req *pb.GetUserRequest) (*
 func (c *userController) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.UpdateUserResponse, error) {
 	param, err := c.mapper.PbUpdateUserToParam(req)
 	if err != nil {
-		return nil, cerr.ErrInvalidUserID.WithCause(err)
+		return nil, entity.ErrInvalidUserID.WithCause(err)
 	}
 
 	u, err := c.engine.UpdateUser(ctx, &param)
@@ -93,7 +93,7 @@ func (c *userController) UpdateUser(ctx context.Context, req *pb.UpdateUserReque
 }
 
 func (c *userController) GetDriverProfile(ctx context.Context, req *pb.GetDriverProfileRequest) (*pb.GetDriverProfileResponse, error) {
-	id, err := parseID(req.UserId, cerr.ErrInvalidUserID)
+	id, err := parseID(req.UserId, entity.ErrInvalidUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (c *userController) GetDriverProfile(ctx context.Context, req *pb.GetDriver
 func (c *userController) UpdateDriverProfile(ctx context.Context, req *pb.UpdateDriverProfileRequest) (*pb.UpdateDriverProfileResponse, error) {
 	param, err := c.mapper.PbUpdateDriverProfileToParam(req)
 	if err != nil {
-		return nil, cerr.ErrInvalidUserID.WithCause(err)
+		return nil, entity.ErrInvalidUserID.WithCause(err)
 	}
 
 	dp, err := c.engine.UpdateDriverProfile(ctx, &param)
@@ -123,7 +123,7 @@ func (c *userController) UpdateDriverProfile(ctx context.Context, req *pb.Update
 }
 
 func (c *userController) GetShipperProfile(ctx context.Context, req *pb.GetShipperProfileRequest) (*pb.GetShipperProfileResponse, error) {
-	id, err := parseID(req.UserId, cerr.ErrInvalidUserID)
+	id, err := parseID(req.UserId, entity.ErrInvalidUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (c *userController) GetShipperProfile(ctx context.Context, req *pb.GetShipp
 func (c *userController) UpdateShipperProfile(ctx context.Context, req *pb.UpdateShipperProfileRequest) (*pb.UpdateShipperProfileResponse, error) {
 	param, err := c.mapper.PbUpdateShipperProfileToParam(req)
 	if err != nil {
-		return nil, cerr.ErrInvalidUserID.WithCause(err)
+		return nil, entity.ErrInvalidUserID.WithCause(err)
 	}
 
 	sp, err := c.engine.UpdateShipperProfile(ctx, &param)
@@ -155,7 +155,7 @@ func (c *userController) UpdateShipperProfile(ctx context.Context, req *pb.Updat
 func (c *userController) UpdateDriverKYC(ctx context.Context, req *pb.UpdateDriverKYCRequest) (*pb.UpdateDriverKYCResponse, error) {
 	param, err := c.mapper.PbUpdateKycToParam(req)
 	if err != nil {
-		return nil, cerr.ErrInvalidUserID.WithCause(err)
+		return nil, entity.ErrInvalidUserID.WithCause(err)
 	}
 
 	dp, err := c.engine.UpdateDriverKYC(ctx, &param)
@@ -172,7 +172,7 @@ func (c *userController) UpdateDriverKYC(ctx context.Context, req *pb.UpdateDriv
 func (c *userController) CreateAddress(ctx context.Context, req *pb.CreateAddressRequest) (*pb.CreateAddressResponse, error) {
 	param, err := c.mapper.PbCreateAddressToParam(req)
 	if err != nil {
-		return nil, cerr.ErrInvalidUserID.WithCause(err)
+		return nil, entity.ErrInvalidUserID.WithCause(err)
 	}
 
 	addr, err := c.engine.CreateAddress(ctx, &param)
@@ -189,7 +189,7 @@ func (c *userController) CreateAddress(ctx context.Context, req *pb.CreateAddres
 func (c *userController) ListAddresses(ctx context.Context, req *pb.ListAddressesRequest) (*pb.ListAddressesResponse, error) {
 	param, err := c.mapper.PbListAddressesToParam(req)
 	if err != nil {
-		return nil, cerr.ErrInvalidUserID.WithCause(err)
+		return nil, entity.ErrInvalidUserID.WithCause(err)
 	}
 
 	res, err := c.engine.ListAddresses(ctx, &param)
@@ -206,7 +206,7 @@ func (c *userController) ListAddresses(ctx context.Context, req *pb.ListAddresse
 func (c *userController) UpdateAddress(ctx context.Context, req *pb.UpdateAddressRequest) (*pb.UpdateAddressResponse, error) {
 	param, err := c.mapper.PbUpdateAddressToParam(req)
 	if err != nil {
-		return nil, cerr.ErrInvalidAddressID.WithCause(err)
+		return nil, entity.ErrInvalidAddressID.WithCause(err)
 	}
 
 	addr, err := c.engine.UpdateAddress(ctx, &param)
@@ -221,14 +221,14 @@ func (c *userController) UpdateAddress(ctx context.Context, req *pb.UpdateAddres
 }
 
 func (c *userController) DeleteAddress(ctx context.Context, req *pb.DeleteAddressRequest) (*pb.DeleteAddressResponse, error) {
-	id, err := parseID(req.Id, cerr.ErrInvalidAddressID)
+	id, err := parseID(req.Id, entity.ErrInvalidAddressID)
 	if err != nil {
 		return nil, err
 	}
 
 	var userID uuid.UUID
 	if len(req.UserId) > 0 {
-		userID, err = parseID(req.UserId, cerr.ErrInvalidUserID)
+		userID, err = parseID(req.UserId, entity.ErrInvalidUserID)
 		if err != nil {
 			return nil, err
 		}
@@ -243,7 +243,7 @@ func (c *userController) DeleteAddress(ctx context.Context, req *pb.DeleteAddres
 func (c *userController) RegisterDevice(ctx context.Context, req *pb.RegisterDeviceRequest) (*pb.RegisterDeviceResponse, error) {
 	param, err := c.mapper.PbRegisterDeviceToParam(req)
 	if err != nil {
-		return nil, cerr.ErrInvalidUserID.WithCause(err)
+		return nil, entity.ErrInvalidUserID.WithCause(err)
 	}
 
 	device, err := c.engine.RegisterDevice(ctx, &param)
@@ -258,7 +258,7 @@ func (c *userController) RegisterDevice(ctx context.Context, req *pb.RegisterDev
 }
 
 func (c *userController) ListDevices(ctx context.Context, req *pb.ListDevicesRequest) (*pb.ListDevicesResponse, error) {
-	id, err := parseID(req.UserId, cerr.ErrInvalidUserID)
+	id, err := parseID(req.UserId, entity.ErrInvalidUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -271,14 +271,14 @@ func (c *userController) ListDevices(ctx context.Context, req *pb.ListDevicesReq
 }
 
 func (c *userController) DeleteDevice(ctx context.Context, req *pb.DeleteDeviceRequest) (*pb.DeleteDeviceResponse, error) {
-	id, err := parseID(req.Id, cerr.ErrInvalidDeviceID)
+	id, err := parseID(req.Id, entity.ErrInvalidDeviceID)
 	if err != nil {
 		return nil, err
 	}
 
 	var userID uuid.UUID
 	if len(req.UserId) > 0 {
-		userID, err = parseID(req.UserId, cerr.ErrInvalidUserID)
+		userID, err = parseID(req.UserId, entity.ErrInvalidUserID)
 		if err != nil {
 			return nil, err
 		}
@@ -307,7 +307,7 @@ func (c *userController) AdminListUsers(ctx context.Context, req *pb.AdminListUs
 func (c *userController) AdminUpdateUserStatus(ctx context.Context, req *pb.AdminUpdateUserStatusRequest) (*pb.AdminUpdateUserStatusResponse, error) {
 	param, err := c.mapper.PbAdminUpdateStatusToParam(req)
 	if err != nil {
-		return nil, cerr.ErrInvalidUserID.WithCause(err)
+		return nil, entity.ErrInvalidUserID.WithCause(err)
 	}
 
 	u, err := c.engine.AdminUpdateUserStatus(ctx, &param)
@@ -336,7 +336,7 @@ func (c *userController) AdminListPendingKYC(ctx context.Context, req *pb.AdminL
 func (c *userController) AdminReviewKYC(ctx context.Context, req *pb.AdminReviewKYCRequest) (*pb.AdminReviewKYCResponse, error) {
 	param, err := c.mapper.PbAdminReviewKycToParam(req)
 	if err != nil {
-		return nil, cerr.ErrInvalidUserID.WithCause(err)
+		return nil, entity.ErrInvalidUserID.WithCause(err)
 	}
 
 	dp, err := c.engine.AdminReviewKYC(ctx, &param)
@@ -372,7 +372,7 @@ func (c *userController) AdminGetUserStats(ctx context.Context, _ *pb.AdminGetUs
 }
 
 func (c *userController) AdminDeleteUser(ctx context.Context, req *pb.AdminDeleteUserRequest) (*pb.AdminDeleteUserResponse, error) {
-	id, err := parseID(req.Id, cerr.ErrInvalidUserID)
+	id, err := parseID(req.Id, entity.ErrInvalidUserID)
 	if err != nil {
 		return nil, err
 	}

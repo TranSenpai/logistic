@@ -1,7 +1,7 @@
 # Binary outputs
 /bin/
-main
-app
+/main
+/app
 
 # Hot Reload (Air)
 /tmp/
@@ -50,8 +50,8 @@ override.tf.json
 
 # Binary outputs
 /bin/
-main
-app
+/main
+/app
 
 # Hot Reload (Air)
 /tmp/
@@ -118,3 +118,5 @@ adr
 # Sổ tay nội bộ: nhật ký refactor, playbook migrate, ghi chú cho các đợt update
 # lớn. Không vào git — đây là ghi chú cá nhân, không phải tài liệu của repo.
 docs/notes/
+
+.codegraph

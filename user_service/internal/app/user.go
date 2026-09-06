@@ -1,9 +1,8 @@
-package biz
+package app
 
 import (
 	"context"
 
-	cerr "user_service/internal/common/errors"
 	"user_service/internal/entity"
 
 	"github.com/google/uuid"
@@ -11,6 +10,8 @@ import (
 )
 
 type UserEngine interface {
+	ComplianceUseCase
+
 	RegisterUser(ctx context.Context, param *entity.RegisterUserParam) (*entity.RegisterUserResult, error)
 	GetUser(ctx context.Context, id uuid.UUID) (*entity.GetUserResult, error)
 	UpdateUser(ctx context.Context, param *entity.UpdateUserParam) (*entity.User, error)
@@ -19,7 +20,6 @@ type UserEngine interface {
 	UpdateDriverProfile(ctx context.Context, param *entity.UpdateDriverProfileParam) (*entity.DriverProfile, error)
 	GetShipperProfile(ctx context.Context, userID uuid.UUID) (*entity.ShipperProfile, error)
 	UpdateShipperProfile(ctx context.Context, param *entity.UpdateShipperProfileParam) (*entity.ShipperProfile, error)
-	UpdateDriverKYC(ctx context.Context, param *entity.UpdateDriverKYCParam) (*entity.DriverProfile, error)
 
 	CreateAddress(ctx context.Context, param *entity.CreateAddressParam) (*entity.Address, error)
 	ListAddresses(ctx context.Context, param *entity.ListAddressesParam) (*entity.ListAddressesResult, error)
@@ -32,31 +32,33 @@ type UserEngine interface {
 
 	AdminListUsers(ctx context.Context, filter *entity.ListUsersFilter) (*entity.ListUsersResult, error)
 	AdminUpdateUserStatus(ctx context.Context, param *entity.UpdateUserStatusParam) (*entity.User, error)
-	AdminListPendingKYC(ctx context.Context, page, pageSize int) (*entity.ListDriverProfilesResult, error)
-	AdminReviewKYC(ctx context.Context, param *entity.ReviewKYCParam) (*entity.DriverProfile, error)
 	AdminGetUserStats(ctx context.Context) (*entity.UserStats, error)
 	AdminDeleteUser(ctx context.Context, id uuid.UUID) error
 }
 
 type userEngineImpl struct {
+	// Nhúng use case duyệt hồ sơ thay vì tự cài: UserEngine vẫn giữ nguyên bề mặt
+	// cho gateway, nhưng logic KYC đã nằm ở compliance.go và chỉ phụ thuộc
+	// ComplianceRepository.
+	ComplianceUseCase
 	repo UserRepo
 }
 
-func NewUserEngine(repo UserRepo) UserEngine {
-	return &userEngineImpl{repo: repo}
+func NewUserEngine(repo UserRepo, compliance ComplianceUseCase) UserEngine {
+	return &userEngineImpl{repo: repo, ComplianceUseCase: compliance}
 }
 
 func (e *userEngineImpl) RegisterUser(ctx context.Context, param *entity.RegisterUserParam) (*entity.RegisterUserResult, error) {
 	if !entity.IsValidRole(param.Role) {
-		return nil, cerr.ErrInvalidRole.WithDetail("role", param.Role)
+		return nil, entity.ErrInvalidRole.WithDetail("role", param.Role)
 	}
 
 	if !param.ProvisionedFromAuth() {
 		if param.Phone == "" {
-			return nil, cerr.ErrPhoneRequired
+			return nil, entity.ErrPhoneRequired
 		}
 		if len(param.Password) < 6 {
-			return nil, cerr.ErrPasswordTooShort
+			return nil, entity.ErrPasswordTooShort
 		}
 	}
 
@@ -66,7 +68,7 @@ func (e *userEngineImpl) RegisterUser(ctx context.Context, param *entity.Registe
 			return nil, err
 		}
 		if exists {
-			return nil, cerr.ErrPhoneAlreadyUsed.WithDetail("phone", param.Phone)
+			return nil, entity.ErrPhoneAlreadyUsed.WithDetail("phone", param.Phone)
 		}
 	}
 
@@ -76,7 +78,7 @@ func (e *userEngineImpl) RegisterUser(ctx context.Context, param *entity.Registe
 			return nil, eErr
 		}
 		if emailTaken {
-			return nil, cerr.ErrEmailAlreadyUsed.WithDetail("email", param.Email)
+			return nil, entity.ErrEmailAlreadyUsed.WithDetail("email", param.Email)
 		}
 	}
 
@@ -85,7 +87,7 @@ func (e *userEngineImpl) RegisterUser(ctx context.Context, param *entity.Registe
 	if !param.ProvisionedFromAuth() {
 		hashed, hErr := bcrypt.GenerateFromPassword([]byte(param.Password), bcrypt.DefaultCost)
 		if hErr != nil {
-			return nil, cerr.ErrDatabase.WithCause(hErr)
+			return nil, entity.ErrDatabase.WithCause(hErr)
 		}
 		passwordHash = string(hashed)
 	}
@@ -122,7 +124,7 @@ func (e *userEngineImpl) RegisterUser(ctx context.Context, param *entity.Registe
 
 func (e *userEngineImpl) GetUser(ctx context.Context, id uuid.UUID) (*entity.GetUserResult, error) {
 	if id == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
+		return nil, entity.ErrInvalidUserID
 	}
 
 	u, err := e.repo.GetUserByID(ctx, id)
@@ -148,7 +150,7 @@ func (e *userEngineImpl) GetUser(ctx context.Context, id uuid.UUID) (*entity.Get
 
 func (e *userEngineImpl) UpdateUser(ctx context.Context, param *entity.UpdateUserParam) (*entity.User, error) {
 	if param.ID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
+		return nil, entity.ErrInvalidUserID
 	}
 	if param.Email != "" {
 		taken, err := e.repo.ExistsByEmail(ctx, param.Email)
@@ -161,7 +163,7 @@ func (e *userEngineImpl) UpdateUser(ctx context.Context, param *entity.UpdateUse
 				return nil, cErr
 			}
 			if current.Email != param.Email {
-				return nil, cerr.ErrEmailAlreadyUsed.WithDetail("email", param.Email)
+				return nil, entity.ErrEmailAlreadyUsed.WithDetail("email", param.Email)
 			}
 		}
 	}
@@ -170,7 +172,7 @@ func (e *userEngineImpl) UpdateUser(ctx context.Context, param *entity.UpdateUse
 
 func (e *userEngineImpl) GetDriverProfile(ctx context.Context, userID uuid.UUID) (*entity.DriverProfile, error) {
 	if userID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
+		return nil, entity.ErrInvalidUserID
 	}
 	if err := e.mustBeRole(ctx, userID, entity.RoleDriver); err != nil {
 		return nil, err
@@ -180,7 +182,7 @@ func (e *userEngineImpl) GetDriverProfile(ctx context.Context, userID uuid.UUID)
 
 func (e *userEngineImpl) UpdateDriverProfile(ctx context.Context, param *entity.UpdateDriverProfileParam) (*entity.DriverProfile, error) {
 	if param.UserID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
+		return nil, entity.ErrInvalidUserID
 	}
 	if err := e.mustBeRole(ctx, param.UserID, entity.RoleDriver); err != nil {
 		return nil, err
@@ -190,7 +192,7 @@ func (e *userEngineImpl) UpdateDriverProfile(ctx context.Context, param *entity.
 
 func (e *userEngineImpl) GetShipperProfile(ctx context.Context, userID uuid.UUID) (*entity.ShipperProfile, error) {
 	if userID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
+		return nil, entity.ErrInvalidUserID
 	}
 	if err := e.mustBeRole(ctx, userID, entity.RoleShipper); err != nil {
 		return nil, err
@@ -200,25 +202,12 @@ func (e *userEngineImpl) GetShipperProfile(ctx context.Context, userID uuid.UUID
 
 func (e *userEngineImpl) UpdateShipperProfile(ctx context.Context, param *entity.UpdateShipperProfileParam) (*entity.ShipperProfile, error) {
 	if param.UserID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
+		return nil, entity.ErrInvalidUserID
 	}
 	if err := e.mustBeRole(ctx, param.UserID, entity.RoleShipper); err != nil {
 		return nil, err
 	}
 	return e.repo.UpdateShipperProfile(ctx, param)
-}
-
-func (e *userEngineImpl) UpdateDriverKYC(ctx context.Context, param *entity.UpdateDriverKYCParam) (*entity.DriverProfile, error) {
-	if param.UserID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
-	}
-	if !entity.IsValidKycStatus(param.KycStatus) {
-		return nil, cerr.ErrInvalidKycStatus.WithDetail("kyc_status", param.KycStatus)
-	}
-	if err := e.mustBeRole(ctx, param.UserID, entity.RoleDriver); err != nil {
-		return nil, err
-	}
-	return e.repo.UpdateDriverKYC(ctx, param)
 }
 
 func (e *userEngineImpl) mustBeRole(ctx context.Context, userID uuid.UUID, role string) error {
@@ -228,25 +217,25 @@ func (e *userEngineImpl) mustBeRole(ctx context.Context, userID uuid.UUID, role 
 	}
 	if u.Role != role {
 		if role == entity.RoleDriver {
-			return cerr.ErrNotADriver.WithDetail("actual_role", u.Role)
+			return entity.ErrNotADriver.WithDetail("actual_role", u.Role)
 		}
-		return cerr.ErrNotAShipper.WithDetail("actual_role", u.Role)
+		return entity.ErrNotAShipper.WithDetail("actual_role", u.Role)
 	}
 	return nil
 }
 
 func (e *userEngineImpl) CreateAddress(ctx context.Context, param *entity.CreateAddressParam) (*entity.Address, error) {
 	if param.UserID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
+		return nil, entity.ErrInvalidUserID
 	}
 	if param.Line1 == "" {
-		return nil, cerr.ErrAddressRequired
+		return nil, entity.ErrAddressRequired
 	}
 	if param.AddressType == "" {
 		param.AddressType = entity.AddressTypeBoth
 	}
 	if !entity.IsValidAddressType(param.AddressType) {
-		return nil, cerr.ErrInvalidAddrType.WithDetail("address_type", param.AddressType)
+		return nil, entity.ErrInvalidAddrType.WithDetail("address_type", param.AddressType)
 	}
 
 	if _, err := e.repo.GetUserByID(ctx, param.UserID); err != nil {
@@ -264,10 +253,10 @@ func (e *userEngineImpl) CreateAddress(ctx context.Context, param *entity.Create
 
 func (e *userEngineImpl) ListAddresses(ctx context.Context, param *entity.ListAddressesParam) (*entity.ListAddressesResult, error) {
 	if param.UserID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
+		return nil, entity.ErrInvalidUserID
 	}
 	if param.AddressType != "" && !entity.IsValidAddressType(param.AddressType) {
-		return nil, cerr.ErrInvalidAddrType.WithDetail("address_type", param.AddressType)
+		return nil, entity.ErrInvalidAddrType.WithDetail("address_type", param.AddressType)
 	}
 
 	page, pageSize, _ := entity.NormalizePaging(param.Page, param.PageSize)
@@ -284,10 +273,10 @@ func (e *userEngineImpl) ListAddresses(ctx context.Context, param *entity.ListAd
 
 func (e *userEngineImpl) UpdateAddress(ctx context.Context, param *entity.UpdateAddressParam) (*entity.Address, error) {
 	if param.ID == uuid.Nil {
-		return nil, cerr.ErrInvalidAddressID
+		return nil, entity.ErrInvalidAddressID
 	}
 	if param.AddressType != "" && !entity.IsValidAddressType(param.AddressType) {
-		return nil, cerr.ErrInvalidAddrType.WithDetail("address_type", param.AddressType)
+		return nil, entity.ErrInvalidAddrType.WithDetail("address_type", param.AddressType)
 	}
 
 	current, err := e.repo.GetAddress(ctx, param.ID)
@@ -296,7 +285,7 @@ func (e *userEngineImpl) UpdateAddress(ctx context.Context, param *entity.Update
 	}
 
 	if param.UserID != uuid.Nil && current.UserID != param.UserID {
-		return nil, cerr.ErrAddressNotOwned
+		return nil, entity.ErrAddressNotOwned
 	}
 
 	if param.IsDefault && !current.IsDefault {
@@ -310,30 +299,30 @@ func (e *userEngineImpl) UpdateAddress(ctx context.Context, param *entity.Update
 
 func (e *userEngineImpl) DeleteAddress(ctx context.Context, id, userID uuid.UUID) error {
 	if id == uuid.Nil {
-		return cerr.ErrInvalidAddressID
+		return entity.ErrInvalidAddressID
 	}
 	current, err := e.repo.GetAddress(ctx, id)
 	if err != nil {
 		return err
 	}
 	if userID != uuid.Nil && current.UserID != userID {
-		return cerr.ErrAddressNotOwned
+		return entity.ErrAddressNotOwned
 	}
 	return e.repo.DeleteAddress(ctx, id)
 }
 
 func (e *userEngineImpl) RegisterDevice(ctx context.Context, param *entity.RegisterDeviceParam) (*entity.UserDevice, error) {
 	if param.UserID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
+		return nil, entity.ErrInvalidUserID
 	}
 	if param.DeviceToken == "" {
-		return nil, cerr.ErrDeviceTokenEmpty
+		return nil, entity.ErrDeviceTokenEmpty
 	}
 	if param.Platform == "" {
 		param.Platform = entity.PlatformAndroid
 	}
 	if !entity.IsValidPlatform(param.Platform) {
-		return nil, cerr.ErrInvalidPlatform.WithDetail("platform", param.Platform)
+		return nil, entity.ErrInvalidPlatform.WithDetail("platform", param.Platform)
 	}
 
 	if _, err := e.repo.GetUserByID(ctx, param.UserID); err != nil {
@@ -344,31 +333,31 @@ func (e *userEngineImpl) RegisterDevice(ctx context.Context, param *entity.Regis
 
 func (e *userEngineImpl) ListDevices(ctx context.Context, userID uuid.UUID) ([]entity.UserDevice, error) {
 	if userID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
+		return nil, entity.ErrInvalidUserID
 	}
 	return e.repo.ListDevices(ctx, userID)
 }
 
 func (e *userEngineImpl) DeleteDevice(ctx context.Context, id, userID uuid.UUID) error {
 	if id == uuid.Nil {
-		return cerr.ErrInvalidDeviceID
+		return entity.ErrInvalidDeviceID
 	}
 	current, err := e.repo.GetDevice(ctx, id)
 	if err != nil {
 		return err
 	}
 	if userID != uuid.Nil && current.UserID != userID {
-		return cerr.ErrDeviceNotOwned
+		return entity.ErrDeviceNotOwned
 	}
 	return e.repo.DeleteDevice(ctx, id)
 }
 
 func (e *userEngineImpl) AdminListUsers(ctx context.Context, filter *entity.ListUsersFilter) (*entity.ListUsersResult, error) {
 	if filter.Role != "" && !entity.IsValidRole(filter.Role) {
-		return nil, cerr.ErrInvalidRole.WithDetail("role", filter.Role)
+		return nil, entity.ErrInvalidRole.WithDetail("role", filter.Role)
 	}
 	if filter.Status != "" && !entity.IsValidStatus(filter.Status) {
-		return nil, cerr.ErrInvalidStatus.WithDetail("status", filter.Status)
+		return nil, entity.ErrInvalidStatus.WithDetail("status", filter.Status)
 	}
 
 	page, pageSize, _ := entity.NormalizePaging(filter.Page, filter.PageSize)
@@ -385,51 +374,12 @@ func (e *userEngineImpl) AdminListUsers(ctx context.Context, filter *entity.List
 
 func (e *userEngineImpl) AdminUpdateUserStatus(ctx context.Context, param *entity.UpdateUserStatusParam) (*entity.User, error) {
 	if param.ID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
+		return nil, entity.ErrInvalidUserID
 	}
 	if !entity.IsValidStatus(param.Status) {
-		return nil, cerr.ErrInvalidStatus.WithDetail("status", param.Status)
+		return nil, entity.ErrInvalidStatus.WithDetail("status", param.Status)
 	}
 	return e.repo.UpdateUserStatus(ctx, param.ID, param.Status, param.Reason)
-}
-
-func (e *userEngineImpl) AdminListPendingKYC(ctx context.Context, page, pageSize int) (*entity.ListDriverProfilesResult, error) {
-	page, pageSize, _ = entity.NormalizePaging(page, pageSize)
-	list, total, err := e.repo.ListPendingKYC(ctx, page, pageSize)
-	if err != nil {
-		return nil, err
-	}
-	return &entity.ListDriverProfilesResult{
-		DriverProfiles: list,
-		Pagination:     entity.BuildPagination(page, pageSize, total),
-	}, nil
-}
-
-func (e *userEngineImpl) AdminReviewKYC(ctx context.Context, param *entity.ReviewKYCParam) (*entity.DriverProfile, error) {
-	if param.UserID == uuid.Nil {
-		return nil, cerr.ErrInvalidUserID
-	}
-
-	current, err := e.repo.GetDriverProfile(ctx, param.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	if current.KycStatus != entity.KycPending {
-		return nil, cerr.ErrKycAlreadyReviewed.WithDetail("current_status", current.KycStatus)
-	}
-
-	status := entity.KycRejected
-	if param.Approved {
-		status = entity.KycApproved
-	}
-
-	return e.repo.UpdateDriverKYC(ctx, &entity.UpdateDriverKYCParam{
-		UserID:     param.UserID,
-		KycStatus:  status,
-		Note:       param.Note,
-		ReviewerID: param.ReviewerID,
-	})
 }
 
 func (e *userEngineImpl) AdminGetUserStats(ctx context.Context) (*entity.UserStats, error) {
@@ -453,7 +403,7 @@ func (e *userEngineImpl) AdminGetUserStats(ctx context.Context) (*entity.UserSta
 	if err != nil {
 		return nil, err
 	}
-	pendingKyc, err := e.repo.CountPendingKYC(ctx)
+	pendingKyc, err := e.CountPendingKYC(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -470,7 +420,7 @@ func (e *userEngineImpl) AdminGetUserStats(ctx context.Context) (*entity.UserSta
 
 func (e *userEngineImpl) AdminDeleteUser(ctx context.Context, id uuid.UUID) error {
 	if id == uuid.Nil {
-		return cerr.ErrInvalidUserID
+		return entity.ErrInvalidUserID
 	}
 	return e.repo.DeleteUser(ctx, id)
 }

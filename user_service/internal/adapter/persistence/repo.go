@@ -1,4 +1,4 @@
-package repo
+package persistence
 
 import (
 	"context"
@@ -12,8 +12,7 @@ import (
 	"user_service/ent/shipperprofile"
 	"user_service/ent/user"
 	"user_service/ent/userdevice"
-	"user_service/internal/biz"
-	cerr "user_service/internal/common/errors"
+	"user_service/internal/app"
 	"user_service/internal/entity"
 	"user_service/internal/mapper"
 
@@ -34,9 +33,9 @@ type userRepoImpl struct {
 	mapper mapper.AppMapper
 }
 
-var _ biz.UserRepo = (*userRepoImpl)(nil)
+var _ app.UserRepo = (*userRepoImpl)(nil)
 
-func NewUserRepo(client *ent.Client, redis *cache.Client, appMapper mapper.AppMapper) biz.UserRepo {
+func NewUserRepo(client *ent.Client, redis *cache.Client, appMapper mapper.AppMapper) app.UserRepo {
 	return &userRepoImpl{client: client, cache: redis, mapper: appMapper}
 }
 
@@ -86,7 +85,7 @@ func (r *userRepoImpl) CreateUser(ctx context.Context, u *entity.User) (*entity.
 
 	dao, err := builder.Save(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrUserNotFound)
+		return nil, wrapError(err, entity.ErrUserNotFound)
 	}
 
 	e := r.mapper.EntUserToEntityUser(dao)
@@ -105,7 +104,7 @@ func (r *userRepoImpl) GetUserByID(ctx context.Context, id uuid.UUID) (*entity.U
 
 	dao, err := r.client.User.Query().Where(user.IDEQ(id)).Only(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrUserNotFound)
+		return nil, wrapError(err, entity.ErrUserNotFound)
 	}
 
 	e := r.mapper.EntUserToEntityUser(dao)
@@ -127,7 +126,7 @@ func (r *userRepoImpl) GetUserByPhone(ctx context.Context, phone string) (*entit
 
 	dao, err := r.client.User.Query().Where(user.PhoneEQ(phone)).Only(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrUserNotFound)
+		return nil, wrapError(err, entity.ErrUserNotFound)
 	}
 
 	e := r.mapper.EntUserToEntityUser(dao)
@@ -140,7 +139,7 @@ func (r *userRepoImpl) GetUserByPhone(ctx context.Context, phone string) (*entit
 func (r *userRepoImpl) ExistsByPhone(ctx context.Context, phone string) (bool, error) {
 	n, err := r.client.User.Query().Where(user.PhoneEQ(phone)).Count(ctx)
 	if err != nil {
-		return false, wrapError(err, cerr.ErrUserNotFound)
+		return false, wrapError(err, entity.ErrUserNotFound)
 	}
 	return n > 0, nil
 }
@@ -151,7 +150,7 @@ func (r *userRepoImpl) ExistsByEmail(ctx context.Context, email string) (bool, e
 	}
 	n, err := r.client.User.Query().Where(user.EmailEQ(email)).Count(ctx)
 	if err != nil {
-		return false, wrapError(err, cerr.ErrUserNotFound)
+		return false, wrapError(err, entity.ErrUserNotFound)
 	}
 	return n > 0, nil
 }
@@ -171,7 +170,7 @@ func (r *userRepoImpl) UpdateUser(ctx context.Context, param *entity.UpdateUserP
 
 	dao, err := builder.Save(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrUserNotFound)
+		return nil, wrapError(err, entity.ErrUserNotFound)
 	}
 
 	r.invalidateUser(ctx, dao.ID, dao.Phone)
@@ -185,7 +184,7 @@ func (r *userRepoImpl) UpdateUserStatus(ctx context.Context, id uuid.UUID, statu
 		SetStatusReason(reason).
 		Save(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrUserNotFound)
+		return nil, wrapError(err, entity.ErrUserNotFound)
 	}
 
 	r.invalidateUser(ctx, dao.ID, dao.Phone)
@@ -196,7 +195,7 @@ func (r *userRepoImpl) UpdateUserStatus(ctx context.Context, id uuid.UUID, statu
 func (r *userRepoImpl) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	dao, err := r.client.User.Get(ctx, id)
 	if err != nil {
-		return wrapError(err, cerr.ErrUserNotFound)
+		return wrapError(err, entity.ErrUserNotFound)
 	}
 
 	tx, err := r.client.Tx(ctx)
@@ -206,19 +205,19 @@ func (r *userRepoImpl) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	defer func() { _ = tx.Rollback() }()
 
 	if _, err := tx.Address.Delete().Where(address.UserIDEQ(id)).Exec(ctx); err != nil {
-		return wrapError(err, cerr.ErrAddressNotFound)
+		return wrapError(err, entity.ErrAddressNotFound)
 	}
 	if _, err := tx.UserDevice.Delete().Where(userdevice.UserIDEQ(id)).Exec(ctx); err != nil {
-		return wrapError(err, cerr.ErrDeviceNotFound)
+		return wrapError(err, entity.ErrDeviceNotFound)
 	}
 	if _, err := tx.DriverProfile.Delete().Where(driverprofile.UserIDEQ(id)).Exec(ctx); err != nil {
-		return wrapError(err, cerr.ErrDriverProfileNotFound)
+		return wrapError(err, entity.ErrDriverProfileNotFound)
 	}
 	if _, err := tx.ShipperProfile.Delete().Where(shipperprofile.UserIDEQ(id)).Exec(ctx); err != nil {
-		return wrapError(err, cerr.ErrShipperProfileNotFound)
+		return wrapError(err, entity.ErrShipperProfileNotFound)
 	}
 	if err := tx.User.DeleteOneID(id).Exec(ctx); err != nil {
-		return wrapError(err, cerr.ErrUserNotFound)
+		return wrapError(err, entity.ErrUserNotFound)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -252,7 +251,7 @@ func (r *userRepoImpl) ListUsers(ctx context.Context, filter *entity.ListUsersFi
 
 	total, err := q.Clone().Count(ctx)
 	if err != nil {
-		return nil, 0, wrapError(err, cerr.ErrUserNotFound)
+		return nil, 0, wrapError(err, entity.ErrUserNotFound)
 	}
 
 	daos, err := q.
@@ -261,7 +260,7 @@ func (r *userRepoImpl) ListUsers(ctx context.Context, filter *entity.ListUsersFi
 		Limit(pageSize).
 		All(ctx)
 	if err != nil {
-		return nil, 0, wrapError(err, cerr.ErrUserNotFound)
+		return nil, 0, wrapError(err, entity.ErrUserNotFound)
 	}
 
 	return r.mapper.EntUserListToEntityUserList(daos), int64(total), nil
@@ -277,7 +276,7 @@ func (r *userRepoImpl) CountUsers(ctx context.Context, role, status string) (int
 	}
 	n, err := q.Count(ctx)
 	if err != nil {
-		return 0, wrapError(err, cerr.ErrUserNotFound)
+		return 0, wrapError(err, entity.ErrUserNotFound)
 	}
 	return int64(n), nil
 }
@@ -294,7 +293,7 @@ func (r *userRepoImpl) CreateDriverProfile(ctx context.Context, userID uuid.UUID
 
 	dao, err := builder.Save(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrDriverProfileNotFound)
+		return nil, wrapError(err, entity.ErrDriverProfileNotFound)
 	}
 
 	e := r.mapper.EntDriverProfileToEntityDriverProfile(dao)
@@ -313,7 +312,7 @@ func (r *userRepoImpl) GetDriverProfile(ctx context.Context, userID uuid.UUID) (
 
 	dao, err := r.client.DriverProfile.Query().Where(driverprofile.UserIDEQ(userID)).Only(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrDriverProfileNotFound)
+		return nil, wrapError(err, entity.ErrDriverProfileNotFound)
 	}
 
 	e := r.mapper.EntDriverProfileToEntityDriverProfile(dao)
@@ -326,7 +325,7 @@ func (r *userRepoImpl) GetDriverProfile(ctx context.Context, userID uuid.UUID) (
 func (r *userRepoImpl) UpdateDriverProfile(ctx context.Context, param *entity.UpdateDriverProfileParam) (*entity.DriverProfile, error) {
 	dao, err := r.client.DriverProfile.Query().Where(driverprofile.UserIDEQ(param.UserID)).Only(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrDriverProfileNotFound)
+		return nil, wrapError(err, entity.ErrDriverProfileNotFound)
 	}
 
 	builder := dao.Update()
@@ -339,7 +338,7 @@ func (r *userRepoImpl) UpdateDriverProfile(ctx context.Context, param *entity.Up
 
 	updated, err := builder.Save(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrDriverProfileNotFound)
+		return nil, wrapError(err, entity.ErrDriverProfileNotFound)
 	}
 
 	if r.cache != nil {
@@ -352,7 +351,7 @@ func (r *userRepoImpl) UpdateDriverProfile(ctx context.Context, param *entity.Up
 func (r *userRepoImpl) UpdateDriverKYC(ctx context.Context, param *entity.UpdateDriverKYCParam) (*entity.DriverProfile, error) {
 	dao, err := r.client.DriverProfile.Query().Where(driverprofile.UserIDEQ(param.UserID)).Only(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrDriverProfileNotFound)
+		return nil, wrapError(err, entity.ErrDriverProfileNotFound)
 	}
 
 	builder := dao.Update().
@@ -366,7 +365,7 @@ func (r *userRepoImpl) UpdateDriverKYC(ctx context.Context, param *entity.Update
 
 	updated, err := builder.Save(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrDriverProfileNotFound)
+		return nil, wrapError(err, entity.ErrDriverProfileNotFound)
 	}
 
 	if r.cache != nil {
@@ -384,7 +383,7 @@ func (r *userRepoImpl) ListPendingKYC(ctx context.Context, page, pageSize int) (
 
 	total, err := q.Clone().Count(ctx)
 	if err != nil {
-		return nil, 0, wrapError(err, cerr.ErrDriverProfileNotFound)
+		return nil, 0, wrapError(err, entity.ErrDriverProfileNotFound)
 	}
 
 	daos, err := q.
@@ -393,7 +392,7 @@ func (r *userRepoImpl) ListPendingKYC(ctx context.Context, page, pageSize int) (
 		Limit(pageSize).
 		All(ctx)
 	if err != nil {
-		return nil, 0, wrapError(err, cerr.ErrDriverProfileNotFound)
+		return nil, 0, wrapError(err, entity.ErrDriverProfileNotFound)
 	}
 
 	return r.mapper.EntDriverProfileListToEntityList(daos), int64(total), nil
@@ -404,7 +403,7 @@ func (r *userRepoImpl) CountPendingKYC(ctx context.Context) (int64, error) {
 		Where(driverprofile.KycStatusEQ(driverprofile.KycStatusPending)).
 		Count(ctx)
 	if err != nil {
-		return 0, wrapError(err, cerr.ErrDriverProfileNotFound)
+		return 0, wrapError(err, entity.ErrDriverProfileNotFound)
 	}
 	return int64(n), nil
 }
@@ -417,7 +416,7 @@ func (r *userRepoImpl) CreateShipperProfile(ctx context.Context, userID uuid.UUI
 		SetBusinessAddress(sp.BusinessAddress).
 		Save(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrShipperProfileNotFound)
+		return nil, wrapError(err, entity.ErrShipperProfileNotFound)
 	}
 
 	e := r.mapper.EntShipperProfileToEntityShipperProfile(dao)
@@ -436,7 +435,7 @@ func (r *userRepoImpl) GetShipperProfile(ctx context.Context, userID uuid.UUID) 
 
 	dao, err := r.client.ShipperProfile.Query().Where(shipperprofile.UserIDEQ(userID)).Only(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrShipperProfileNotFound)
+		return nil, wrapError(err, entity.ErrShipperProfileNotFound)
 	}
 
 	e := r.mapper.EntShipperProfileToEntityShipperProfile(dao)
@@ -449,7 +448,7 @@ func (r *userRepoImpl) GetShipperProfile(ctx context.Context, userID uuid.UUID) 
 func (r *userRepoImpl) UpdateShipperProfile(ctx context.Context, param *entity.UpdateShipperProfileParam) (*entity.ShipperProfile, error) {
 	dao, err := r.client.ShipperProfile.Query().Where(shipperprofile.UserIDEQ(param.UserID)).Only(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrShipperProfileNotFound)
+		return nil, wrapError(err, entity.ErrShipperProfileNotFound)
 	}
 
 	builder := dao.Update()
@@ -465,7 +464,7 @@ func (r *userRepoImpl) UpdateShipperProfile(ctx context.Context, param *entity.U
 
 	updated, err := builder.Save(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrShipperProfileNotFound)
+		return nil, wrapError(err, entity.ErrShipperProfileNotFound)
 	}
 
 	if r.cache != nil {
@@ -491,7 +490,7 @@ func (r *userRepoImpl) CreateAddress(ctx context.Context, param *entity.CreateAd
 		SetIsDefault(param.IsDefault).
 		Save(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrAddressNotFound)
+		return nil, wrapError(err, entity.ErrAddressNotFound)
 	}
 
 	if r.cache != nil {
@@ -504,7 +503,7 @@ func (r *userRepoImpl) CreateAddress(ctx context.Context, param *entity.CreateAd
 func (r *userRepoImpl) GetAddress(ctx context.Context, id uuid.UUID) (*entity.Address, error) {
 	dao, err := r.client.Address.Get(ctx, id)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrAddressNotFound)
+		return nil, wrapError(err, entity.ErrAddressNotFound)
 	}
 	e := r.mapper.EntAddressToEntityAddress(dao)
 	return &e, nil
@@ -528,7 +527,7 @@ func (r *userRepoImpl) ListAddresses(ctx context.Context, param *entity.ListAddr
 
 	total, err := q.Clone().Count(ctx)
 	if err != nil {
-		return nil, 0, wrapError(err, cerr.ErrAddressNotFound)
+		return nil, 0, wrapError(err, entity.ErrAddressNotFound)
 	}
 
 	daos, err := q.
@@ -537,7 +536,7 @@ func (r *userRepoImpl) ListAddresses(ctx context.Context, param *entity.ListAddr
 		Limit(pageSize).
 		All(ctx)
 	if err != nil {
-		return nil, 0, wrapError(err, cerr.ErrAddressNotFound)
+		return nil, 0, wrapError(err, entity.ErrAddressNotFound)
 	}
 
 	list := r.mapper.EntAddressListToEntityAddressList(daos)
@@ -580,7 +579,7 @@ func (r *userRepoImpl) UpdateAddress(ctx context.Context, param *entity.UpdateAd
 
 	dao, err := builder.Save(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrAddressNotFound)
+		return nil, wrapError(err, entity.ErrAddressNotFound)
 	}
 
 	if r.cache != nil {
@@ -593,10 +592,10 @@ func (r *userRepoImpl) UpdateAddress(ctx context.Context, param *entity.UpdateAd
 func (r *userRepoImpl) DeleteAddress(ctx context.Context, id uuid.UUID) error {
 	dao, err := r.client.Address.Get(ctx, id)
 	if err != nil {
-		return wrapError(err, cerr.ErrAddressNotFound)
+		return wrapError(err, entity.ErrAddressNotFound)
 	}
 	if err := r.client.Address.DeleteOneID(id).Exec(ctx); err != nil {
-		return wrapError(err, cerr.ErrAddressNotFound)
+		return wrapError(err, entity.ErrAddressNotFound)
 	}
 	if r.cache != nil {
 		_ = r.cache.Delete(ctx, r.keyAddrList(dao.UserID))
@@ -610,7 +609,7 @@ func (r *userRepoImpl) ClearDefaultAddress(ctx context.Context, userID uuid.UUID
 		SetIsDefault(false).
 		Save(ctx)
 	if err != nil {
-		return wrapError(err, cerr.ErrAddressNotFound)
+		return wrapError(err, entity.ErrAddressNotFound)
 	}
 	if r.cache != nil {
 		_ = r.cache.Delete(ctx, r.keyAddrList(userID))
@@ -632,7 +631,7 @@ func (r *userRepoImpl) UpsertDevice(ctx context.Context, param *entity.RegisterD
 			SetLastSeenAt(time.Now()).
 			Save(ctx)
 		if uErr != nil {
-			return nil, wrapError(uErr, cerr.ErrDeviceNotFound)
+			return nil, wrapError(uErr, entity.ErrDeviceNotFound)
 		}
 
 		if r.cache != nil {
@@ -647,7 +646,7 @@ func (r *userRepoImpl) UpsertDevice(ctx context.Context, param *entity.RegisterD
 	}
 
 	if !ent.IsNotFound(err) {
-		return nil, wrapError(err, cerr.ErrDeviceNotFound)
+		return nil, wrapError(err, entity.ErrDeviceNotFound)
 	}
 
 	dao, cErr := r.client.UserDevice.Create().
@@ -657,7 +656,7 @@ func (r *userRepoImpl) UpsertDevice(ctx context.Context, param *entity.RegisterD
 		SetDeviceName(param.DeviceName).
 		Save(ctx)
 	if cErr != nil {
-		return nil, wrapError(cErr, cerr.ErrDeviceNotFound)
+		return nil, wrapError(cErr, entity.ErrDeviceNotFound)
 	}
 
 	if r.cache != nil {
@@ -670,7 +669,7 @@ func (r *userRepoImpl) UpsertDevice(ctx context.Context, param *entity.RegisterD
 func (r *userRepoImpl) GetDevice(ctx context.Context, id uuid.UUID) (*entity.UserDevice, error) {
 	dao, err := r.client.UserDevice.Get(ctx, id)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrDeviceNotFound)
+		return nil, wrapError(err, entity.ErrDeviceNotFound)
 	}
 	e := r.mapper.EntUserDeviceToEntityUserDevice(dao)
 	return &e, nil
@@ -691,7 +690,7 @@ func (r *userRepoImpl) ListDevices(ctx context.Context, userID uuid.UUID) ([]ent
 		Order(ent.Desc(userdevice.FieldLastSeenAt)).
 		All(ctx)
 	if err != nil {
-		return nil, wrapError(err, cerr.ErrDeviceNotFound)
+		return nil, wrapError(err, entity.ErrDeviceNotFound)
 	}
 
 	list := r.mapper.EntUserDeviceListToEntityList(daos)
@@ -704,10 +703,10 @@ func (r *userRepoImpl) ListDevices(ctx context.Context, userID uuid.UUID) ([]ent
 func (r *userRepoImpl) DeleteDevice(ctx context.Context, id uuid.UUID) error {
 	dao, err := r.client.UserDevice.Get(ctx, id)
 	if err != nil {
-		return wrapError(err, cerr.ErrDeviceNotFound)
+		return wrapError(err, entity.ErrDeviceNotFound)
 	}
 	if err := r.client.UserDevice.DeleteOneID(id).Exec(ctx); err != nil {
-		return wrapError(err, cerr.ErrDeviceNotFound)
+		return wrapError(err, entity.ErrDeviceNotFound)
 	}
 	if r.cache != nil {
 		_ = r.cache.Delete(ctx, r.keyDeviceList(dao.UserID))

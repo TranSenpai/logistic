@@ -1,12 +1,12 @@
-package repo
+package persistence
 
 import (
 	"context"
 	"errors"
 	"strings"
+	"user_service/internal/entity"
 
 	"user_service/ent"
-	cerr "user_service/internal/common/errors"
 
 	"github.com/logistic/pkg/apperr"
 )
@@ -25,7 +25,7 @@ func wrapError(err error, notFound *apperr.Error) error {
 
 	if ent.IsNotFound(err) {
 		if notFound == nil {
-			notFound = cerr.ErrUserNotFound
+			notFound = entity.ErrUserNotFound
 		}
 		return notFound.WithCause(err)
 	}
@@ -42,7 +42,7 @@ func wrapError(err error, notFound *apperr.Error) error {
 		return apperr.Conflict("NOT_SINGULAR", "truy vấn trả về nhiều hơn một bản ghi").WithCause(err)
 	}
 
-	return cerr.ErrDatabase.WithCause(err)
+	return entity.ErrDatabase.WithCause(err)
 }
 
 func mapConstraint(err error) error {
@@ -50,13 +50,13 @@ func mapConstraint(err error) error {
 
 	switch {
 	case strings.Contains(msg, "phone"):
-		return cerr.ErrPhoneAlreadyUsed.WithCause(err)
+		return entity.ErrPhoneAlreadyUsed.WithCause(err)
 	case strings.Contains(msg, "email"):
-		return cerr.ErrEmailAlreadyUsed.WithCause(err)
+		return entity.ErrEmailAlreadyUsed.WithCause(err)
 	case strings.Contains(msg, "license_number"):
-		return cerr.ErrLicenseAlreadyUsed.WithCause(err)
+		return entity.ErrLicenseAlreadyUsed.WithCause(err)
 	case strings.Contains(msg, "id_card"):
-		return cerr.ErrIDCardAlreadyUsed.WithCause(err)
+		return entity.ErrIDCardAlreadyUsed.WithCause(err)
 	case strings.Contains(msg, "device_token"):
 		return apperr.AlreadyExists("DEVICE_TOKEN_EXISTS", "thiết bị này đã được đăng ký").WithCause(err)
 	default:
