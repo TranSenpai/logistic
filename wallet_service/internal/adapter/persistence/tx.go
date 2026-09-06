@@ -1,4 +1,4 @@
-package repository
+package persistence
 
 import (
 	"context"
@@ -10,19 +10,15 @@ import (
 
 type keyTx struct{}
 
-type UnitOfWorkRepository interface {
-	Do(ctx context.Context, fn func(ctxTx context.Context) error) error
-}
-
-type unitOfWorkRepository struct {
+type UnitOfWork struct {
 	entClient *ent.Client
 }
 
-func NewUnitOfWorkRepository(entClient *ent.Client) UnitOfWorkRepository {
-	return &unitOfWorkRepository{entClient: entClient}
+func NewUnitOfWork(entClient *ent.Client) *UnitOfWork {
+	return &UnitOfWork{entClient: entClient}
 }
 
-func (u *unitOfWorkRepository) Do(ctx context.Context, fn func(ctxTx context.Context) error) (err error) {
+func (u *UnitOfWork) Do(ctx context.Context, fn func(ctxTx context.Context) error) (err error) {
 	tx, err := u.entClient.Tx(ctx)
 	if err != nil {
 		return err
@@ -45,7 +41,9 @@ func (u *unitOfWorkRepository) Do(ctx context.Context, fn func(ctxTx context.Con
 	return
 }
 
-func GetClientTx(ctx context.Context, client *ent.Client) *ent.Client {
+// clientFrom lấy *ent.Client của transaction đang mở trong context; không có thì
+// dùng client thường. Không export vì chỉ repo trong package này mới cần.
+func clientFrom(ctx context.Context, client *ent.Client) *ent.Client {
 	clientAny := ctx.Value(keyTx{})
 	if clientTx, ok := clientAny.(*ent.Client); ok {
 		return clientTx

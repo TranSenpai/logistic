@@ -86,8 +86,10 @@ jobs:
             - 'user_service/**'
           vehicle:
             - 'vehicle_service/**'
-          # Code dùng chung (pkg, api) — được 6 service Go import qua directive
-          # `replace` trong go.mod, nên đổi ở đây phải BUILD LẠI cả 7 image.
+          wallet:
+            - 'wallet_service/**'
+          # Code dùng chung (pkg, api) — được 7 service Go import qua directive
+          # `replace` trong go.mod, nên đổi ở đây phải BUILD LẠI cả 8 image.
           # Thêm Dockerfile/.dockerignore vì chúng ảnh hưởng trực tiếp tới image.
           shared_code:
             - 'pkg/**'
@@ -113,9 +115,9 @@ jobs:
         SERVICES=""            # tên trong COMPOSE (user-service) -> dùng để restart
         FULL_RECONCILE="false"
 
-        # Tất cả 6 service Go, dùng khi cần build/restart toàn bộ
-        ALL_DIRS="auth_service gateway_service matching_service media_service notification_service user_service vehicle_service"
-        ALL_SVCS="auth-service gateway-service matching-service media-service notification-service user-service vehicle-service"
+        # Tất cả 7 service Go, dùng khi cần build/restart toàn bộ
+        ALL_DIRS="auth_service gateway_service matching_service media_service notification_service user_service vehicle_service wallet_service"
+        ALL_SVCS="auth-service gateway-service matching-service media-service notification-service user-service vehicle-service wallet-service"
 
         if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.service }}" != 'auto' ]]; then
           # Trigger tay: dùng đúng giá trị người chạy chọn, bỏ qua paths-filter.
@@ -148,9 +150,10 @@ jobs:
             if [[ "${{ steps.filter.outputs.notification }}" == 'true' ]]; then BUILD_DIRS="$BUILD_DIRS notification_service"; fi
             if [[ "${{ steps.filter.outputs.user }}"     == 'true' ]]; then BUILD_DIRS="$BUILD_DIRS user_service";     fi
             if [[ "${{ steps.filter.outputs.vehicle }}"  == 'true' ]]; then BUILD_DIRS="$BUILD_DIRS vehicle_service";  fi
+            if [[ "${{ steps.filter.outputs.wallet }}"   == 'true' ]]; then BUILD_DIRS="$BUILD_DIRS wallet_service";  fi
           fi
         elif [[ "${{ steps.filter.outputs.shared_code }}" == 'true' ]]; then
-          # Code dùng chung (pkg/api) đổi: build lại + restart cả 7 service Go.
+          # Code dùng chung (pkg/api) đổi: build lại + restart cả 8 service Go.
           BUILD_DIRS="$ALL_DIRS"
           SERVICES="$ALL_SVCS"
         else
@@ -162,6 +165,7 @@ jobs:
           if [[ "${{ steps.filter.outputs.notification }}" == 'true' ]]; then BUILD_DIRS="$BUILD_DIRS notification_service"; SERVICES="$SERVICES notification-service"; fi
           if [[ "${{ steps.filter.outputs.user }}"     == 'true' ]]; then BUILD_DIRS="$BUILD_DIRS user_service";     SERVICES="$SERVICES user-service";     fi
           if [[ "${{ steps.filter.outputs.vehicle }}"  == 'true' ]]; then BUILD_DIRS="$BUILD_DIRS vehicle_service";  SERVICES="$SERVICES vehicle-service";  fi
+          if [[ "${{ steps.filter.outputs.wallet }}"   == 'true' ]]; then BUILD_DIRS="$BUILD_DIRS wallet_service";  SERVICES="$SERVICES wallet-service";  fi
         fi
 
         # Gọt khoảng trắng thừa
@@ -439,6 +443,17 @@ jobs:
           VEHICLE_DB_NAME=${{ secrets.VEHICLE_DB_NAME }}
           VEHICLE_DB_REPLICATION_USER=${{ secrets.VEHICLE_DB_REPLICATION_USER }}
           VEHICLE_DB_REPLICATION_PASSWORD=${{ secrets.VEHICLE_DB_REPLICATION_PASSWORD }}
+          WALLET_SERVICE_GRPC_PORT=${{ secrets.WALLET_SERVICE_GRPC_PORT }}
+          WALLET_SERVICE_DB_NAME=${{ secrets.WALLET_SERVICE_DB_NAME }}
+          WALLET_SERVICE_DB_USER=${{ secrets.WALLET_SERVICE_DB_USER }}
+          WALLET_SERVICE_DB_PASSWORD=${{ secrets.WALLET_SERVICE_DB_PASSWORD }}
+          WALLET_SERVICE_DB_ROOT_PASSWORD=${{ secrets.WALLET_SERVICE_DB_ROOT_PASSWORD }}
+          WALLET_SERVICE_DB_DSN=${{ secrets.WALLET_SERVICE_DB_DSN }}
+          WALLET_SERVICE_KAFKA_BROKERS=${{ secrets.WALLET_SERVICE_KAFKA_BROKERS }}
+          WALLET_SERVICE_ES_ADDRESSES=${{ secrets.WALLET_SERVICE_ES_ADDRESSES }}
+          WALLET_SERVICE_ES_USERNAME=${{ secrets.WALLET_SERVICE_ES_USERNAME }}
+          WALLET_SERVICE_ES_PASSWORD=${{ secrets.WALLET_SERVICE_ES_PASSWORD }}
+          MATCHING_WALLET_GRPC_ADDR=${{ secrets.MATCHING_WALLET_GRPC_ADDR }}
           OTEL_EXPORTER_OTLP_ENDPOINT=${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
           ELASTIC_PASSWORD=${{ secrets.ELASTIC_PASSWORD }}
           KIBANA_PASSWORD=${{ secrets.KIBANA_PASSWORD }}

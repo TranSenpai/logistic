@@ -1,4 +1,4 @@
-package controller
+package grpcserver
 
 import (
 	"context"
@@ -8,27 +8,27 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"wallet_service/internal/biz"
+	"wallet_service/internal/adapter/search"
+	"wallet_service/internal/app"
 	"wallet_service/internal/mapper"
-	"wallet_service/internal/search"
 )
 
-type WalletController struct {
+type WalletServer struct {
 	pb.UnimplementedWalletServiceServer
-	useCase  biz.WalletUseCase
+	useCase  app.WalletUseCase
 	esEngine search.WalletSearchEngine
 	mapper   mapper.WalletMapper
 }
 
-func NewWalletController(useCase biz.WalletUseCase, esEngine search.WalletSearchEngine, m mapper.WalletMapper) *WalletController {
-	return &WalletController{
+func NewWalletServer(useCase app.WalletUseCase, esEngine search.WalletSearchEngine, m mapper.WalletMapper) *WalletServer {
+	return &WalletServer{
 		useCase:  useCase,
 		esEngine: esEngine,
 		mapper:   m,
 	}
 }
 
-func (c *WalletController) GetBalance(ctx context.Context, req *pb.GetBalanceReq) (*pb.GetBalanceRes, error) {
+func (c *WalletServer) GetBalance(ctx context.Context, req *pb.GetBalanceReq) (*pb.GetBalanceRes, error) {
 	userID, err := uuid.FromBytes(req.UserId)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid user_id format: %v", err)
@@ -45,7 +45,7 @@ func (c *WalletController) GetBalance(ctx context.Context, req *pb.GetBalanceReq
 	}, nil
 }
 
-func (c *WalletController) Deposit(ctx context.Context, req *pb.DepositReq) (*pb.DepositRes, error) {
+func (c *WalletServer) Deposit(ctx context.Context, req *pb.DepositReq) (*pb.DepositRes, error) {
 	userID, err := uuid.FromBytes(req.UserId)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid user_id format")
@@ -68,7 +68,7 @@ func (c *WalletController) Deposit(ctx context.Context, req *pb.DepositReq) (*pb
 	}, nil
 }
 
-func (c *WalletController) Transfer(ctx context.Context, req *pb.TransferReq) (*pb.TransferRes, error) {
+func (c *WalletServer) Transfer(ctx context.Context, req *pb.TransferReq) (*pb.TransferRes, error) {
 	fromUser, err := uuid.FromBytes(req.FromUserId)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid from_user_id format")
@@ -95,7 +95,7 @@ func (c *WalletController) Transfer(ctx context.Context, req *pb.TransferReq) (*
 	}, nil
 }
 
-func (c *WalletController) SearchWallets(ctx context.Context, req *pb.SearchWalletsReq) (*pb.SearchWalletsRes, error) {
+func (c *WalletServer) SearchWallets(ctx context.Context, req *pb.SearchWalletsReq) (*pb.SearchWalletsRes, error) {
 	if c.esEngine == nil {
 		return nil, status.Errorf(codes.Unimplemented, "elasticsearch engine is not available")
 	}
@@ -133,7 +133,7 @@ func (c *WalletController) SearchWallets(ctx context.Context, req *pb.SearchWall
 	return res, nil
 }
 
-func (c *WalletController) SearchTransactions(ctx context.Context, req *pb.SearchTransactionsReq) (*pb.SearchTransactionsRes, error) {
+func (c *WalletServer) SearchTransactions(ctx context.Context, req *pb.SearchTransactionsReq) (*pb.SearchTransactionsRes, error) {
 	if c.esEngine == nil {
 		return nil, status.Errorf(codes.Unimplemented, "elasticsearch engine is not available")
 	}

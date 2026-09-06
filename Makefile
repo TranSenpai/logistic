@@ -111,7 +111,7 @@ auth-keys-show:
 # Modules / Build Verification
 # ==============================================================================
 
-GO_SERVICES = auth_service gateway_service matching_service media_service notification_service user_service vehicle_service
+GO_SERVICES = auth_service gateway_service matching_service media_service notification_service user_service vehicle_service wallet_service
 
 .PHONY: verify-modules tidy-modules docker-build
 
@@ -154,8 +154,12 @@ docker-build:
 #  - goverter: v1.9.0 kéo golang.org/x/tools v0.25.0 — bản này KHÔNG biên dịch
 #            được với Go 1.26 ("invalid array length"). v1.9.4 thì chạy tốt.
 
+# CỐ Ý thiếu matching_service và wallet_service: hai service này sinh ent bằng
+# cờ --feature riêng, khai trong <service>/ent/generate.go (matching dùng
+# sql/execquery,intercept; wallet dùng sql/modifier cho SELECT ... FOR UPDATE).
+# Regen chúng bằng `go generate ./ent` trong thư mục service, KHÔNG phải ent-all.
 ENT_SERVICES = notification_service user_service vehicle_service
-MAPPER_SERVICES = matching_service notification_service user_service vehicle_service
+MAPPER_SERVICES = matching_service notification_service user_service vehicle_service wallet_service
 
 ENT_VERSION = v0.14.6
 GOVERTER_VERSION = v1.9.4
