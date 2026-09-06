@@ -9,7 +9,23 @@ import (
 	"matching_service/internal/entity"
 
 	"github.com/google/uuid"
+	"github.com/logistic/pkg/apperr"
 )
+
+func assertKind(t *testing.T, err error, want apperr.Kind, wantCode string) {
+	t.Helper()
+
+	appErr, ok := apperr.From(err)
+	if !ok {
+		t.Fatalf("lỗi không mang phân loại apperr nên sẽ thành 500: %v", err)
+	}
+	if appErr.Kind != want {
+		t.Errorf("Kind = %s, mong đợi %s", appErr.Kind, want)
+	}
+	if appErr.Code != wantCode {
+		t.Errorf("Code = %s, mong đợi %s", appErr.Code, wantCode)
+	}
+}
 
 type fakeNotifier struct {
 	mu               sync.Mutex
@@ -84,6 +100,8 @@ type fakeRepo struct {
 	asksForBid []entity.Ask
 	bidsForAsk []entity.Bid
 	contracts  []*entity.MatchContract
+
+	createContractErr error
 }
 
 func newFakeRepo() *fakeRepo {
@@ -159,6 +177,9 @@ func (r *fakeRepo) GetAsk(_ context.Context, id uuid.UUID) (*entity.Ask, error) 
 func (r *fakeRepo) CreateMatchContract(_ context.Context, c *entity.MatchContract) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if r.createContractErr != nil {
+		return r.createContractErr
+	}
 	r.contracts = append(r.contracts, c)
 	return nil
 }
@@ -175,13 +196,14 @@ func (fakeSpatial) GetNeighborZones(context.Context, string) ([]string, error) {
 type fakePublisher struct {
 	mu    sync.Mutex
 	count int
+	err   error
 }
 
 func (p *fakePublisher) Publish(context.Context, *EventMessage) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.count++
-	return nil
+	return p.err
 }
 
 func newTestEngine(repo MatchingRepo, notifier Notifier) MatchingEngine {
@@ -191,8 +213,8 @@ func newTestEngine(repo MatchingRepo, notifier Notifier) MatchingEngine {
 func TestSubmitBidNotifiesCandidateDrivers(t *testing.T) {
 	repo := newFakeRepo()
 	repo.asksForBid = []entity.Ask{
-		{ID: uuid.New(), DriverID: uuid.New(), VehicleID: uuid.New(), MinPrice: 100},
-		{ID: uuid.New(), DriverID: uuid.New(), VehicleID: uuid.New(), MinPrice: 120},
+		availableTruck(100),
+		availableTruck(120),
 	}
 
 	notifier := &fakeNotifier{}
@@ -244,7 +266,7 @@ func TestSubmitBidWithNoCandidatesDoesNotNotify(t *testing.T) {
 
 func TestSubmitBidSucceedsWhenNotifierFails(t *testing.T) {
 	repo := newFakeRepo()
-	repo.asksForBid = []entity.Ask{{ID: uuid.New(), DriverID: uuid.New()}}
+	repo.asksForBid = []entity.Ask{availableTruck(100)}
 
 	notifier := &fakeNotifier{err: errors.New("rabbitmq: connection refused")}
 	engine := newTestEngine(repo, notifier)
@@ -273,10 +295,11 @@ func TestAcceptOfferNotifiesMatchFound(t *testing.T) {
 	bidID := uuid.Must(uuid.NewV7())
 	askID := uuid.Must(uuid.NewV7())
 
-	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusNegotiating}
+	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusNegotiating,
+		OfferedAskID: askID, OfferedPrice: 4_000_000}
 	repo.asks[askID] = &entity.Ask{ID: askID, DriverID: uuid.New(), VehicleID: uuid.New(), MinPrice: 1000}
 
-	contract, err := engine.AcceptOffer(ctx, bidID, askID)
+	contract, err := engine.AcceptOffer(ctx, bidID, askID, 4_000_000, "chu-ky-chu-hang")
 	if err != nil {
 		t.Fatalf("AcceptOffer lỗi: %v", err)
 	}
@@ -292,6 +315,37 @@ func TestAcceptOfferNotifiesMatchFound(t *testing.T) {
 	if notifier.lastBid == nil || notifier.lastAsk == nil {
 		t.Error("notifier phải nhận được cả bid và ask để báo cho hai phía")
 	}
+
+	if contract.ShipperSignature != "chu-ky-chu-hang" {
+		t.Errorf("chữ ký chủ hàng = %q, mong đợi %q", contract.ShipperSignature, "chu-ky-chu-hang")
+	}
+	if contract.AgreedAt.IsZero() {
+		t.Error("agreed_at phải được đặt, nếu không ent từ chối ghi hợp đồng")
+	}
+}
+
+func TestAcceptOfferGhiHopDongTruocKhiLatTrangThai(t *testing.T) {
+	repo := newFakeRepo()
+	engine := newTestEngine(repo, &fakeNotifier{})
+
+	bidID := uuid.Must(uuid.NewV7())
+	askID := uuid.Must(uuid.NewV7())
+	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusNegotiating,
+		OfferedAskID: askID, OfferedPrice: 4_000_000}
+	repo.asks[askID] = &entity.Ask{ID: askID, DriverID: uuid.New(), MinPrice: 1000}
+
+	repo.createContractErr = errors.New("ent: missing required field")
+
+	if _, err := engine.AcceptOffer(context.Background(), bidID, askID, 4_000_000, "chu-ky"); err == nil {
+		t.Fatal("AcceptOffer phải trả lỗi khi không ghi được hợp đồng")
+	}
+
+	if repo.bids[bidID].Status == entity.BidStatusMatched {
+		t.Error("đơn bị đánh dấu MATCHED dù hợp đồng ghi hỏng")
+	}
+	if repo.asks[askID].Status == entity.AskStatusMatched {
+		t.Error("chuyến bị đánh dấu MATCHED dù hợp đồng ghi hỏng")
+	}
 }
 
 func TestAcceptOfferRejectsNonNegotiatingBid(t *testing.T) {
@@ -304,30 +358,60 @@ func TestAcceptOfferRejectsNonNegotiatingBid(t *testing.T) {
 	repo.bids[bidID] = &entity.Bid{ID: bidID, Status: entity.BidStatusPending}
 	repo.asks[askID] = &entity.Ask{ID: askID}
 
-	if _, err := engine.AcceptOffer(context.Background(), bidID, askID); err == nil {
+	_, err := engine.AcceptOffer(context.Background(), bidID, askID, 0, "chu-ky-chu-hang")
+	if err == nil {
 		t.Fatal("không được chốt một bid chưa qua bước thương lượng")
 	}
+	assertKind(t, err, apperr.KindFailedPrecond, "BID_NOT_NEGOTIATING")
 	if _, matchFound, _, _, _ := notifier.counts(); matchFound != 0 {
 		t.Errorf("chốt thất bại mà vẫn báo ghép đơn %d lần", matchFound)
 	}
 }
 
+func TestRejectOfferTraLoiSaiTrangThai(t *testing.T) {
+	repo := newFakeRepo()
+	engine := newTestEngine(repo, &fakeNotifier{})
+
+	bidID := uuid.Must(uuid.NewV7())
+	askID := uuid.Must(uuid.NewV7())
+	repo.bids[bidID] = &entity.Bid{ID: bidID, Status: entity.BidStatusPending}
+	repo.asks[askID] = &entity.Ask{ID: askID}
+
+	err := engine.RejectOffer(context.Background(), bidID, askID)
+	if err == nil {
+		t.Fatal("không được từ chối một bid chưa vào thương lượng")
+	}
+	assertKind(t, err, apperr.KindFailedPrecond, "BID_NOT_NEGOTIATING")
+}
+
+func TestSubmitOfferBaoLoiTamThoiKhiHangDoiHong(t *testing.T) {
+	repo := newFakeRepo()
+	askID := uuid.Must(uuid.NewV7())
+	repo.asks[askID] = &entity.Ask{ID: askID, DriverID: uuid.New()}
+
+	engine := NewMatchingEngine(repo, fakeSpatial{}, NewMockWalletClient(),
+		&fakePublisher{}, &fakePublisher{err: errors.New("nats: no response from stream")}, nil)
+
+	err := engine.SubmitOffer(context.Background(), uuid.Must(uuid.NewV7()), askID, 4_000_000)
+	if err == nil {
+		t.Fatal("publish hỏng thì SubmitOffer phải báo lỗi")
+	}
+	assertKind(t, err, apperr.KindUnavailable, "OFFER_QUEUE_UNAVAILABLE")
+}
+
 func TestSubmitAskNotifiesCargoSuggested(t *testing.T) {
 	repo := newFakeRepo()
 	repo.bidsForAsk = []entity.Bid{
-		{ID: uuid.New(), ShipperID: uuid.New()},
-		{ID: uuid.New(), ShipperID: uuid.New()},
-		{ID: uuid.New(), ShipperID: uuid.New()},
+		matchableCargo(),
+		matchableCargo(),
+		matchableCargo(),
 	}
 
 	notifier := &fakeNotifier{}
 	engine := newTestEngine(repo, notifier)
 
-	_, err := engine.SubmitAsk(context.Background(), &entity.Ask{
-		DriverID:        uuid.New(),
-		VehicleID:       uuid.New(),
-		CurrentLocation: entity.Location{Latitude: 10.7769, Longitude: 106.7009},
-	})
+	truck := availableTruck(1_000_000)
+	_, err := engine.SubmitAsk(context.Background(), &truck)
 	if err != nil {
 		t.Fatalf("SubmitAsk lỗi: %v", err)
 	}
@@ -348,7 +432,8 @@ func TestRejectOfferNotifiesDriverAndReopensBid(t *testing.T) {
 
 	bidID := uuid.Must(uuid.NewV7())
 	askID := uuid.Must(uuid.NewV7())
-	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusNegotiating}
+	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusNegotiating,
+		OfferedAskID: askID, OfferedPrice: 4_000_000}
 	repo.asks[askID] = &entity.Ask{ID: askID, DriverID: uuid.New()}
 
 	if err := engine.RejectOffer(context.Background(), bidID, askID); err != nil {
@@ -387,11 +472,146 @@ func TestNewMatchingEngineAcceptsNilNotifier(t *testing.T) {
 
 	engine := NewMatchingEngine(repo, fakeSpatial{}, NewMockWalletClient(), &fakePublisher{}, &fakePublisher{}, nil)
 
-	repo.asksForBid = []entity.Ask{{ID: uuid.New(), DriverID: uuid.New()}}
+	repo.asksForBid = []entity.Ask{availableTruck(100)}
 	if _, err := engine.SubmitBid(context.Background(), &entity.Bid{
 		ShipperID: uuid.New(),
 		Origin:    entity.Location{Latitude: 10.7769, Longitude: 106.7009},
 	}); err != nil {
 		t.Fatalf("engine với notifier nil phải chạy được, nhận: %v", err)
+	}
+}
+
+func availableTruck(minPrice float64) entity.Ask {
+	return entity.Ask{
+		ID:                uuid.New(),
+		DriverID:          uuid.New(),
+		VehicleID:         uuid.New(),
+		CurrentLocation:   entity.Location{Latitude: 10.7769, Longitude: 106.7009},
+		Destination:       entity.Location{Latitude: 10.9804, Longitude: 106.6519},
+		AvailableWeightKg: 8000,
+		AvailableVolumeM3: 30,
+		MinPrice:          minPrice,
+	}
+}
+
+func matchableCargo() entity.Bid {
+	return entity.Bid{
+		ID:          uuid.New(),
+		ShipperID:   uuid.New(),
+		Origin:      entity.Location{Latitude: 10.7769, Longitude: 106.7009},
+		Destination: entity.Location{Latitude: 10.9804, Longitude: 106.6519},
+		WeightKg:    2000,
+		VolumeM3:    8,
+		MaxPrice:    5_000_000,
+	}
+}
+
+// Giá chốt phải là giá tài xế đã báo, không phải min_price của chuyến — min_price
+// là mức sàn tài xế đặt lúc đăng chuyến, không phải kết quả thương lượng.
+func TestGiaChotLaGiaDaBaoKhongPhaiGiaSan(t *testing.T) {
+	repo := newFakeRepo()
+	engine := newTestEngine(repo, &fakeNotifier{})
+
+	bidID := uuid.Must(uuid.NewV7())
+	askID := uuid.Must(uuid.NewV7())
+	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusNegotiating,
+		OfferedAskID: askID, OfferedPrice: 4_000_000}
+	repo.asks[askID] = &entity.Ask{ID: askID, DriverID: uuid.New(), MinPrice: 3_000_000}
+
+	contract, err := engine.AcceptOffer(context.Background(), bidID, askID, 4_000_000, "chu-ky")
+	if err != nil {
+		t.Fatalf("AcceptOffer lỗi: %v", err)
+	}
+	if contract.ConsensusPrice != 4_000_000 {
+		t.Errorf("giá chốt = %v, mong đợi 4000000 (giá đã báo)", contract.ConsensusPrice)
+	}
+	if contract.ConsensusDeposit != 400_000 {
+		t.Errorf("cọc = %v, mong đợi 400000 (10%% giá chốt)", contract.ConsensusDeposit)
+	}
+}
+
+// Chủ hàng không được chốt với tài xế chưa từng báo giá cho đơn này.
+func TestKhongChotDuocVoiChuyenChuaBaoGia(t *testing.T) {
+	repo := newFakeRepo()
+	engine := newTestEngine(repo, &fakeNotifier{})
+
+	bidID := uuid.Must(uuid.NewV7())
+	daBaoGia := uuid.Must(uuid.NewV7())
+	nguoiKhac := uuid.Must(uuid.NewV7())
+	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusNegotiating,
+		OfferedAskID: daBaoGia, OfferedPrice: 4_000_000}
+	repo.asks[nguoiKhac] = &entity.Ask{ID: nguoiKhac, DriverID: uuid.New(), MinPrice: 1_000}
+
+	_, err := engine.AcceptOffer(context.Background(), bidID, nguoiKhac, 0, "chu-ky")
+	if err == nil {
+		t.Fatal("phải từ chối chốt với chuyến không phải người đang thương lượng")
+	}
+	assertKind(t, err, apperr.KindFailedPrecond, "OFFER_ASK_MISMATCH")
+}
+
+// Số client gửi lên chỉ để xác nhận; lệch thì dừng chứ không âm thầm chốt số khác.
+func TestGiaXacNhanLechThiTuChoi(t *testing.T) {
+	repo := newFakeRepo()
+	engine := newTestEngine(repo, &fakeNotifier{})
+
+	bidID := uuid.Must(uuid.NewV7())
+	askID := uuid.Must(uuid.NewV7())
+	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusNegotiating,
+		OfferedAskID: askID, OfferedPrice: 4_000_000}
+	repo.asks[askID] = &entity.Ask{ID: askID, DriverID: uuid.New(), MinPrice: 3_000_000}
+
+	_, err := engine.AcceptOffer(context.Background(), bidID, askID, 1_000_000, "chu-ky")
+	if err == nil {
+		t.Fatal("giá xác nhận lệch thì phải từ chối")
+	}
+	assertKind(t, err, apperr.KindConflict, "PRICE_MISMATCH")
+
+	if len(repo.contracts) != 0 {
+		t.Error("không được ghi hợp đồng khi giá lệch")
+	}
+}
+
+// Từ chối báo giá phải xoá luôn giá đã lưu, nếu không lần chốt sau dùng lại giá cũ.
+func TestTuChoiBaoGiaXoaGiaDaLuu(t *testing.T) {
+	repo := newFakeRepo()
+	engine := newTestEngine(repo, &fakeNotifier{})
+
+	bidID := uuid.Must(uuid.NewV7())
+	askID := uuid.Must(uuid.NewV7())
+	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusNegotiating,
+		OfferedAskID: askID, OfferedPrice: 4_000_000}
+	repo.asks[askID] = &entity.Ask{ID: askID, DriverID: uuid.New(), MinPrice: 3_000_000}
+
+	if err := engine.RejectOffer(context.Background(), bidID, askID); err != nil {
+		t.Fatalf("RejectOffer lỗi: %v", err)
+	}
+
+	sau := repo.bids[bidID]
+	if sau.OfferedPrice != 0 || sau.OfferedAskID != uuid.Nil {
+		t.Errorf("giá đã lưu phải bị xoá, còn lại price=%v ask=%v", sau.OfferedPrice, sau.OfferedAskID)
+	}
+}
+
+// ProcessOfferQueue là nơi duy nhất ghi lại giá báo.
+func TestHangDoiGhiLaiGiaDaBao(t *testing.T) {
+	repo := newFakeRepo()
+	engine := newTestEngine(repo, &fakeNotifier{})
+
+	bidID := uuid.Must(uuid.NewV7())
+	askID := uuid.Must(uuid.NewV7())
+	repo.bids[bidID] = &entity.Bid{ID: bidID, ShipperID: uuid.New(), Status: entity.BidStatusPending}
+
+	err := engine.ProcessOfferQueue(context.Background(), bidID,
+		&entity.Ask{ID: askID, DriverID: uuid.New(), MinPrice: 4_200_000})
+	if err != nil {
+		t.Fatalf("ProcessOfferQueue lỗi: %v", err)
+	}
+
+	sau := repo.bids[bidID]
+	if sau.Status != entity.BidStatusNegotiating {
+		t.Errorf("trang thai = %v, mong đợi NEGOTIATING", sau.Status)
+	}
+	if sau.OfferedPrice != 4_200_000 || sau.OfferedAskID != askID {
+		t.Errorf("chưa ghi lại báo giá: price=%v ask=%v", sau.OfferedPrice, sau.OfferedAskID)
 	}
 }

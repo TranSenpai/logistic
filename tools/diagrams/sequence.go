@@ -143,8 +143,8 @@ func seqDriverOnboarding() Sequence {
 			{ID: "redis", Label: "Redis GEO", Kind: KindStore},
 		},
 		Messages: []Message{
-			{From: "driver", To: "gw", Label: "POST /users/register (role=driver)", Kind: Sync},
-			{From: "gw", To: "user", Label: "RegisterUser", Kind: Sync},
+			{From: "driver", To: "gw", Label: "POST /auth/register (role=driver)", Kind: Sync},
+			{From: "gw", To: "user", Label: "RegisterUser(id = id danh tính)", Kind: Sync},
 			{From: "user", To: "user", Label: "tạo users + driver_profiles RỖNG", Kind: Self, Note: "license/id_card = NULL, không phải \"\""},
 			{From: "user", To: "gw", Label: "user_id", Kind: Return},
 			{From: "gw", To: "driver", Label: "201 Created", Kind: Return},
@@ -191,6 +191,7 @@ func seqShipperOrder() Sequence {
 			{ID: "gw", Label: "gateway_service", Kind: KindGateway},
 			{ID: "matching", Label: "matching_service", Kind: KindService},
 			{ID: "wallet", Label: "wallet_service", Kind: KindService},
+			{ID: "nats", Label: "NATS JetStream", Kind: KindBroker},
 			{ID: "kafka", Label: "Kafka", Kind: KindBroker},
 			{ID: "mq", Label: "RabbitMQ", Kind: KindBroker},
 			{ID: "notif", Label: "notification_service", Kind: KindService},
@@ -205,6 +206,8 @@ func seqShipperOrder() Sequence {
 
 			{From: "driver", To: "gw", Label: "POST /matching/offers (giá 3.2tr)", Kind: Sync},
 			{From: "gw", To: "matching", Label: "SubmitOffer", Kind: Sync},
+			{From: "matching", To: "nats", Label: "publish matching.offers.{bid_id}", Kind: Async},
+			{From: "nats", To: "matching", Label: "consumer → ProcessOfferQueue", Kind: Async, Note: "hàng đợi để nhiều báo giá cùng đơn xử lý tuần tự"},
 			{From: "matching", To: "matching", Label: "bid.status = NEGOTIATING", Kind: Self, Note: "khoá mềm: tài xế khác bị từ chối ngay"},
 			{From: "matching", To: "mq", Label: "matching.offer.received", Kind: Async},
 			{From: "mq", To: "notif", Label: "giao message", Kind: Async},
@@ -221,15 +224,15 @@ func seqShipperOrder() Sequence {
 			{From: "wallet", To: "matching", Label: "balance", Kind: Return},
 			{From: "matching", To: "shipper", Label: "422 INSUFFICIENT_BALANCE", Kind: Return},
 			{From: "matching", To: "kafka", Label: "wallet.hold_deposit (đóng băng cọc 10%)", Kind: Async},
-			{From: "matching", To: "matching", Label: "bid/ask = MATCHED · INSERT matches", Kind: Self},
+			{From: "matching", To: "matching", Label: "INSERT matches → bid/ask = MATCHED", Kind: Self, Note: "ghi hợp đồng trước, lật trạng thái sau"},
 			{From: "matching", To: "mq", Label: "matching.match.found", Kind: Async},
 			{From: "mq", To: "notif", Label: "giao message", Kind: Async},
 			{From: "notif", To: "shipper", Label: "push \"đã tìm được xe\"", Kind: Async},
 			{From: "notif", To: "driver", Label: "push \"bạn nhận được đơn\"", Kind: Async},
 		},
 		Fragments: []Fragment{
-			{Type: "alt", Label: "chủ hàng từ chối giá", ElseLabel: "chủ hàng chốt xe", From: 11, To: 25, Else: 15},
-			{Type: "alt", Label: "số dư không đủ", ElseLabel: "đủ tiền cọc", From: 19, To: 25, Else: 20},
+			{Type: "alt", Label: "chủ hàng từ chối giá", ElseLabel: "chủ hàng chốt xe", From: 13, To: 27, Else: 17},
+			{Type: "alt", Label: "số dư không đủ", ElseLabel: "đủ tiền cọc", From: 21, To: 27, Else: 22},
 		},
 	}
 }
@@ -288,10 +291,16 @@ func seqAuthentication() Sequence {
 			{ID: "user", Label: "Người dùng", Kind: KindClient},
 			{ID: "gw", Label: "gateway_service", Kind: KindGateway},
 			{ID: "auth", Label: "auth_service", Kind: KindService},
+			{ID: "usersvc", Label: "user_service", Kind: KindService},
 			{ID: "google", Label: "Google OAuth2", Kind: KindExternal},
 			{ID: "svc", Label: "service nội bộ", Kind: KindService},
 		},
 		Messages: []Message{
+			{From: "user", To: "gw", Label: "POST /auth/register", Kind: Sync},
+			{From: "gw", To: "auth", Label: "Register → id danh tính", Kind: Sync},
+			{From: "gw", To: "usersvc", Label: "RegisterUser(id = id danh tính)", Kind: Sync, Note: "cùng id thì token và hồ sơ trỏ về một người"},
+			{From: "gw", To: "user", Label: "201 Created", Kind: Return},
+
 			{From: "user", To: "gw", Label: "POST /auth/login", Kind: Sync},
 			{From: "gw", To: "auth", Label: "Login(email, password)", Kind: Sync},
 			{From: "auth", To: "gw", Label: "TokenPair · hoặc Unauthenticated", Kind: Return},
@@ -318,9 +327,9 @@ func seqAuthentication() Sequence {
 			{From: "svc", To: "user", Label: "200 { users, pagination }", Kind: Return},
 		},
 		Fragments: []Fragment{
-			{Type: "alt", Label: "đăng nhập bằng email + mật khẩu", ElseLabel: "đăng nhập bằng Google OAuth2", From: 0, To: 15, Else: 4},
-			{Type: "alt", Label: "state lệch hoặc thiếu cookie", ElseLabel: "state khớp", From: 11, To: 15, Else: 12},
-			{Type: "alt", Label: "role ≠ admin", ElseLabel: "role = admin", From: 19, To: 21, Else: 20},
+			{Type: "alt", Label: "đăng nhập bằng email + mật khẩu", ElseLabel: "đăng nhập bằng Google OAuth2", From: 4, To: 19, Else: 8},
+			{Type: "alt", Label: "state lệch hoặc thiếu cookie", ElseLabel: "state khớp", From: 15, To: 19, Else: 16},
+			{Type: "alt", Label: "role ≠ admin", ElseLabel: "role = admin", From: 23, To: 25, Else: 24},
 		},
 	}
 }

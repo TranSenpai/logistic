@@ -237,6 +237,11 @@ func (c *AppMapperImpl) PbListDocumentsToParam(source *v1.ListVehicleDocumentsRe
 			return entityListDocumentsParam, err
 		}
 		entityListDocumentsParam.VehicleID = uuidUUID
+		uuidUUID2, err := mapper.BytesToUUID((*source).DriverId)
+		if err != nil {
+			return entityListDocumentsParam, err
+		}
+		entityListDocumentsParam.DriverID = uuidUUID2
 		entityListDocumentsParam.ReviewStatus = (*source).ReviewStatus
 	}
 	return entityListDocumentsParam, nil
@@ -349,6 +354,11 @@ func (c *AppMapperImpl) PbUpdateVehicleToParam(source *v1.UpdateVehicleRequest) 
 			return entityUpdateVehicleParam, err
 		}
 		entityUpdateVehicleParam.ID = uuidUUID
+		uuidUUID2, err := mapper.BytesToUUID((*source).DriverId)
+		if err != nil {
+			return entityUpdateVehicleParam, err
+		}
+		entityUpdateVehicleParam.DriverID = uuidUUID2
 		entityUpdateVehicleParam.Brand = (*source).Brand
 		entityUpdateVehicleParam.Model = (*source).Model
 		entityUpdateVehicleParam.ManufactureYear = mapper.Int32ToInt((*source).ManufactureYear)
@@ -366,6 +376,11 @@ func (c *AppMapperImpl) PbUploadDocumentToParam(source *v1.UploadVehicleDocument
 			return entityUploadDocumentParam, err
 		}
 		entityUploadDocumentParam.VehicleID = uuidUUID
+		uuidUUID2, err := mapper.BytesToUUID((*source).DriverId)
+		if err != nil {
+			return entityUploadDocumentParam, err
+		}
+		entityUploadDocumentParam.DriverID = uuidUUID2
 		entityUploadDocumentParam.DocumentType = (*source).DocumentType
 		entityUploadDocumentParam.DocumentNumber = (*source).DocumentNumber
 		entityUploadDocumentParam.FileURL = (*source).FileUrl

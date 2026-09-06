@@ -3,20 +3,74 @@ package controller
 import (
 	"gateway_service/internal/middleware"
 	"gateway_service/internal/response"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	pb "github.com/logistic/api/logistic/matching_service/v1"
+	pbvehicle "github.com/logistic/api/logistic/vehicle_service/v1"
+	"github.com/logistic/pkg/uuidx"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MatchingController struct {
 	matchingClient pb.MatchingEngineServiceClient
+	vehicleClient  pbvehicle.VehicleServiceClient
 }
 
-func NewMatchingController(matchingClient pb.MatchingEngineServiceClient) *MatchingController {
-	return &MatchingController{matchingClient: matchingClient}
+func NewMatchingController(
+	matchingClient pb.MatchingEngineServiceClient,
+	vehicleClient pbvehicle.VehicleServiceClient,
+) *MatchingController {
+	return &MatchingController{matchingClient: matchingClient, vehicleClient: vehicleClient}
 }
+
+// callerID trả danh tính từ token và từ chối nếu body khai một id khác. Nhận id
+// từ body là cho phép đăng đơn hoặc đăng chuyến dưới danh nghĩa người khác.
+func callerID(ctx *gin.Context, declared, field string) ([]byte, bool) {
+	self := selfID(ctx)
+	if uuidx.IsZero(self) {
+		response.Unauthorized(ctx, "không xác định được người dùng")
+		return nil, false
+	}
+	if declared != "" {
+		if _, err := uuid.Parse(declared); err != nil {
+			response.BadRequest(ctx, "INVALID_"+strings.ToUpper(field), field+" phải là UUID hợp lệ")
+			return nil, false
+		}
+		if declared != uuidx.String(self) {
+			response.Forbidden(ctx, "không thể đăng thay cho người dùng khác ("+field+")")
+			return nil, false
+		}
+	}
+	return self, true
+}
+
+// usableVehicle chặn xe không thuộc người gọi hoặc chưa được duyệt giấy tờ.
+// matching_service giữ bảng asks riêng và không hỏi vehicle_service, nên nếu
+// không chặn ở đây thì xe chưa duyệt vẫn được ghép đơn và nhận thông báo.
+func (c *MatchingController) usableVehicle(ctx *gin.Context, vehicleID, driverID []byte) bool {
+	if c.vehicleClient == nil {
+		return true
+	}
+
+	resp, err := c.vehicleClient.GetVehicle(ctx.Request.Context(), &pbvehicle.GetVehicleRequest{
+		Id:       vehicleID,
+		DriverId: driverID,
+	})
+	if err != nil {
+		response.Error(ctx, err)
+		return false
+	}
+	if resp.GetVehicle().GetVerificationStatus() != vehicleVerified {
+		response.FailedPrecondition(ctx, "VEHICLE_NOT_VERIFIED",
+			"phương tiện chưa được duyệt giấy tờ, chưa thể nhận đơn")
+		return false
+	}
+	return true
+}
+
+const vehicleVerified = "verified"
 
 func uuidBytes(raw string) ([]byte, bool) {
 	if raw == "" {
@@ -74,9 +128,8 @@ func (c *MatchingController) SubmitBid(ctx *gin.Context) {
 		return
 	}
 
-	shipperID, ok := uuidBytes(req.ShipperID)
+	shipperID, ok := callerID(ctx, req.ShipperID, "shipper_id")
 	if !ok {
-		response.BadRequest(ctx, "INVALID_SHIPPER_ID", "shipper_id phải là UUID hợp lệ")
 		return
 	}
 	consigneeID, ok := uuidBytes(req.ConsigneeID)
@@ -142,14 +195,16 @@ func (c *MatchingController) SubmitAsk(ctx *gin.Context) {
 		return
 	}
 
-	driverID, ok := uuidBytes(req.DriverID)
+	driverID, ok := callerID(ctx, req.DriverID, "driver_id")
 	if !ok {
-		response.BadRequest(ctx, "INVALID_DRIVER_ID", "driver_id phải là UUID hợp lệ")
 		return
 	}
 	vehicleID, ok := uuidBytes(req.VehicleID)
 	if !ok {
 		response.BadRequest(ctx, "INVALID_VEHICLE_ID", "vehicle_id phải là UUID hợp lệ")
+		return
+	}
+	if !c.usableVehicle(ctx, vehicleID, driverID) {
 		return
 	}
 

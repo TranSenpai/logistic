@@ -61,7 +61,12 @@ func (c *vehicleController) GetVehicle(ctx context.Context, req *pb.GetVehicleRe
 		return nil, err
 	}
 
-	v, err := c.engine.GetVehicle(ctx, id)
+	driverID, err := parseOptionalID(req.DriverId, cerr.ErrInvalidDriverID)
+	if err != nil {
+		return nil, err
+	}
+
+	v, err := c.engine.GetVehicle(ctx, id, driverID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +129,12 @@ func (c *vehicleController) UpdateVehicleStatus(ctx context.Context, req *pb.Upd
 		return nil, err
 	}
 
-	v, err := c.engine.UpdateVehicleStatus(ctx, id, req.Status)
+	driverID, err := parseOptionalID(req.DriverId, cerr.ErrInvalidDriverID)
+	if err != nil {
+		return nil, err
+	}
+
+	v, err := c.engine.UpdateVehicleStatus(ctx, id, driverID, req.Status)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +180,11 @@ func (c *vehicleController) DeleteVehicleDocument(ctx context.Context, req *pb.D
 	if err != nil {
 		return nil, err
 	}
-	if err := c.engine.DeleteDocument(ctx, id); err != nil {
+	driverID, err := parseOptionalID(req.DriverId, cerr.ErrInvalidDriverID)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.engine.DeleteDocument(ctx, id, driverID); err != nil {
 		return nil, err
 	}
 	return &pb.DeleteVehicleDocumentResponse{Message: "Xoá giấy tờ thành công"}, nil
@@ -199,7 +213,12 @@ func (c *vehicleController) GetVehicleLocation(ctx context.Context, req *pb.GetV
 		return nil, err
 	}
 
-	loc, err := c.engine.GetLocation(ctx, id)
+	driverID, err := parseOptionalID(req.DriverId, cerr.ErrInvalidDriverID)
+	if err != nil {
+		return nil, err
+	}
+
+	loc, err := c.engine.GetLocation(ctx, id, driverID)
 	if err != nil {
 		return nil, err
 	}

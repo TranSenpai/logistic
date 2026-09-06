@@ -10,7 +10,7 @@ import (
 )
 
 type consumerGroupHandler struct {
-	bizHandler func(context context.Context, bucket []byte) error
+	bizHandler biz.EventHandler
 }
 
 func (cgh *consumerGroupHandler) Setup(sarama.ConsumerGroupSession) error {
@@ -30,7 +30,7 @@ func (cgh *consumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSessio
 				return nil
 			}
 
-			err := cgh.bizHandler(session.Context(), msg.Value)
+			err := cgh.bizHandler(session.Context(), msg.Topic, msg.Value)
 			if err != nil {
 				if errors.Is(err, biz.ErrNonRetryable) {
 					log.Printf("Business error: %v", err)
@@ -70,7 +70,7 @@ func NewKafkaConsumer(brokers []string, groupId string) (biz.EventConsumer, erro
 	return &kafkaConsumer{consumerGroup: consumerGroup}, nil
 }
 
-func (c *kafkaConsumer) Consume(ctx context.Context, topic string, handler func(ctx context.Context, bucket []byte) error) error {
+func (c *kafkaConsumer) Consume(ctx context.Context, topic string, handler biz.EventHandler) error {
 	saramaHandler := &consumerGroupHandler{
 		bizHandler: handler,
 	}

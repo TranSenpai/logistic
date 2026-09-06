@@ -71,6 +71,15 @@ func Forbidden(ctx *gin.Context, message string) {
 	})
 }
 
+// FailedPrecondition cho các điều kiện nghiệp vụ gateway tự kiểm được trước khi
+// gọi xuống service. Trả 422 cùng mã với service nội bộ để client xử lý một kiểu.
+func FailedPrecondition(ctx *gin.Context, code, message string) {
+	ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, ErrorBody{
+		Error:     ErrorDetail{Code: code, Message: message},
+		RequestID: requestID(ctx),
+	})
+}
+
 func Error(ctx *gin.Context, err error) {
 	st, ok := status.FromError(err)
 	if !ok {

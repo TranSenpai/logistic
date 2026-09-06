@@ -11,18 +11,18 @@ import (
 
 type VehicleEngine interface {
 	RegisterVehicle(ctx context.Context, param *entity.RegisterVehicleParam) (*entity.Vehicle, error)
-	GetVehicle(ctx context.Context, id uuid.UUID) (*entity.Vehicle, error)
+	GetVehicle(ctx context.Context, id, driverID uuid.UUID) (*entity.Vehicle, error)
 	ListVehicles(ctx context.Context, param *entity.ListVehiclesParam) (*entity.ListVehiclesResult, error)
 	UpdateVehicle(ctx context.Context, param *entity.UpdateVehicleParam) (*entity.Vehicle, error)
 	DeleteVehicle(ctx context.Context, id, driverID uuid.UUID) error
-	UpdateVehicleStatus(ctx context.Context, id uuid.UUID, status string) (*entity.Vehicle, error)
+	UpdateVehicleStatus(ctx context.Context, id, driverID uuid.UUID, status string) (*entity.Vehicle, error)
 
 	UploadDocument(ctx context.Context, param *entity.UploadDocumentParam) (*entity.VehicleDocument, error)
 	ListDocuments(ctx context.Context, param *entity.ListDocumentsParam) ([]entity.VehicleDocument, error)
-	DeleteDocument(ctx context.Context, id uuid.UUID) error
+	DeleteDocument(ctx context.Context, id, driverID uuid.UUID) error
 
 	ReportLocation(ctx context.Context, param *entity.ReportLocationParam) (*entity.VehicleLocation, error)
-	GetLocation(ctx context.Context, vehicleID uuid.UUID) (*entity.VehicleLocation, error)
+	GetLocation(ctx context.Context, vehicleID, driverID uuid.UUID) (*entity.VehicleLocation, error)
 
 	SetAvailability(ctx context.Context, param *entity.SetAvailabilityParam) (*entity.DriverAvailability, error)
 	GetAvailability(ctx context.Context, driverID uuid.UUID) (*entity.DriverAvailability, error)
@@ -61,11 +61,23 @@ func (e *vehicleEngineImpl) RegisterVehicle(ctx context.Context, param *entity.R
 	return e.repo.CreateVehicle(ctx, param)
 }
 
-func (e *vehicleEngineImpl) GetVehicle(ctx context.Context, id uuid.UUID) (*entity.Vehicle, error) {
-	if id == uuid.Nil {
+// Mọi thao tác của tài xế phải qua đây. driverID rỗng = luồng quản trị, bỏ kiểm tra.
+func (e *vehicleEngineImpl) ownedVehicle(ctx context.Context, vehicleID, driverID uuid.UUID) (*entity.Vehicle, error) {
+	if vehicleID == uuid.Nil {
 		return nil, cerr.ErrInvalidVehicleID
 	}
-	return e.repo.GetVehicleByID(ctx, id)
+	v, err := e.repo.GetVehicleByID(ctx, vehicleID)
+	if err != nil {
+		return nil, err
+	}
+	if driverID != uuid.Nil && v.DriverID != driverID {
+		return nil, cerr.ErrVehicleNotOwned
+	}
+	return v, nil
+}
+
+func (e *vehicleEngineImpl) GetVehicle(ctx context.Context, id, driverID uuid.UUID) (*entity.Vehicle, error) {
+	return e.ownedVehicle(ctx, id, driverID)
 }
 
 func (e *vehicleEngineImpl) ListVehicles(ctx context.Context, param *entity.ListVehiclesParam) (*entity.ListVehiclesResult, error) {
@@ -94,33 +106,25 @@ func (e *vehicleEngineImpl) UpdateVehicle(ctx context.Context, param *entity.Upd
 	if param.VehicleType != "" && !entity.IsValidVehicleType(param.VehicleType) {
 		return nil, cerr.ErrInvalidType.WithDetail("vehicle_type", param.VehicleType)
 	}
-	if _, err := e.repo.GetVehicleByID(ctx, param.ID); err != nil {
+	if _, err := e.ownedVehicle(ctx, param.ID, param.DriverID); err != nil {
 		return nil, err
 	}
 	return e.repo.UpdateVehicle(ctx, param)
 }
 
 func (e *vehicleEngineImpl) DeleteVehicle(ctx context.Context, id, driverID uuid.UUID) error {
-	if id == uuid.Nil {
-		return cerr.ErrInvalidVehicleID
-	}
-	v, err := e.repo.GetVehicleByID(ctx, id)
-	if err != nil {
+	if _, err := e.ownedVehicle(ctx, id, driverID); err != nil {
 		return err
-	}
-
-	if driverID != uuid.Nil && v.DriverID != driverID {
-		return cerr.ErrVehicleNotOwned
 	}
 	return e.repo.DeleteVehicle(ctx, id)
 }
 
-func (e *vehicleEngineImpl) UpdateVehicleStatus(ctx context.Context, id uuid.UUID, status string) (*entity.Vehicle, error) {
-	if id == uuid.Nil {
-		return nil, cerr.ErrInvalidVehicleID
-	}
+func (e *vehicleEngineImpl) UpdateVehicleStatus(ctx context.Context, id, driverID uuid.UUID, status string) (*entity.Vehicle, error) {
 	if !entity.IsValidVehicleStatus(status) {
 		return nil, cerr.ErrInvalidStatus.WithDetail("status", status)
+	}
+	if _, err := e.ownedVehicle(ctx, id, driverID); err != nil {
+		return nil, err
 	}
 	return e.repo.UpdateVehicleStatus(ctx, id, status)
 }
@@ -135,27 +139,32 @@ func (e *vehicleEngineImpl) UploadDocument(ctx context.Context, param *entity.Up
 	if param.FileURL == "" {
 		return nil, cerr.ErrFileURLRequired
 	}
-	if _, err := e.repo.GetVehicleByID(ctx, param.VehicleID); err != nil {
+	if _, err := e.ownedVehicle(ctx, param.VehicleID, param.DriverID); err != nil {
 		return nil, err
 	}
 	return e.repo.CreateDocument(ctx, param)
 }
 
 func (e *vehicleEngineImpl) ListDocuments(ctx context.Context, param *entity.ListDocumentsParam) ([]entity.VehicleDocument, error) {
-	if param.VehicleID == uuid.Nil {
-		return nil, cerr.ErrInvalidVehicleID
-	}
 	if param.ReviewStatus != "" && !entity.IsValidReviewStatus(param.ReviewStatus) {
 		return nil, cerr.ErrInvalidReviewStat.WithDetail("review_status", param.ReviewStatus)
+	}
+	if _, err := e.ownedVehicle(ctx, param.VehicleID, param.DriverID); err != nil {
+		return nil, err
 	}
 	return e.repo.ListDocuments(ctx, param)
 }
 
-func (e *vehicleEngineImpl) DeleteDocument(ctx context.Context, id uuid.UUID) error {
+func (e *vehicleEngineImpl) DeleteDocument(ctx context.Context, id, driverID uuid.UUID) error {
 	if id == uuid.Nil {
 		return cerr.ErrInvalidDocumentID
 	}
-	if _, err := e.repo.GetDocument(ctx, id); err != nil {
+	doc, err := e.repo.GetDocument(ctx, id)
+	if err != nil {
+		return err
+	}
+	// Giấy tờ không mang driver_id, phải qua xe mới biết chủ.
+	if _, err := e.ownedVehicle(ctx, doc.VehicleID, driverID); err != nil {
 		return err
 	}
 	return e.repo.DeleteDocument(ctx, id)
@@ -171,7 +180,7 @@ func (e *vehicleEngineImpl) ReportLocation(ctx context.Context, param *entity.Re
 			WithDetail("longitude", formatFloat(param.Longitude))
 	}
 
-	v, err := e.repo.GetVehicleByID(ctx, param.VehicleID)
+	v, err := e.ownedVehicle(ctx, param.VehicleID, param.DriverID)
 	if err != nil {
 		return nil, err
 	}
@@ -184,9 +193,9 @@ func (e *vehicleEngineImpl) ReportLocation(ctx context.Context, param *entity.Re
 	return e.repo.UpsertLocation(ctx, param, zoneID)
 }
 
-func (e *vehicleEngineImpl) GetLocation(ctx context.Context, vehicleID uuid.UUID) (*entity.VehicleLocation, error) {
-	if vehicleID == uuid.Nil {
-		return nil, cerr.ErrInvalidVehicleID
+func (e *vehicleEngineImpl) GetLocation(ctx context.Context, vehicleID, driverID uuid.UUID) (*entity.VehicleLocation, error) {
+	if _, err := e.ownedVehicle(ctx, vehicleID, driverID); err != nil {
+		return nil, err
 	}
 	return e.repo.GetLocation(ctx, vehicleID)
 }
@@ -199,12 +208,9 @@ func (e *vehicleEngineImpl) SetAvailability(ctx context.Context, param *entity.S
 		return nil, cerr.ErrInvalidVehicleID
 	}
 
-	v, err := e.repo.GetVehicleByID(ctx, param.VehicleID)
+	v, err := e.ownedVehicle(ctx, param.VehicleID, param.DriverID)
 	if err != nil {
 		return nil, err
-	}
-	if v.DriverID != param.DriverID {
-		return nil, cerr.ErrVehicleNotOwned
 	}
 
 	if param.IsOnline {

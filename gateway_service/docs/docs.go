@@ -2019,6 +2019,9 @@ const docTemplate = `{
                     "type": "string",
                     "minLength": 8
                 },
+                "phone": {
+                    "type": "string"
+                },
                 "role": {
                     "type": "string",
                     "enum": [

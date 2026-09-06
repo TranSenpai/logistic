@@ -103,8 +103,15 @@ message RegisterVehicleResponse {
   Vehicle vehicle = 3;
 }
 
+// driver_id trong các request dưới đây là DANH TÍNH NGƯỜI GỌI, do gateway lấy từ
+// token rồi gắn vào — không phải giá trị client tự khai. vehicle_service so nó với
+// chủ xe và từ chối nếu lệch. Bỏ trống (nil) nghĩa là gọi từ luồng quản trị, bỏ
+// qua kiểm tra; xem DeleteVehicleRequest đã dùng đúng quy ước này từ trước.
+// driver_id dưới đây là danh tính người gọi do gateway lấy từ token, không phải
+// giá trị client khai. vehicle_service so với chủ xe; bỏ trống = luồng quản trị.
 message GetVehicleRequest {
   bytes id = 1;
+  bytes driver_id = 2;
 }
 
 message GetVehicleResponse {
@@ -132,6 +139,7 @@ message UpdateVehicleRequest {
   string vehicle_type = 5;
   double capacity_weight_kg = 6;
   double capacity_volume_cbm = 7;
+  bytes driver_id = 8;
 }
 
 message UpdateVehicleResponse {
@@ -151,6 +159,7 @@ message DeleteVehicleResponse {
 message UpdateVehicleStatusRequest {
   bytes id = 1;
   string status = 2;
+  bytes driver_id = 3;
 }
 
 message UpdateVehicleStatusResponse {
@@ -165,6 +174,7 @@ message UploadVehicleDocumentRequest {
   string file_url = 4;
   google.protobuf.Timestamp issued_at = 5;
   google.protobuf.Timestamp expires_at = 6;
+  bytes driver_id = 7;
 }
 
 message UploadVehicleDocumentResponse {
@@ -175,6 +185,7 @@ message UploadVehicleDocumentResponse {
 message ListVehicleDocumentsRequest {
   bytes vehicle_id = 1;
   string review_status = 2;
+  bytes driver_id = 3;
 }
 
 message ListVehicleDocumentsResponse {
@@ -183,6 +194,7 @@ message ListVehicleDocumentsResponse {
 
 message DeleteVehicleDocumentRequest {
   bytes id = 1;
+  bytes driver_id = 2;
 }
 
 message DeleteVehicleDocumentResponse {
@@ -205,6 +217,7 @@ message ReportLocationResponse {
 
 message GetVehicleLocationRequest {
   bytes vehicle_id = 1;
+  bytes driver_id = 2;
 }
 
 message GetVehicleLocationResponse {

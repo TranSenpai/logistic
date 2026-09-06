@@ -76,6 +76,24 @@ Postgres **trước**, Redis **sau**. Nếu ghi Redis trước mà Postgres hỏ
 sẽ chứa một xe mà bảng vị trí không hề biết tới. Ngược lại thì tệ nhất là chỉ mục
 chậm hơn DB đúng một nhịp ping — hoàn toàn chấp nhận được.
 
+## Ai được đụng vào xe nào
+
+Mọi thao tác của tài xế lên một chiếc xe đều đi qua `ownedVehicle` ở tầng biz: đọc
+xe rồi đối chiếu chủ với `driver_id` mà gateway lấy từ token. Lệch thì trả
+`VEHICLE_NOT_OWNED` (403).
+
+`driver_id` là **danh tính người gọi**, không phải giá trị client khai. Bỏ trống
+nghĩa là luồng quản trị và bỏ qua kiểm tra — các endpoint `/api/v1/admin/*` dùng
+RPC riêng nên không đi qua đường này.
+
+Ràng buộc áp cho: xem chi tiết xe, sửa thông số, đổi trạng thái, tải lên và xoá
+giấy tờ, xem danh sách giấy tờ, báo và đọc vị trí GPS, bật/tắt nhận đơn, xoá xe.
+`vehicle_service/internal/biz/ownership_test.go` chạy cả mười thao tác đó cho ba
+vai — chủ xe, người lạ, quản trị.
+
+Đọc vị trí GPS cũng nằm trong danh sách vì nó là dữ liệu theo dõi thời gian thực:
+để lộ là bất kỳ ai biết ID xe đều bám được đường đi của tài xế.
+
 ## Cấu hình
 
 ```

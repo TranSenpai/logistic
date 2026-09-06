@@ -310,6 +310,13 @@
             "required": true,
             "type": "string",
             "format": "byte"
+          },
+          {
+            "name": "driverId",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -461,6 +468,13 @@
             "required": true,
             "type": "string",
             "format": "byte"
+          },
+          {
+            "name": "driverId",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -610,6 +624,13 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "driverId",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "byte"
           }
         ],
         "tags": [
@@ -676,6 +697,13 @@
             "name": "vehicleId",
             "in": "path",
             "required": true,
+            "type": "string",
+            "format": "byte"
+          },
+          {
+            "name": "driverId",
+            "in": "query",
+            "required": false,
             "type": "string",
             "format": "byte"
           }
@@ -830,6 +858,10 @@
         "capacityVolumeCbm": {
           "type": "number",
           "format": "double"
+        },
+        "driverId": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
@@ -838,6 +870,10 @@
       "properties": {
         "status": {
           "type": "string"
+        },
+        "driverId": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
@@ -860,6 +896,10 @@
         "expiresAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "driverId": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
