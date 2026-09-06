@@ -118,3 +118,5 @@ adr
 # Sổ tay nội bộ: nhật ký refactor, playbook migrate, ghi chú cho các đợt update
 # lớn. Không vào git — đây là ghi chú cá nhân, không phải tài liệu của repo.
 docs/notes/
+
+.codegraph
